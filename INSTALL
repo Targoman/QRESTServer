@@ -1,0 +1,61 @@
+/*******************************************************************************
+ * QRESTServer a lean and mean Qt/C++ based REST server                        *
+ *                                                                             *
+ * Copyright 2018 by Targoman Intelligent Processing Co Pjc.<http://tip.co.ir> *
+ *                                                                             *
+ *                                                                             *
+ * QRESTServer is free software: you can redistribute it and/or modify         *
+ * it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE as published by *
+ * the Free Software Foundation, either version 3 of the License, or           *
+ * (at your option) any later version.                                         *
+ *                                                                             *
+ * QRESTServer is distributed in the hope that it will be useful,              *
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of              *
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               *
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.                         *
+ * You should have received a copy of the GNU AFFERO GENERAL PUBLIC LICENSE    *
+ * along with QRESTServer. If not, see <http://www.gnu.org/licenses/>.         *
+ *                                                                             *
+ *******************************************************************************/
+
+Here is a brief guide on how to build QRESTServer
+
+1 - Unpack:  This should give a top-level directory with the subdirectories
+    listed in README, as well as a few documentation files and a buildAndTest
+    script.
+
+2- Update dependencies:
+
+3 - Requirements:
+    * Linux x86 64bit machine
+    * g++: v7.3 or above
+    * GNU make: v4.0 or above
+    * Following Qt development packages version 5.6 or above:
+            - Qt5Core
+            - Qt5Concurrent
+            - Qt5Network
+            - Qt5JSON
+            - Qt5Test
+
+    * Following Qt development packages are optional and activate if existent
+            - Qt5WebSocket
+            - Qt5Sql-mysql
+            - Qt5Sql-odbc
+            - Qt5Sql-mssql
+
+    * Following Targoman projects are needed to be installed prior to compilation
+            - TargomanCommon (https://github.com/Targoman/TargomanCommon.git)
+            - QHttp (https://github.com/Targoman/QHttp.git)
+
+4 - run qmake with following options:
+    * CONFIG+=debug if you want to build a debugging version
+    * PREFIX=DESIRED_LOCATION if you want to install binaries in a folder other than default paths
+
+5 - All outputs will be stored in 'out' directory at top level. subdirectories will be:
+    * bin:      examples.
+    * build:    Build process object files
+    * conf:     Dictionaries and static configurations off all apps and tools
+    * include:  APIs and essential include files for further development
+    * lib:      shared objects and static libraries
+    * unitTest  UnitTest binaries
+

@@ -27,7 +27,7 @@ DIST_HEADERS += \
     HTTPExceptions.h \
 
 PRIVATE_HEADERS += \
-    Private/RequestHandler.h \
+    Private/clsRequestHandler.h \
     Private/Configs.hpp \
     Private/RESTAPIRegistry.h \
     Private/clsAPIObject.hpp
@@ -36,7 +36,7 @@ PRIVATE_HEADERS += \
 # +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-#
 SOURCES += \
     libID.cpp \
-    Private/RequestHandler.cpp \
+    Private/clsRequestHandler.cpp \
     Private/RESTAPIRegistry.cpp \
     QRESTServer.cpp \
 

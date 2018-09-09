@@ -55,13 +55,16 @@ private:
     }
 };
 
-class RequestHandler
+class clsRequestHandler
 {
 public:
-    static void process(const QString &_api, qhttp::server::QHttpRequest* _req, qhttp::server::QHttpResponse* _res);
-    static void findAndCallAPI(const QString &_api, qhttp::server::QHttpRequest *_req, qhttp::server::QHttpResponse *_res);
-    static void sendError(qhttp::server::QHttpResponse *_res, qhttp::TStatusCode _code, const QString& _message, bool _closeConnection = false);
-    static void sendResponse(qhttp::server::QHttpResponse *_res, qhttp::TStatusCode _code, QVariant _response);
+    void process(const QString &_api, qhttp::server::QHttpRequest* _req, qhttp::server::QHttpResponse* _res);
+    void findAndCallAPI(const QString &_api, qhttp::server::QHttpRequest *_req, qhttp::server::QHttpResponse *_res);
+    void sendError(qhttp::server::QHttpResponse *_res, qhttp::TStatusCode _code, const QString& _message, bool _closeConnection = false);
+    void sendResponse(qhttp::server::QHttpResponse *_res, qhttp::TStatusCode _code, QVariant _response);
+
+private:
+    QByteArray RemainingData;
 };
 
 }

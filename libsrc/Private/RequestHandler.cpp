@@ -24,7 +24,7 @@
 
 #include <QJsonObject>
 #include <QJsonDocument>
-#include "RequestHandler.h"
+#include "clsRequestHandler.h"
 #include "libTargomanCommon/CmdIO.h"
 #include "intfRESTAPIHolder.h"
 #include "Configs.hpp"
@@ -43,24 +43,93 @@ void RequestHandler::process(const QString& _api, qhttp::server::QHttpRequest *_
         QByteArray ContentType= _req->headers().value("content-type");
         if(ContentType.isEmpty())
             throw exHTTPBadRequest("No content-type header present");
-        /*
+
         switch(ContentType.at(0)){
-        case 'a':
+        case 'a':{
             if(ContentType != "application/json")
                 throw exHTTPBadRequest(("unsupported Content-Type: " + ContentType).constData());
+            _data = _data.trimmed();
+            if(_data.startsWith('{') == false || _data.endsWith('}') == false)
+                throw exHTTPBadRequest("Invalid JSON Object");
+            QJsonParseError Error;
+            QJsonDocument JSON = QJsonDocument::fromJson(_data, &Error);
+            if(JSON.isNull() || JSON.isObject() == false)
+                throw exHTTPBadRequest(QString("Invalid JSON Object: %1").arg(Error.errorString()));
+            QJsonObject JSONObject = JSON.object();
+            for(auto JSONObjectIter = JSONObject.begin();
+                JSONObjectIter != JSONObject.end()
+                ++JSONObjectIter)
+                _req->addUserDefinedData(JSONObjectIter.key(), JSONObjectIter.value().toString());
+            foreach
             break;
-        case: 'm':
-            if(ContentType.startsWith("multipart/form-data; boundary=")
+        }
+        case: 'm':{
+            static const char MULTIPART_BOUNDARY_HEADER[] = "multipart/form-data; boundary=";
+            static const char MULTIPART_CONTENT_DISPOSITION[] = "Content-Disposition: ";
+            static const char MULTIPART_CONTENT_DISPOSITION_FORM[] =        "form-data; name=\"";
+            static const char MULTIPART_CONTENT_DISPOSITION_FILE[] =        "file; filename=\"";
+            static const char MULTIPART_CONTENT_DISPOSITION_SINGLE_FILE[] = "form-data; name=\"files\"; filename=\"";
+            static const char MULTIPART_CONTENT_TYPE_FILES[]       = "Type: multipart/mixed; boundary=";
+            static const char MULTIPART_CONTENT_FILETYPE[] = "Content-Type: ";
+
+            if(ContentType.startsWith(MULTIPART_BOUNDARY_HEADER))
                 throw exHTTPBadRequest(("unsupported Content-Type: " + ContentType).constData());
+            QByteArray BaseMarker = ContentType.mid(sizeof(MULTIPART_BOUNDARY_HEADER));
+            if(_data.startsWith(BaseMarker) == false)
+                throw exHTTPBadRequest(("invalid marker at start of multipart message: " + BaseMarker).constData());
+            int NextDataPos = BaseMarker.size();
+            QByteArray InnerMarker;
+            while(NextDataPos >0){
+                /// @note data must start with a Content-Disopsition header followed by its type so check for size
+                if(Q_UNLIKELY(_data.size() <= NextDataPos + sizeof(MULTIPART_CONTENT_DISPOSITION) + sizeof(MULTIPART_CONTENT_DISPOSITION_FILE) + 4))
+                    throw exHTTPBadRequest("invalid multipart message: no data after marker");
+                switch(_data.at(NextDataPos)){
+                case '\n':
+                case '\r':
+                    ++NextDataPos;
+                    continue;
+                case 'C':
+                    switch()
+                    _data = _data.mid(NextDataPos + sizeof(MULTIPART_CONTENT_DISPOSITION));
+                    if(_data.startsWith(MULTIPART_CONTENT_DISPOSITION_FORM)){
+                        if(InnerMarker.size())
+                            throw exHTTPBadRequest("No more form data allowed when iner boundary is set");
+                        NextDataPos = _data.indexOf('\"');
+                        if(NextDataPos < 0 )
+                            throw exHTTPBadRequest("No name for multipart data");
+                        QString Name = _data.mid(0, NextDataPos);
+                        quint8  HeaderMarker =0;
+                        bool DataStarted = false;
+                        while(NextDataPos > 0){
+                            if(Q_UNLIKELY(_data.size() <= NextDataPos + BaseMarker.size() + 4))
+                                throw exHTTPBadRequest("invalid multipart message: no data after header");
+                            if(_data.at(NextDataPos) == '\n')
+                                ++HeaderMarker;
+                            if(HeaderMarker == 2){
+                                NextDataPos = _data.indexOf(BaseMarker);
+                                if(NextDataPos < 0)
+                                    throw exHTTPBadRequest("end of data has not been yet received");
+                                break;
+                            }
+                            ++NextDataPos;
+                        }
+                    }else if (_data.startsWith(MULTIPART_CONTENT_DISPOSITION_SINGLE_FILE)){
+                        if(InnerMarker.size())
+                            throw exHTTPBadRequest("No more form data allowed when iner boundary is set");
+
+                    }
+                default:
+                    throw exHTTPBadRequest(("invalid multipart message: must start with Content-Disposition: " + _data.left(20)).constData());
+                }
+            }
+        }
         default:'
             throw exHTTPBadRequest(("unsupported Content-Type: " + ContentType).constData());
         }
 
-        Q_UNUSED(_data)
         qDebug()<<_req->headers();
         qDebug()<<_data;
         qDebug()<<_req->url().query();
-        */
     });
     _req->onEnd([_api, _req, _res](){
         try{

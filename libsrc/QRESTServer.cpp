@@ -27,7 +27,7 @@
 #include <QtConcurrent/QtConcurrent>
 #include "QRESTServer.h"
 #include "Private/Configs.hpp"
-#include "Private/RequestHandler.h"
+#include "Private/clsRequestHandler.h"
 
 namespace QHttp {
 
@@ -80,17 +80,18 @@ void RESTServer::start() {
     });
 
     gHTTPServer.listen (gConfigs.Public.ListenAddress, gConfigs.Public.ListenPort, [&](QHttpRequest* _req, QHttpResponse* _res){
+        clsRequestHandler* RequestHandler = new RequestHandler;
         try{
             QString Path = _req->url().adjusted(QUrl::NormalizePathSegments |
                                                 QUrl::RemoveAuthority
                                                 ).path(QUrl::PrettyDecoded);
 
             if(Path.startsWith(gConfigs.Public.BasePath) == false)
-                return RequestHandler::sendError(_res, qhttp::ESTATUS_NOT_FOUND, "Path not found: '" + Path + "'", true);
+                return RequestHandler->sendError(_res, qhttp::ESTATUS_NOT_FOUND, "Path not found: '" + Path + "'", true);
             if(Path.startsWith(gConfigs.Private.BaseParthWithVersion) == false)
-                return RequestHandler::sendError(_res, qhttp::ESTATUS_NOT_ACCEPTABLE, "Invalid Version or version not specified", true);
+                return RequestHandler->sendError(_res, qhttp::ESTATUS_NOT_ACCEPTABLE, "Invalid Version or version not specified", true);
             if(Path == gConfigs.Private.BaseParthWithVersion )
-                return RequestHandler::sendError(_res, qhttp::ESTATUS_NOT_ACCEPTABLE, "No API call provided", true);
+                return RequestHandler->sendError(_res, qhttp::ESTATUS_NOT_ACCEPTABLE, "No API call provided", true);
 
             TargomanLogInfo(7,
                             "New API Call ["<<
@@ -100,13 +101,13 @@ void RESTServer::start() {
                             "]: "<<
                             Path<<
                             _req->url().query());
-            RequestHandler::process(Path.mid(gConfigs.Private.BaseParthWithVersion.size() - 1),
+            new clsRequestHandler(Path.mid(gConfigs.Private.BaseParthWithVersion.size() - 1),
                                     _req,
                                     _res);
         }catch(exHTTPError &ex){
-            RequestHandler::sendError(_res, (qhttp::TStatusCode)ex.code(), ex.what(), ex.code() >= 500);
+            RequestHandler->sendError(_res, (qhttp::TStatusCode)ex.code(), ex.what(), ex.code() >= 500);
         }catch(exTargomanBase &ex){
-            RequestHandler::sendError(_res, qhttp::ESTATUS_INTERNAL_SERVER_ERROR, ex.what(), true);
+            RequestHandler->sendError(_res, qhttp::ESTATUS_INTERNAL_SERVER_ERROR, ex.what(), true);
         }
     });
 

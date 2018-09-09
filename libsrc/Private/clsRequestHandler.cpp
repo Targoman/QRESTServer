@@ -24,6 +24,9 @@
 
 #include <QJsonObject>
 #include <QJsonDocument>
+#include <map>
+#include <utility>
+
 #include "clsRequestHandler.h"
 #include "libTargomanCommon/CmdIO.h"
 #include "intfRESTAPIHolder.h"
@@ -38,38 +41,43 @@ stuStatistics gServerStats;
 using namespace qhttp::server;
 using namespace Targoman::Common;
 
-clsRequestHandler::clsRequestHandler(QObject* _parent) :
+clsRequestHandler::clsRequestHandler(QHttpRequest *_req, QHttpResponse *_res, QObject* _parent) :
     QObject(_parent),
-    LastMarkerPos(0),
-    LastRemainingMarkerSize(0)
+    Request(_req),
+    Response(_res)
 {}
 
-void clsRequestHandler::process(const QString& _api, qhttp::server::QHttpRequest *_req, qhttp::server::QHttpResponse *_res) {
-    _req->onData([_req, _res](QByteArray _data){
-        QByteArray ContentType= _req->headers().value("content-type");
+
+
+void clsRequestHandler::process(const QString& _api) {
+    this->Request->onData([this](QByteArray _data){
+        QByteArray ContentType= this->Request->headers().value("content-type");
         if(ContentType.isEmpty())
             throw exHTTPBadRequest("No content-type header present");
-        QByteArray ContentLengthStr = _req->headers().value("content-length");
+        QByteArray ContentLengthStr = this->Request->headers().value("content-length");
         if(ContentLengthStr.isEmpty())
             throw exHTTPBadRequest("No content-length header present");
 
-        quint64 ContentLength = ContentLengthStr.toULongLong ();
+        int ContentLength = ContentLengthStr.toLongLong ();
         if(!ContentLength)
             throw exHTTPBadRequest("content-length seems to be zero");
 
-        switch(_req->method()){
+        switch(this->Request->method()){
         case qhttp::EHTTP_POST:
         case qhttp::EHTTP_PUT:
         case qhttp::EHTTP_PATCH:
             break;
         default:
-            throw exHTTPBadRequest("Method: "+_req->methodString()+" is not supported or does not accept request body");
+            throw exHTTPBadRequest("Method: "+this->Request->methodString()+" is not supported or does not accept request body");
         }
+        static const char APPLICATION_JSON_HEADER[] = "application/json";
+        static const char MULTIPART_BOUNDARY_HEADER[] = "multipart/form-data; boundary=";
 
         switch(ContentType.at(0)){
         case 'a':{
-            if(ContentType != "application/json")
+            if(ContentType != APPLICATION_JSON_HEADER)
                 throw exHTTPBadRequest(("unsupported Content-Type: " + ContentType).constData());
+
             if(_data.size() == ContentLength){
                 this->RemainingData = _data;
             }else if (this->RemainingData.size()){
@@ -90,215 +98,44 @@ void clsRequestHandler::process(const QString& _api, qhttp::server::QHttpRequest
                 throw exHTTPBadRequest(QString("Invalid JSON Object: %1").arg(Error.errorString()));
             QJsonObject JSONObject = JSON.object();
             for(auto JSONObjectIter = JSONObject.begin();
-                JSONObjectIter != JSONObject.end()
+                JSONObjectIter != JSONObject.end();
                 ++JSONObjectIter)
-                _req->addUserDefinedData(JSONObjectIter.key(), JSONObjectIter.value().toString());
-            foreach
-                    break;
+                this->Request->addUserDefinedData(JSONObjectIter.key(), JSONObjectIter.value().toString());
+
+            break;
         }
-        case: 'm':{
-            static const char MULTIPART_BOUNDARY_HEADER[] = "multipart/form-data; boundary=";
-            static const char MULTIPART_CONTENT_DISPOSITION[] = "Content-Disposition: ";
-            static const char MULTIPART_CONTENT_DISPOSITION_FORM[] =        "form-data; name=\"";
-            static const char MULTIPART_CONTENT_DISPOSITION_FILE[] =        "file; filename=\"";
-            static const char MULTIPART_CONTENT_DISPOSITION_SINGLE_FILE[] = "form-data; name=\"files\"; filename=\"";
-            static const char MULTIPART_CONTENT_TYPE_FILES[]       = "Type: multipart/mixed; boundary=";
-            static const char MULTIPART_CONTENT_FILETYPE[] = "Content-Type: ";
+        case 'm':{
+            if(this->MultipartFormDataHandler.isNull()){
+                if(ContentType.startsWith(MULTIPART_BOUNDARY_HEADER))
+                    throw exHTTPBadRequest(("unsupported Content-Type: " + ContentType).constData());
 
-            if(ContentType.startsWith(MULTIPART_BOUNDARY_HEADER))
-                throw exHTTPBadRequest(("unsupported Content-Type: " + ContentType).constData());
-            QByteArray BaseMarker = ContentType.mid(sizeof(MULTIPART_BOUNDARY_HEADER));
-            if(this->LastMarker.isEmpty())
-                this->LastMarker = BaseMarker;
-
-            static auto finishFile = [this, _data](const QByteArray& _toWriteData, int _size){
-                if(_size > 0) this->LastStoringFile->write(_toWriteData.constData(), _size);
-                this->LastStoringFile.reset();
-                this->LastRemainingMarkerSize = 0;
-            };
-
-            static auto storeDataContinuationToFile = [this, _data, finishFile](){
-                this->LastMarkerPos = _data.indexOf(this->LastMarker);
-                if(this->LastMarkerPos < 0){
-                    QByteArray CheckingMarker = this->LastMarker;
-                    while(CheckingMarker.size() > 1){
-                        CheckingMarker.truncate(CheckingMarker.size() - 2);
-                        if(_data.endsWith(CheckingMarker)){
-                            this->LastStoringFile->write(_data.constData(), _data.size() - CheckingMarker.size());
-                            this->RemainingData = _data.mid(_data.size() - CheckingMarker.size());
-                            this->LastRemainingMarkerSize = this->LastMarker.size() - CheckingMarker.size();
-                            return true;
-                        }
-                    }
-                    this->LastStoringFile->write(_data);
-                    this->LastRemainingMarkerSize = 0;
-                }else{
-                    finishFile(_data, this->LastMarkerPos);
-                }
-                return false;
-            };
-
-            static auto processCompletedData = [this, BaseMarker](const QByteArray& _data){
-                this->LastMarkerPos = this->LastMarker.size();
-                while(this->LastMarkerPos >0){
-                    /// @note data must start with a Content-Disopsition header followed by its type so check for size
-                    if(Q_UNLIKELY(_data.size() <= this->LastMarkerPos + sizeof(MULTIPART_CONTENT_DISPOSITION) + sizeof(MULTIPART_CONTENT_DISPOSITION_FILE) + 4))
-                        throw exHTTPBadRequest("invalid multipart message: no data after marker");
-                    switch(_data.at(this->LastMarkerPos)){
-                    case '\n':
-                    case '\r':
-                        ++this->LastMarkerPos;
-                        continue;
-                    case 'C':
-                        _data = _data.mid(this->LastMarkerPos + sizeof(MULTIPART_CONTENT_DISPOSITION));
-                        if (_data.startsWith(MULTIPART_CONTENT_DISPOSITION_SINGLE_FILE)){
-                            if(this->LastMarker != BaseMarker)
-                                throw exHTTPBadRequest("No more form data allowed when inner boundary is set");
-                            this->LastMarkerPos = _data.indexOf('\"');
-                            if(this->LastMarkerPos < 0 )
-                                throw exHTTPBadRequest("No name for file");
-
-                            QString Name = _data.mid(0, this->LastMarkerPos).constData();
-                            QString Mime;
-                            quint8  HeaderMarker = 0;
-                            while(this->LastMarkerPos > 0){
-                                if(Q_UNLIKELY(_data.size() <= this->LastMarkerPos + BaseMarker.size() + 4))
-                                    throw exHTTPBadRequest("invalid multipart message: no data after header");
-                                if(_data.at(this->LastMarkerPos) == '\n')
-                                    ++HeaderMarker;
-                                if(HeaderMarker == 2){
-                                    this->LastStoringFile.reset(new QTemporaryFile);
-                                    if(this->LastStoringFile.isNull() || this->LastStoringFile->open() == false)
-                                        throw exHTTPInternalServerError("Seems that temp directory is full");
-                                    this->LastStoringFile->setAutoRemove(false);
-                                    storeDataContinuationToFile();
-                                    QString FileJson = QString("[{\"name\":\"%1\",\"tmp-name\":\"%2\"").arg(
-                                                QJsonValue(Name).toString()).arg(
-                                                this->LastStoringFile->fileName()
-                                                );
-                                    if(Mime.size())
-                                        FileJson.append(QString(",\"mime-type\":\"%1\"").arg(QJsonValue(Mime).toString()));
-                                    FileJson.append("}]");
-                                    _req->addUserDefinedData('files', FileJson);
-                                    break;
-                                }else if(_data.at(this->LastMarkerPos) == 'C'){
-                                    if(_data.startsWith(MULTIPART_CONTENT_FILETYPE))
-                                        Mime = _data.mid(0, sizeof(MULTIPART_CONTENT_FILETYPE)).constData();
-                                }
-                                ++this->LastMarkerPos;
-                            }
-                        }else if(_data.startsWith(MULTIPART_CONTENT_DISPOSITION_FORM)){
-                            if(this->LastMarker != BaseMarker)
-                                throw exHTTPBadRequest("No more form data allowed when inner boundary is set");
-                            this->LastMarkerPos = _data.indexOf('\"');
-                            if(this->LastMarkerPos < 0 )
-                                throw exHTTPBadRequest("No name for multipart data");
-                            QString Name = _data.mid(0, this->LastMarkerPos).constData();
-                            quint8  HeaderMarker =0;
-                            while(this->LastMarkerPos > 0){
-                                if(Q_UNLIKELY(_data.size() <= this->LastMarkerPos + BaseMarker.size() + 4))
-                                    throw exHTTPBadRequest("invalid multipart message: no data after header");
-                                if(_data.at(this->LastMarkerPos) == '\n')
-                                    ++HeaderMarker;
-                                if(HeaderMarker == 2){
-                                    this->LastMarkerPos = _data.indexOf(this->LastMarker);
-                                    if(this->LastMarkerPos < 0){
-                                        if(_data.size() >= ContentLength)
-                                            throw exHTTPBadRequest("end of data not found");
-                                        this->RemainingData = _data;
-                                    }else{
-                                        if(Name = "files")
-                                        _req->addUserDefinedData(Name, _data.mid(0,this->LastMarker));
-                                        continue;
-                                    }
-                                }
-                                ++this->LastMarkerPos;
-                            }
-                        }else if (_data.startsWith(MULTIPART_CONTENT_DISPOSITION_FILE)){
-                            if(this->LastMarker == BaseMarker)
-                                throw exHTTPBadRequest("file can not be started without form-data");
-
-                        }
-                    default:
-                        throw exHTTPBadRequest(("invalid multipart message: must start with Content-Disposition: " + _data.left(20)).constData());
-                    }
-                }
-            };
-
-            if (this->LastStoringFile.isNull() == false && this->LastStoringFile->isOpen())){
-                if(this->RemainingData.size()){
-                    if(this->RemainingData.size() + _data.size () < this->LastMarker.size() + 2){
-                        this->RemainingData += _data;
-                        return;
-                    }else{
-                        if((this->RemainingData + _data.mid(0, this->LastRemainingMarkerSize)).endsWith(this->LastMarker)){
-                            finishFile(this->RemainingData.mid(0,this->LastMarker.size() - this->LastRemainingMarkerSize), this->LastMarker.size() - this->LastRemainingMarkerSize);
-                            _data = _data.mid(this->LastRemainingMarkerSize);
-                            this->RemainingData.clear();
-                        }else{
-                            this->LastStoringFile->write(this->RemainingData);
-                            this->RemainingData.clear();
-                            storeDataContinuationToFile();
-                            return;
-                        }
-                    }
-                }else
-                    storeDataContinuationToFile();
-            }else if (this->RemainingData.size()){
-                if(this->RemainingData.size() + _data.size()  < this->LastMarker.size() + 2){
-                    this->RemainingData += _data;
-                    return;
-                }else{
-                    if((this->RemainingData + _data.mid(0, this->LastRemainingMarkerSize)).endsWith(this->LastMarker)){
-                        this->RemainingData += _data.mid(0, this->LastRemainingMarkerSize);
-                        processCompletedData(this->RemainingData);
-                        this->RemainingData.clear();
-                        _data.clear();
-                    }else{
-                        this->LastMarkerPos = _data.indexOf(this->LastMarker);
-                        if(this->LastMarkerPos < 0){
-                            QByteArray CheckingMarker = this->LastMarker;
-                            while(CheckingMarker.size() > 1){
-                                CheckingMarker.truncate(CheckingMarker.size() - 2);
-                                if(_data.endsWith(CheckingMarker)){
-                                    processCompletedData(this->RemainingData + _data.mid(0, _data.size() - CheckingMarker.size() + this->LastMarker.size()));
-                                    this->RemainingData = _data.mid(_data.size() - CheckingMarker.size());
-                                    this->LastRemainingMarkerSize = this->LastMarker.size() - CheckingMarker.size();
-                                    return;
-                                }
-                            }
-                            this->RemainingData += _data;
-                            this->LastRemainingMarkerSize = 0;
-                        }else
-                            _data = processCompletedData(_data.mid(0,this->LastMarkerPos + this->LastMarker.size()))
-                    }
-                }
-            }else if(_data.size() < BaseMarker.size()){
-                this->RemainingData = _data;
-                return;
+                this->MultipartFormDataHandler.reset(
+                            new clsMultipartFormDataRequestHandler(
+                                this,
+                                ContentType.mid(sizeof(MULTIPART_BOUNDARY_HEADER))
+                                ));
             }
 
-            if(_data.startsWith(BaseMarker) == false)
-                throw exHTTPBadRequest(("invalid marker at start of multipart message: " + BaseMarker).constData());
+            size_t Fed = 0;
+            while(!this->MultipartFormDataHandler->stopped() && _data.size() > Fed){
+                do {
+                    size_t Ret = this->MultipartFormDataHandler->feed(_data.mid(Fed), _data.size() - Fed);
+                    Fed += Ret;
+                } while (Fed < _data.size() && !this->MultipartFormDataHandler->stopped());
+            }
 
-            if(_data.size() && this->LastMarkerPos >= 0)
-                processCompletedData(_data.mid(this->LastMarkerPos));
         }
-        default:'
+        default:
             throw exHTTPBadRequest(("unsupported Content-Type: " + ContentType).constData());
         }
-
-        qDebug()<<_req->headers();
-        qDebug()<<_data;
-        qDebug()<<_req->url().query();
     });
-    _req->onEnd([_api, _req, _res](){
+    this->Request->onEnd([this, _api](){
         try{
-            this->findAndCallAPI (_api, _req, _res);
+            this->findAndCallAPI (_api);
         }catch(exHTTPError &ex){
-            this->sendError(_res, (qhttp::TStatusCode)ex.code(), ex.what(), ex.code() >= 500);
+            this->sendError((qhttp::TStatusCode)ex.code(), ex.what(), ex.code() >= 500);
         }catch(exTargomanBase &ex){
-            this->sendError(_res, qhttp::ESTATUS_INTERNAL_SERVER_ERROR, ex.what(), true);
+            this->sendError(qhttp::ESTATUS_INTERNAL_SERVER_ERROR, ex.what(), true);
         }
     });
 }
@@ -346,49 +183,144 @@ const qhttp::TStatusCode StatusCodeOnMethod[] = {
     qhttp::ESTATUS_EXPECTATION_FAILED, ///< EHTTP_UNLINK         = 32,
 };
 
-void clsRequestHandler::findAndCallAPI(const QString& _api, QHttpRequest *_req, QHttpResponse *_res)
+void clsRequestHandler::findAndCallAPI(const QString &_api)
 {
-    clsAPIObject* APIObject = RESTAPIRegistry::getAPIObject(_req->methodString(), _api);
+    clsAPIObject* APIObject = RESTAPIRegistry::getAPIObject(this->Request->methodString(), _api);
 
     if(!APIObject){
         gServerStats.Errors.inc();
-        return this->sendError(_res,
-                               qhttp::ESTATUS_NOT_FOUND,
-                               "API not found("+_req->methodString()+": "+_api+")",
+        return this->sendError(qhttp::ESTATUS_NOT_FOUND,
+                               "API not found("+this->Request->methodString()+": "+_api+")",
                                true);
     }
 
-    QStringList Queries = _req->url().query().split('&', QString::SkipEmptyParts);
-    this->sendResponse(_res, StatusCodeOnMethod[_req->method()], APIObject->invoke(Queries));
+    QStringList Queries = this->Request->url().query().split('&', QString::SkipEmptyParts);
+    this->sendResponse(StatusCodeOnMethod[this->Request->method()], APIObject->invoke(Queries));
 
 }
 
-void clsRequestHandler::sendError(QHttpResponse *_res, qhttp::TStatusCode _code, const QString &_message, bool _closeConnection)
+void clsRequestHandler::sendError(qhttp::TStatusCode _code, const QString &_message, bool _closeConnection)
 {
     QJsonObject ErrorInfo = QJsonObject({
                                             {"code", _code},
                                             {"message", _message}
                                         });
     QByteArray ErrorJson = QJsonDocument(QJsonObject({ {"error", ErrorInfo }})).toJson(gConfigs.Public.IndentedJson ? QJsonDocument::Indented : QJsonDocument::Compact);
-    _res->setStatusCode(_code);
-    if(_closeConnection) _res->addHeader("connection", "close");
-    _res->addHeaderValue("content-type", QString("application/json; charset=utf-8"));
-    _res->addHeaderValue("content-length", ErrorJson.length());
-    _res->end(ErrorJson.constData());
+    this->Response->setStatusCode(_code);
+    if(_closeConnection) this->Response->addHeader("connection", "close");
+    this->Response->addHeaderValue("content-type", QString("application/json; charset=utf-8"));
+    this->Response->addHeaderValue("content-length", ErrorJson.length());
+    this->Response->end(ErrorJson.constData());
     this->deleteLater();
 }
 
-void clsRequestHandler::sendResponse(QHttpResponse *_res, qhttp::TStatusCode _code, QVariant _response)
+void clsRequestHandler::sendResponse(qhttp::TStatusCode _code, QVariant _response)
 {
     QByteArray Data = QJsonDocument(QJsonObject({ {"data", QJsonValue::fromVariant(_response) } })).toJson(gConfigs.Public.IndentedJson ? QJsonDocument::Indented : QJsonDocument::Compact);
 
-    _res->setStatusCode(_code);
-    _res->addHeaderValue("content-length", Data.length());
-    _res->addHeaderValue("content-type", QString("application/json; charset=utf-8"));
-    _res->end(Data.constData());
+    this->Response->setStatusCode(_code);
+    this->Response->addHeaderValue("content-length", Data.length());
+    this->Response->addHeaderValue("content-type", QString("application/json; charset=utf-8"));
+    this->Response->end(Data.constData());
     this->deleteLater();
 }
 
+/**************************************************************************/
+void clsMultipartFormDataRequestHandler::onMultiPartBegin(const MultipartHeaders &_headers, void *_userData) {
+    clsMultipartFormDataRequestHandler *Self = static_cast<clsMultipartFormDataRequestHandler*>(_userData);
+    std::string ContentDisposition = _headers["Content-Disposition"];
+    if(ContentDisposition.size()){
+        const char* pContentDisposition = ContentDisposition.c_str();
+        const char* pBufferStart = pContentDisposition;
+        enum enuLooking4{
+            L4Type,
+            L4Field,
+            L4Equal,
+            L4DQuote,
+            L4Value,
+        } Looking4 = L4Type;
+        char StopChar = ';';
+        std::string* pLastFieldValue;
+
+        while(pContentDisposition){
+            if(*pContentDisposition == StopChar)
+                switch(Looking4){
+                case L4Type:
+                    if(strncmp(pBufferStart, "form-data", pContentDisposition - pBufferStart))
+                        throw exHTTPBadRequest("Just form-data is allowed in multi-part request according to RFC7578");
+                    Looking4 = L4Field;
+                    break;
+                case L4Field:
+                    if(strncmp(pBufferStart, "name", pContentDisposition - pBufferStart))
+                        pLastFieldValue = &Self->LastItemName;
+                    else if(strcmp(pBufferStart, "filename"))
+                        pLastFieldValue = &Self->LastFileName;
+                    Looking4 = L4Equal;
+                    StopChar = '=';
+                    break;
+                case L4Equal:
+                    Looking4 = L4DQuote;
+                    StopChar = '"';
+                    break;
+                case L4DQuote:
+                    Looking4 = L4Value;
+                    StopChar = '"';
+                    pBufferStart = pContentDisposition;
+                    break;
+                case L4Value:
+                    *pLastFieldValue = pBufferStart;
+                    pLastFieldValue->erase(pContentDisposition - pBufferStart, std::string::npos);
+                }
+        }
+
+        if(Self->LastItemName.empty())
+            throw exHTTPBadRequest(QString("No name provided for form field: ") + ContentDisposition.c_str());
+        if(Self->LastFileName.size()){
+            Self->LastTempFile.reset(new QTemporaryFile);
+            if(Self->LastTempFile.isNull() || Self->LastTempFile->isOpen() == false)
+                throw exHTTPInternalServerError("unable to create temporary file");
+            Self->LastTempFile->setAutoRemove(false);
+            Self->LastMime = _headers["Content-Type"];
+        }
+    }else
+        throw exHTTPBadRequest("No Content-Disposition header provided");
+}
+
+void clsMultipartFormDataRequestHandler::onMultiPartData(const char *_buffer, size_t _size, void *_userData) {
+    clsMultipartFormDataRequestHandler *Self = static_cast<clsMultipartFormDataRequestHandler*>(_userData);
+    if(Self->LastTempFile.isNull() == false)
+        Self->LastWrittenBytes += Self->LastTempFile->write(_buffer, _size);
+    else
+        Self->pParent->Request->addUserDefinedData(Self->LastItemName.c_str(), QString::fromUtf8(_buffer, _size));
+}
+
+void clsMultipartFormDataRequestHandler::onMultiPartEnd(void *_userData) {
+    clsMultipartFormDataRequestHandler *Self = static_cast<clsMultipartFormDataRequestHandler*>(_userData);
+    if(Self->LastTempFile.isNull() == false){
+        if(Self->LastStoredItemName != Self->LastItemName){
+            Self->pParent->Request->addUserDefinedData(Self->LastStoredItemName.c_str(), QString("[%1]").arg(Self->UploadedFilesInfo.join(',')));
+            Self->LastStoredItemName = Self->LastItemName;
+            Self->UploadedFilesInfo.clear();
+        }else
+            Self->UploadedFilesInfo.append(
+                        QString("{\"name\":\"%1\",\"tmpname\":\"%2\",\"size\":\"%3\",\"type\":\"%4\"}").arg(
+                            Self->LastFileName.c_str()).arg(
+                            Self->LastTempFile->fileName()).arg(
+                            Self->LastWrittenBytes).arg(
+                            Self->LastMime.c_str()));
+    }
+    Self->LastFileName.clear();
+    Self->LastItemName.clear();
+    Self->LastMime.clear();
+    Self->LastTempFile.reset();
+    Self->LastWrittenBytes = 0;
+}
+
+void clsMultipartFormDataRequestHandler::onDataEnd(void *_userData){
+    clsMultipartFormDataRequestHandler *Self = static_cast<clsMultipartFormDataRequestHandler*>(_userData);
+    if(Self->UploadedFilesInfo.size())
+        Self->pParent->Request->addUserDefinedData(Self->LastStoredItemName.c_str(), QString("[%1]").arg(Self->UploadedFilesInfo.join(',')));
+}
 
 }
 }

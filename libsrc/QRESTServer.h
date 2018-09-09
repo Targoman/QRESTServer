@@ -61,6 +61,8 @@ public:
         quint16 ListenPort;
         QHostAddress ListenAddress;
         bool         IndentedJson;
+        qint64       MaxUploadSize;
+        qint64       MaxUploadedFileSize;
 
         stuConfig(const QString& _basePath = "/",
                   const QString& _version = "v0",
@@ -68,7 +70,9 @@ public:
                   bool _indentedJson = false,
                   const QHostAddress& _listenAddress = QHostAddress::Any,
                   const fnIsInBlackList_t& _ipBlackListChecker = {},
-                  quint8 _statisticsInterval = 3
+                  quint8 _statisticsInterval = 3,
+                  qint64 _maxUploadSize = 100 * 1024 * 1024,
+                  qint64 _maxUploadedFileSize = 100 * 1024 * 1024
                   );
     };
 

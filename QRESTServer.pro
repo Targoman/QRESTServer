@@ -20,6 +20,12 @@
 ################################################################################
 #                       DO NOT CHANGE ANYTHING BELOW                           #
 ################################################################################
+PRJDIR=.
+ConfigFile = qmake/configs.pri
+!exists($$ConfigFile){
+error("**** libsrc: Unable to find Configuration file $$ConfigFile ****")
+}
+include ($$ConfigFile)
 
 TEMPLATE = subdirs
 CONFIG += ordered
@@ -28,6 +34,8 @@ SUBDIRS += libsrc
 SUBDIRS += example
 SUBDIRS += unitTest
 
+
+libsrc.depends = Dependencies
 example.depends = libsrc
 unitTest.depends = libsrc
 

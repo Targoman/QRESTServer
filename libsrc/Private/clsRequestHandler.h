@@ -24,12 +24,16 @@
 #ifndef QHTTP_PRIVATE_CLSREQUESTHANDLER_H
 #define QHTTP_PRIVATE_CLSREQUESTHANDLER_H
 
+#include <QTemporaryFile>
 #include "QHttp/QHttpServer"
 #include "RESTAPIRegistry.h"
 #include "Private/Configs.hpp"
+#include "3rdParty/multipart-parser/MultipartReader.h"
 
 namespace QHttp {
 namespace Private {
+
+class clsRequestHandler;
 
 class clsStatisticsUpdateThread : public QThread{
     Q_OBJECT
@@ -55,21 +59,58 @@ private:
     }
 };
 
+class clsMultipartFormDataRequestHandler : public MultipartReader{
+public:
+    clsMultipartFormDataRequestHandler(clsRequestHandler* _parent, const QByteArray& _marker) :
+        pParent(_parent),
+        LastWrittenBytes(0){
+        this->onPartBegin = clsMultipartFormDataRequestHandler::onPartBegin;
+        this->onPartData = clsMultipartFormDataRequestHandler::onPartData;
+        this->onPartEnd = clsMultipartFormDataRequestHandler::onPartEnd;
+        this->onEnd = clsMultipartFormDataRequestHandler::onDataEnd;
+
+        this->setBoundary(_marker.toStdString());
+    }
+
+    size_t feed(const char *_buffer, size_t _len){
+        return MultipartReader::feed(_buffer, _len);
+    }
+
+private:
+    static void onMultiPartBegin(const MultipartHeaders &_headers, void *_userData);
+    static void onMultiPartData(const char *_buffer, size_t _size, void *_userData);
+    static void onMultiPartEnd(void *_userData);
+    static void onDataEnd(void *_userData);
+
+private:
+    clsRequestHandler* pParent;
+    QScopedPointer<QTemporaryFile> LastTempFile;
+    std::string LastMime;
+    std::string LastFileName;
+    std::string LastStoredItemName;
+    std::string LastItemName;
+    int         LastWrittenBytes;
+    QStringList UploadedFilesInfo;
+
+    friend class clsRequestHandler;
+};
+
 class clsRequestHandler :QObject
 {
 public:
-    clsRequestHandler(QObject *_parent);
-    void process(const QString &_api, qhttp::server::QHttpRequest* _req, qhttp::server::QHttpResponse* _res);
-    void findAndCallAPI(const QString &_api, qhttp::server::QHttpRequest *_req, qhttp::server::QHttpResponse *_res);
-    void sendError(qhttp::server::QHttpResponse *_res, qhttp::TStatusCode _code, const QString& _message, bool _closeConnection = false);
-    void sendResponse(qhttp::server::QHttpResponse *_res, qhttp::TStatusCode _code, QVariant _response);
+    clsRequestHandler(qhttp::server::QHttpRequest* _req, qhttp::server::QHttpResponse* _res, QObject *_parent = nullptr);
+    void process(const QString &_api);
+    void findAndCallAPI(const QString &_api);
+    void sendError(qhttp::TStatusCode _code, const QString& _message, bool _closeConnection = false);
+    void sendResponse(qhttp::TStatusCode _code, QVariant _response);
 
 private:
     QByteArray      RemainingData;
-    QScopedPointer<QTemporaryFile> LastStoringFile;
-    QByteArray      LastMarker;
-    qint64          LastRemainingMarkerSize;
-    qint64          LastMarkerPos;
+    qhttp::server::QHttpRequest* Request;
+    qhttp::server::QHttpResponse *Response;
+    QScopedPointer<clsMultipartFormDataRequestHandler> MultipartFormDataHandler;
+
+    friend class clsMultipartFormDataRequestHandler;
 };
 
 }

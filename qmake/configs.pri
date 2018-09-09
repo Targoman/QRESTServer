@@ -56,7 +56,8 @@ BaseBuildFolder          = $$PRJDIR/out/$$BuildFolderPattern/$$ProjectName
 BaseConfigFolder         = $$PRJDIR/out/$$ConfigFolderPattern
 
 #+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-++-+-
-INCLUDEPATH += $$PRJDIR/src \
+INCLUDEPATH += $$PRJDIR \
+               $$PRJDIR/src \
                $$PRJDIR/libsrc \
                $$BaseLibraryIncludeFolder \
                $$PREFIX/include \

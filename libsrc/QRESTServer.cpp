@@ -68,9 +68,9 @@ void RESTServer::start() {
         enuIPBlackListStatus::Type IPBlackListStatus;
 
         if(gConfigs.Public.fnIPInBlackList &&
-           (IPBlackListStatus = gConfigs.Public.fnIPInBlackList(Connection->peerAddress())) != enuIPBlackListStatus::Ok){
+                (IPBlackListStatus = gConfigs.Public.fnIPInBlackList(Connection->peerAddress())) != enuIPBlackListStatus::Ok){
             TargomanWarn(1,"Connection from " + Connection->peerAddress().toString() + " was closed by security provider due to: "+enuIPBlackListStatus::toStr(IPBlackListStatus))
-            _con->killConnection();
+                    _con->killConnection();
             gServerStats.Blocked.inc();
             return;
         }
@@ -80,18 +80,18 @@ void RESTServer::start() {
     });
 
     gHTTPServer.listen (gConfigs.Public.ListenAddress, gConfigs.Public.ListenPort, [&](QHttpRequest* _req, QHttpResponse* _res){
-        clsRequestHandler* RequestHandler = new RequestHandler;
+        clsRequestHandler* RequestHandler = new clsRequestHandler(_req, _res);
         try{
             QString Path = _req->url().adjusted(QUrl::NormalizePathSegments |
                                                 QUrl::RemoveAuthority
                                                 ).path(QUrl::PrettyDecoded);
 
             if(Path.startsWith(gConfigs.Public.BasePath) == false)
-                return RequestHandler->sendError(_res, qhttp::ESTATUS_NOT_FOUND, "Path not found: '" + Path + "'", true);
+                return RequestHandler->sendError(qhttp::ESTATUS_NOT_FOUND, "Path not found: '" + Path + "'", true);
             if(Path.startsWith(gConfigs.Private.BaseParthWithVersion) == false)
-                return RequestHandler->sendError(_res, qhttp::ESTATUS_NOT_ACCEPTABLE, "Invalid Version or version not specified", true);
+                return RequestHandler->sendError(qhttp::ESTATUS_NOT_ACCEPTABLE, "Invalid Version or version not specified", true);
             if(Path == gConfigs.Private.BaseParthWithVersion )
-                return RequestHandler->sendError(_res, qhttp::ESTATUS_NOT_ACCEPTABLE, "No API call provided", true);
+                return RequestHandler->sendError(qhttp::ESTATUS_NOT_ACCEPTABLE, "No API call provided", true);
 
             TargomanLogInfo(7,
                             "New API Call ["<<
@@ -101,13 +101,11 @@ void RESTServer::start() {
                             "]: "<<
                             Path<<
                             _req->url().query());
-            new clsRequestHandler(Path.mid(gConfigs.Private.BaseParthWithVersion.size() - 1),
-                                    _req,
-                                    _res);
+            RequestHandler->process(Path.mid(gConfigs.Private.BaseParthWithVersion.size() - 1));
         }catch(exHTTPError &ex){
-            RequestHandler->sendError(_res, (qhttp::TStatusCode)ex.code(), ex.what(), ex.code() >= 500);
+            RequestHandler->sendError((qhttp::TStatusCode)ex.code(), ex.what(), ex.code() >= 500);
         }catch(exTargomanBase &ex){
-            RequestHandler->sendError(_res, qhttp::ESTATUS_INTERNAL_SERVER_ERROR, ex.what(), true);
+            RequestHandler->sendError(qhttp::ESTATUS_INTERNAL_SERVER_ERROR, ex.what(), true);
         }
     });
 
@@ -160,19 +158,23 @@ QHash<QString, clsAPIObject*>  RESTAPIRegistry::Registry;
 QHash<QString, fnDeserializer_t>  RESTAPIRegistry::RegisteredDeserializers;
 
 RESTServer::stuConfig::stuConfig(const QString &_basePath,
-                     const QString &_version,
-                     quint16 _listenPort,
-                     bool _indentedJson,
-                     const QHostAddress &_listenAddress,
-                     const fnIsInBlackList_t &_ipBlackListChecker,
-                     quint8 _statisticsInterval):
+                                 const QString &_version,
+                                 quint16 _listenPort,
+                                 bool _indentedJson,
+                                 const QHostAddress &_listenAddress,
+                                 const fnIsInBlackList_t &_ipBlackListChecker,
+                                 quint8 _statisticsInterval,
+                                 qint64 _maxUploadSize,
+                                 qint64 _maxUploadedFileSize):
     BasePath(_basePath),
     Version(_version),
     fnIPInBlackList(_ipBlackListChecker),
     StatisticsInterval(_statisticsInterval),
     ListenPort(_listenPort),
     ListenAddress(_listenAddress),
-    IndentedJson(_indentedJson)
+    IndentedJson(_indentedJson),
+    MaxUploadSize(_maxUploadSize),
+    MaxUploadedFileSize(_maxUploadedFileSize)
 {
     if(this->BasePath.endsWith('/') == false)
         this->BasePath+='/';

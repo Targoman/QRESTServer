@@ -4,3 +4,6 @@
 [submodule "3rdParty/QHttp"]
 	path = 3rdParty/QHttp
 	url = https://github.com/Targoman/QHttp.git
+[submodule "3rdParty/multipart-parser"]
+	path = 3rdParty/multipart-parser
+	url = https://github.com/FooBarWidget/multipart-parser.git

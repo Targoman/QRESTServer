@@ -32,37 +32,6 @@ PRIVATE_HEADERS += \
     Private/RESTAPIRegistry.h \
     Private/clsAPIObject.hpp
 
-#SUBMODULE_HEADERS += \
-#    $$SUBMODULE_TARGOMAN/Macros.h \
-#    $$SUBMODULE_TARGOMAN/CmdIO.h \
-#    $$SUBMODULE_TARGOMAN/Logger.h \
-#    $$SUBMODULE_TARGOMAN/Helpers.hpp \
-#    $$SUBMODULE_TARGOMAN/FastOperations.hpp \
-#    $$SUBMODULE_TARGOMAN/exTargomanBase.h \
-#    $$SUBMODULE_TARGOMAN/clsCountAndSpeed.h \
-#    $$SUBMODULE_TARGOMAN/Configuration/tmplConfigurable.h \
-#    $$SUBMODULE_TARGOMAN/Configuration/intfConfigurable.hpp \
-#    $$SUBMODULE_TARGOMAN/Configuration/ConfigManager.h \
-#    $$SUBMODULE_QHTTP/qhttpfwd.hpp \
-#    $$SUBMODULE_QHTTP/qhttpabstracts.hpp \
-#    $$SUBMODULE_QHTTP/qhttpserverconnection.hpp \
-#    $$SUBMODULE_QHTTP/qhttpserverrequest.hpp \
-#    $$SUBMODULE_QHTTP/qhttpserverresponse.hpp \
-#    $$SUBMODULE_QHTTP/qhttpserver.hpp \
-#    $$SUBMODULE_QHTTP/QHttpServer \
-#    $$SUBMODULE_QHTTP/private/httpparser.hxx \
-#    $$SUBMODULE_QHTTP/private/httpreader.hxx \
-#    $$SUBMODULE_QHTTP/private/httpwriter.hxx \
-#    $$SUBMODULE_QHTTP/private/qhttpabstractsocket.hpp \
-#    $$SUBMODULE_QHTTP/private/qhttpbase.hpp \
-#    $$SUBMODULE_QHTTP/private/qhttpclient_private.hpp \
-#    $$SUBMODULE_QHTTP/private/qhttpclientrequest_private.hpp \
-#    $$SUBMODULE_QHTTP/private/qhttpclientresponse_private.hpp \
-#    $$SUBMODULE_QHTTP/private/qhttpserver_private.hpp \
-#    $$SUBMODULE_QHTTP/private/qhttpserverconnection_private.hpp \
-#    $$SUBMODULE_QHTTP/private/qhttpserverrequest_private.hpp \
-#    $$SUBMODULE_QHTTP/private/qhttpserverresponse_private.hpp \
-#    $$SUBMODULE_QHTTP/../3rdParty/http-parser/http_parser.h \
 
 # +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-#
 SOURCES += \
@@ -70,19 +39,6 @@ SOURCES += \
     Private/RequestHandler.cpp \
     Private/RESTAPIRegistry.cpp \
     QRESTServer.cpp \
-
-#    $$SUBMODULE_TARGOMAN/CmdIO.cpp \
-#    $$SUBMODULE_TARGOMAN/Logger.cpp \
-#    $$SUBMODULE_TARGOMAN/clsCountAndSpeed.cpp \
-#    $$SUBMODULE_TARGOMAN/exTargomanBase.cpp \
-#    $$SUBMODULE_TARGOMAN/Configuration/tmplConfigurable.cpp \
-#    $$SUBMODULE_TARGOMAN/Configuration/ConfigManager.cpp \
-#    $$SUBMODULE_QHTTP/qhttpabstracts.cpp \
-#    $$SUBMODULE_QHTTP/qhttpserverconnection.cpp \
-#    $$SUBMODULE_QHTTP/qhttpserverrequest.cpp \
-#    $$SUBMODULE_QHTTP/qhttpserverresponse.cpp \
-#    $$SUBMODULE_QHTTP/qhttpserver.cpp \
-#    $$SUBMODULE_QHTTP/../3rdParty/http-parser/http_parser.c
 
 # +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-#
 OTHER_FILES += \

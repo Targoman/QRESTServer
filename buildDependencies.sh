@@ -3,7 +3,7 @@
 BasePath=$(realpath $1)
 DEPS_BUILT=$2
 
-if [ -f $DEPS_BUILT ];
+if [ -f $DEPS_BUILT ];then
   exit 0
 fi
 
@@ -21,6 +21,6 @@ if [ -f .gitmodules ]; then
   done
 fi
 
-touch $$DEPS_BUILT
+touch $BasePath/$DEPS_BUILT
 
 popd >/dev/null 2>&1

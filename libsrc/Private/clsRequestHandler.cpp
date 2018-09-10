@@ -116,14 +116,14 @@ void clsRequestHandler::process(const QString& _api) {
                                 ));
             }
 
-            size_t Fed = 0;
+            qlonglong Fed = 0;
             while(!this->MultipartFormDataHandler->stopped() && _data.size() > Fed){
                 do {
-                    size_t Ret = this->MultipartFormDataHandler->feed(_data.mid(Fed), _data.size() - Fed);
+                    qlonglong Ret = this->MultipartFormDataHandler->feed(_data.mid(Fed), _data.size() - Fed);
                     Fed += Ret;
                 } while (Fed < _data.size() && !this->MultipartFormDataHandler->stopped());
             }
-
+            break;
         }
         default:
             throw exHTTPBadRequest(("unsupported Content-Type: " + ContentType).constData());

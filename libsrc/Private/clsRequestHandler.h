@@ -68,6 +68,7 @@ public:
         this->onPartData = clsMultipartFormDataRequestHandler::onPartData;
         this->onPartEnd = clsMultipartFormDataRequestHandler::onPartEnd;
         this->onEnd = clsMultipartFormDataRequestHandler::onDataEnd;
+        this->userData = (void*)this;
 
         this->setBoundary(_marker.toStdString());
     }

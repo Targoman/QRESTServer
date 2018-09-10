@@ -25,6 +25,8 @@ Here is a brief guide on how to build QRESTServer
     script.
 
 2- Update dependencies:
+    * git submodule init
+    * git submodule update --recursive
 
 3 - Requirements:
     * Linux x86 64bit machine
@@ -37,25 +39,27 @@ Here is a brief guide on how to build QRESTServer
             - Qt5JSON
             - Qt5Test
 
-    * Following Qt development packages are optional and activate if existent
+    * Following Qt development packages are optional and activated if existent
             - Qt5WebSocket
             - Qt5Sql-mysql
             - Qt5Sql-odbc
             - Qt5Sql-mssql
 
-    * Following Targoman projects are needed to be installed prior to compilation
+    * Following projects are needed and defined as submodules
             - TargomanCommon (https://github.com/Targoman/TargomanCommon.git)
             - QHttp (https://github.com/Targoman/QHttp.git)
+            - multipart-parser (https://github.com/FooBarWidget/multipart-parser.git)
 
 4 - run qmake with following options:
     * CONFIG+=debug if you want to build a debugging version
     * PREFIX=DESIRED_LOCATION if you want to install binaries in a folder other than default paths
 
 5 - All outputs will be stored in 'out' directory at top level. subdirectories will be:
-    * bin:      examples.
+    * bin:      application and submodule oututs (if any).
     * build:    Build process object files
     * conf:     Dictionaries and static configurations off all apps and tools
     * include:  APIs and essential include files for further development
-    * lib:      shared objects and static libraries
+    * lib:      Shared objects, dlls and static libraries from base library and its submodules
     * unitTest  UnitTest binaries
-
+    * test      Examples and test outputs
+    * .depsBuilt Empty file created once upon submodules are prepared

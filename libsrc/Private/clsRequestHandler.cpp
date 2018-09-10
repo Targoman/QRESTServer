@@ -205,7 +205,7 @@ void clsRequestHandler::findAndCallAPI(const QString &_api)
     }
 
     QStringList Queries = this->Request->url().query().split('&', QString::SkipEmptyParts);
-    this->sendResponse(StatusCodeOnMethod[this->Request->method()], APIObject->invoke(Queries));
+    this->sendResponse(StatusCodeOnMethod[this->Request->method()], APIObject->invoke(Queries, this->Request->userDefinedValues()));
 
 }
 

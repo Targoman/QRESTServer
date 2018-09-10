@@ -52,8 +52,8 @@ extern stuStatistics gServerStats;
 class clsAPIObject;
 
 struct stuMetaTypeInfo{
-    std::function<QGenericArgument(const QVariant& _val, const QByteArray& _paramName)> makeGenericArgument = {};
-    std::function<QVariant(const clsAPIObject* _apiObject, const QList<QGenericArgument>& _arguments)> invokeMethod = {};
+    std::function<std::function<QGenericArgument()>(const QVariant& _val, const QByteArray& _paramName)> makeGenericArgument = {};
+    std::function<QVariant(const clsAPIObject* _apiObject, const QList<std::function<QGenericArgument()>>& _arguments)> invokeMethod = {};
     QString PrettyName;
 };
 

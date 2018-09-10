@@ -35,7 +35,7 @@ public:
 
 private slots:
     int apiGETSampleData();
-    int apiPUTSampleData(quint64 _id, const QString& _info = ",");
+    int apiPUTSampleData(quint64 _id, const QString& _info = "defaultValue");
     int apiDELETESampleData(quint64 _id = 5);
     int apiUPDATESampleData(quint64 _id, const QString &_info = "dfdsf");
 

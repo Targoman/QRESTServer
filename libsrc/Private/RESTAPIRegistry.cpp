@@ -30,7 +30,7 @@ namespace Private {
 
 /***********************************************************************************************/
 
-#define DO_ON_TYPE(_typeName, _baseType)            DO_ON_TYPE_PROXY(_baseType, IGNORE_TYPE_##_typeName)
+#define DO_ON_TYPE(_typeName, _baseType) DO_ON_TYPE_PROXY(_baseType, IGNORE_TYPE_##_typeName)
 #define DO_ON_TYPE_SELECTOR(_1,_2,N,...) N
 #define DO_ON_TYPE_PROXY(_type, ...) DO_ON_TYPE_SELECTOR(__VA_ARGS__, DO_ON_TYPE_IGNORED, DO_ON_TYPE_VALID)(_type)
 #define DO_ON_TYPE_IGNORED(_baseType)   \
@@ -38,11 +38,13 @@ namespace Private {
     nullptr,
 
 #define DO_ON_TYPE_VALID(_baseType)     \
-    [](const QVariant& _val, const QByteArray& _paramName){ \
+    [](const QVariant& _val, const QByteArray& _paramName) -> std::function<QGenericArgument()>{ \
         if(!_val.canConvert<_baseType>()) \
-            throw exHTTPBadRequest("Invalid value specified: " + _paramName); \
-        return Q_ARG(_baseType, _val.value<_baseType>());}, \
-    [](const clsAPIObject* _apiObject, const QList<QGenericArgument> _arguments){ \
+            throw exHTTPBadRequest("Invalid value specified for parameter: " + _paramName); \
+        return [_val](){return QArgument<_baseType>(#_baseType, _val.value<_baseType>());}; \
+        /*return new QArgument<_baseType>(#_baseType, _val.value<_baseType>());*/ \
+    }, \
+    [](const clsAPIObject* _apiObject, const QList<std::function<QGenericArgument()>>& _arguments){ \
        _baseType Result; \
        _apiObject->invokeMethod(_arguments,Q_RETURN_ARG(_baseType, Result)); \
        return QVariant::fromValue(Result); \

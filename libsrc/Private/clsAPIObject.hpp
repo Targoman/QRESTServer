@@ -49,13 +49,15 @@ public:
             this->ParamNames.append(ParamName.startsWith('_') ? ParamName.mid(1) : ParamName);
     }
 
-    inline QVariant invoke(const QStringList& _args) const{
+    inline QVariant invoke(const QStringList& _args, QList<QPair<QString, QString>> _bodyArgs) const{
         Q_ASSERT_X(this->parent(), "parent module", "Parent module not found to invoke method");
 
-        if(_args.size() < this->RequiredParamsCount)
+        if(_args.size() + _bodyArgs.size() < this->RequiredParamsCount)
             throw exHTTPBadRequest("Not enough arguments");
 
-        QList<QGenericArgument> Arguments;
+        //QList<QGenericArgument*> Arguments;
+
+        QList<std::function<QGenericArgument()>> Arguments;
 
         qint8 FirstArgumentWithValue = -1;
         qint8 LastArgumentWithValue = -1;
@@ -63,33 +65,47 @@ public:
         for(int i=0; i< this->ParamNames.count(); ++i ){
             bool ParamNotFound = true;
             QVariant ArgumentValue;
+
+            static auto parseArgValue = [this, ArgumentValue](const QString& _paramNamne, const QString& _value) -> QVariant {
+                if((_value.startsWith('[') && _value.endsWith(']')) ||
+                   (_value.startsWith('{') && _value.endsWith('}'))){
+                    QJsonParseError Error;
+                    QJsonDocument JSON = QJsonDocument::fromJson(_value.toUtf8(), &Error);
+                    if(JSON.isNull())
+                        throw exHTTPBadRequest(QString("Invalid value for %1: %2").arg(_paramNamne).arg(Error.errorString()));
+                    return JSON.toVariant();
+                }else{
+                    return _value;
+                }
+            };
+
             foreach (const QString& Arg, _args){
                 if(Arg.startsWith(this->ParamNames.at(i)+ '=')){
                     ParamNotFound = false;
-                    QString ArgValStr = Arg.mid(Arg.indexOf('='));
-                    if((ArgValStr.startsWith('[') && ArgValStr.endsWith(']')) ||
-                        (ArgValStr.startsWith('{') && ArgValStr.endsWith('}'))){
-                        QJsonParseError Error;
-                        QJsonDocument JSON = QJsonDocument::fromJson(ArgValStr.toUtf8(), &Error);
-                        if(JSON.isNull())
-                            throw exHTTPBadRequest(QString("Invalid value for %1: %2").arg(Arg).arg(Error.errorString()));
-                        ArgumentValue = JSON.toVariant();
-                    }else{
-                        ArgumentValue = ArgValStr;
-                    }
-                    if(ArgumentValue.isValid() == false)
-                        throw exHTTPBadRequest(QString("Invalid value for %1: no conversion to QVariant defined").arg(Arg));
+                    ArgumentValue = parseArgValue(this->ParamNames.at(i), Arg.mid(Arg.indexOf('=')));
                     break;
                 }
             }
+            if(ParamNotFound)
+                foreach (auto BodyArg, _bodyArgs) {
+                    bool ConversionResult = true;
+                    if(BodyArg.first == this->ParamNames.at(i) || (BodyArg.first.toInt(&ConversionResult) == i && ConversionResult)){
+                        ParamNotFound = false;
+                        ArgumentValue = parseArgValue(this->ParamNames.at(i), BodyArg.second);
+                        break;
+                    }
+                }
 
             if(ParamNotFound){
                 if(i < this->RequiredParamsCount)
                     throw exHTTPBadRequest(QString("Required parameter <%1> not specified").arg(this->ParamNames.at(i).constData()));
                 else
-                    Arguments.append(QGenericArgument());
+                    Arguments.append(nullptr);
+                    //Arguments.append(QGenericArgument());
                 continue;
-            }
+            }else if(ArgumentValue.isValid() == false)
+                throw exHTTPBadRequest(QString("Invalid value for %1: no conversion to QVariant defined").arg(this->ParamNames.at(i).constData()));
+
             if(FirstArgumentWithValue < 0)
                 FirstArgumentWithValue = i;
             LastArgumentWithValue = i;
@@ -100,9 +116,10 @@ public:
                 Q_ASSERT(this->BaseMethod.parameterType(i) < OrderedMetaTypeInfo.size());
                 Q_ASSERT(OrderedMetaTypeInfo.at(this->BaseMethod.parameterType(i)).makeGenericArgument != nullptr);
 
-                Arguments.append(OrderedMetaTypeInfo.at(this->BaseMethod.parameterType(i)).makeGenericArgument(
+                Arguments.append(OrderedMetaTypeInfo.at(
+                                     this->BaseMethod.parameterType(i)).makeGenericArgument(
                                      ArgumentValue,
-                                     this->BaseMethod.parameterTypes().at(i)));
+                                     this->ParamNames.at(i)));
             }
         }
 
@@ -116,13 +133,13 @@ public:
             throw Targoman::Common::exTargomanMustBeImplemented();
         }else{
             Q_ASSERT(this->BaseMethod.returnType() < OrderedMetaTypeInfo.size());
-            Q_ASSERT(OrderedMetaTypeInfo.at(this->BaseMethod.returnType()).invokeMethod == nullptr);
+            Q_ASSERT(OrderedMetaTypeInfo.at(this->BaseMethod.returnType()).invokeMethod != nullptr);
 
             return OrderedMetaTypeInfo.at(this->BaseMethod.returnType()).invokeMethod(this, Arguments);
         }
     }
 
-    void invokeMethod(const QList<QGenericArgument>& _arguments, QGenericReturnArgument _returnArg) const{
+    void invokeMethod(const QList<std::function<QGenericArgument()>>& _arguments, QGenericReturnArgument _returnArg) const{
         bool InvocationResult= true;
         QMetaMethod InvokableMethod;
         if(_arguments.size() == this->ParamNames.size())
@@ -132,32 +149,32 @@ public:
 
         switch(_arguments.size()){
         case 0: InvocationResult = InvokableMethod.invoke(this->parent(), this->IsAsync ? Qt::QueuedConnection : Qt::DirectConnection,
-                                                       _returnArg);break;
-        case 1: InvocationResult = InvokableMethod.invoke(this->parent(), this->IsAsync ? Qt::QueuedConnection : Qt::DirectConnection,
-                                                       _returnArg, _arguments.at(0));break;
+                                                          _returnArg);break;
+        /*case 1: InvocationResult = InvokableMethod.invoke(this->parent(), this->IsAsync ? Qt::QueuedConnection : Qt::DirectConnection,
+                                                          _returnArg, *_arguments.at(0));break;*/
         case 2: InvocationResult = InvokableMethod.invoke(this->parent(), this->IsAsync ? Qt::QueuedConnection : Qt::DirectConnection,
-                                                       _returnArg, _arguments.at(0),_arguments.at(1));break;
-        case 3: InvocationResult = InvokableMethod.invoke(this->parent(), this->IsAsync ? Qt::QueuedConnection : Qt::DirectConnection,
-                                                       _returnArg, _arguments.at(0),_arguments.at(1),_arguments.at(2));break;
+                                                          _returnArg, _arguments.at(0)(), _arguments.at(1)()/*_arguments.at(0),*_arguments.at(1)*/);break;
+        /*case 3: InvocationResult = InvokableMethod.invoke(this->parent(), this->IsAsync ? Qt::QueuedConnection : Qt::DirectConnection,
+                                                          _returnArg, *_arguments.at(0),*_arguments.at(1),*_arguments.at(2));break;
         case 4: InvocationResult = InvokableMethod.invoke(this->parent(), this->IsAsync ? Qt::QueuedConnection : Qt::DirectConnection,
-                                                       _returnArg, _arguments.at(0),_arguments.at(1),_arguments.at(2),_arguments.at(3));break;
+                                                          _returnArg, *_arguments.at(0),*_arguments.at(1),*_arguments.at(2),*_arguments.at(3));break;
         case 5: InvocationResult = InvokableMethod.invoke(this->parent(), this->IsAsync ? Qt::QueuedConnection : Qt::DirectConnection,
-                                                       _returnArg, _arguments.at(0),_arguments.at(1),_arguments.at(2),_arguments.at(3),_arguments.at(4));break;
+                                                          _returnArg, *_arguments.at(0),*_arguments.at(1),*_arguments.at(2),*_arguments.at(3),*_arguments.at(4));break;
         case 6: InvocationResult = InvokableMethod.invoke(this->parent(), this->IsAsync ? Qt::QueuedConnection : Qt::DirectConnection,
-                                                       _returnArg,_arguments.at(0),_arguments.at(1),_arguments.at(2),_arguments.at(3),_arguments.at(4),
-                                                       _arguments.at(5));break;
+                                                          _returnArg, *_arguments.at(0),*_arguments.at(1),*_arguments.at(2),*_arguments.at(3),*_arguments.at(4),
+                                                          *_arguments.at(5));break;
         case 7: InvocationResult = InvokableMethod.invoke(this->parent(), this->IsAsync ? Qt::QueuedConnection : Qt::DirectConnection,
-                                                       _returnArg, _arguments.at(0),_arguments.at(1),_arguments.at(2),_arguments.at(3),_arguments.at(4),
-                                                       _arguments.at(5),_arguments.at(6));break;
+                                                          _returnArg, *_arguments.at(0),*_arguments.at(1),*_arguments.at(2),*_arguments.at(3),*_arguments.at(4),
+                                                          *_arguments.at(5),*_arguments.at(6));break;
         case 8: InvocationResult = InvokableMethod.invoke(this->parent(), this->IsAsync ? Qt::QueuedConnection : Qt::DirectConnection,
-                                                       _returnArg, _arguments.at(0),_arguments.at(1),_arguments.at(2),_arguments.at(3),_arguments.at(4),
-                                                       _arguments.at(5),_arguments.at(6),_arguments.at(7));break;
+                                                          _returnArg, *_arguments.at(0),*_arguments.at(1),*_arguments.at(2),*_arguments.at(3),*_arguments.at(4),
+                                                          *_arguments.at(5),*_arguments.at(6),*_arguments.at(7));break;
         case 9: InvocationResult = InvokableMethod.invoke(this->parent(), this->IsAsync ? Qt::QueuedConnection : Qt::DirectConnection,
-                                                       _returnArg, _arguments.at(0),_arguments.at(1),_arguments.at(2),_arguments.at(3),_arguments.at(4),
-                                                       _arguments.at(5),_arguments.at(6),_arguments.at(7),_arguments.at(8));break;
+                                                          _returnArg, *_arguments.at(0),*_arguments.at(1),*_arguments.at(2),*_arguments.at(3),*_arguments.at(4),
+                                                          *_arguments.at(5),*_arguments.at(6),*_arguments.at(7),*_arguments.at(8));break;
         case 10: InvocationResult = InvokableMethod.invoke(this->parent(), this->IsAsync ? Qt::QueuedConnection : Qt::DirectConnection,
-                                                       _returnArg, _arguments.at(0),_arguments.at(1),_arguments.at(2),_arguments.at(3),_arguments.at(4),
-                                                       _arguments.at(5),_arguments.at(6),_arguments.at(7),_arguments.at(8),_arguments.at(9));break;
+                                                           _returnArg, *_arguments.at(0),*_arguments.at(1),*_arguments.at(2),*_arguments.at(3),*_arguments.at(4),
+                                                           *_arguments.at(5),*_arguments.at(6),*_arguments.at(7),*_arguments.at(8),*_arguments.at(9));break;*/
         }
         if (InvocationResult == false)
             throw exHTTPInternalServerError(QString("Unable to invoke method"));

@@ -45,8 +45,8 @@ int SampleAPI::apiGETSampleData()
 
 int SampleAPI::apiPUTSampleData(quint64 _id, const QString &_info)
 {
-    TargomanDebug(1, "Called: " <<__FUNCTION__<<" Params: ("<<_id<<","<<_info<<")");
-    return 4;
+    TargomanDebug(1, "Called: " <<__FUNCTION__<<" Params: (\""<<_id<<"\",\""<<_info<<"\")");
+    return _id;
 }
 
 int SampleAPI::apiDELETESampleData(quint64 _id)

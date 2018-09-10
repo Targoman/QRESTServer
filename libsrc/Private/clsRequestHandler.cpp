@@ -51,82 +51,92 @@ clsRequestHandler::clsRequestHandler(QHttpRequest *_req, QHttpResponse *_res, QO
 
 void clsRequestHandler::process(const QString& _api) {
     this->Request->onData([this](QByteArray _data){
-        QByteArray ContentType= this->Request->headers().value("content-type");
-        if(ContentType.isEmpty())
-            throw exHTTPBadRequest("No content-type header present");
-        QByteArray ContentLengthStr = this->Request->headers().value("content-length");
-        if(ContentLengthStr.isEmpty())
-            throw exHTTPBadRequest("No content-length header present");
+        try{
+            QByteArray ContentType= this->Request->headers().value("content-type");
+            if(ContentType.isEmpty())
+                throw exHTTPBadRequest("No content-type header present");
+            QByteArray ContentLengthStr = this->Request->headers().value("content-length");
+            if(ContentLengthStr.isEmpty())
+                throw exHTTPBadRequest("No content-length header present");
 
-        int ContentLength = ContentLengthStr.toLongLong ();
-        if(!ContentLength)
-            throw exHTTPBadRequest("content-length seems to be zero");
+            int ContentLength = ContentLengthStr.toLongLong ();
+            if(!ContentLength)
+                throw exHTTPLengthRequired("content-length seems to be zero");
+            if(ContentLength > gConfigs.Public.MaxUploadSize)
+                throw exHTTPPayloadTooLarge(QString("Content-Size is too large: %d").arg(ContentLength));
 
-        switch(this->Request->method()){
-        case qhttp::EHTTP_POST:
-        case qhttp::EHTTP_PUT:
-        case qhttp::EHTTP_PATCH:
-            break;
-        default:
-            throw exHTTPBadRequest("Method: "+this->Request->methodString()+" is not supported or does not accept request body");
-        }
-        static const char APPLICATION_JSON_HEADER[] = "application/json";
-        static const char MULTIPART_BOUNDARY_HEADER[] = "multipart/form-data; boundary=";
-
-        switch(ContentType.at(0)){
-        case 'a':{
-            if(ContentType != APPLICATION_JSON_HEADER)
-                throw exHTTPBadRequest(("unsupported Content-Type: " + ContentType).constData());
-
-            if(_data.size() == ContentLength){
-                this->RemainingData = _data;
-            }else if (this->RemainingData.size()){
-                this->RemainingData += _data;
-                if(this->RemainingData.size() < ContentLength)
-                    return;
-            }else{
-                this->RemainingData = _data;
-                return;
+            switch(this->Request->method()){
+            case qhttp::EHTTP_POST:
+            case qhttp::EHTTP_PUT:
+            case qhttp::EHTTP_PATCH:
+                break;
+            default:
+                throw exHTTPBadRequest("Method: "+this->Request->methodString()+" is not supported or does not accept request body");
             }
+            static const char APPLICATION_JSON_HEADER[] = "application/json";
+            static const char MULTIPART_BOUNDARY_HEADER[] = "multipart/form-data; boundary=";
 
-            this->RemainingData = this->RemainingData.trimmed();
-            if(this->RemainingData.startsWith('{') == false || this->RemainingData.endsWith('}') == false)
-                throw exHTTPBadRequest("Invalid JSON Object");
-            QJsonParseError Error;
-            QJsonDocument JSON = QJsonDocument::fromJson(this->RemainingData, &Error);
-            if(JSON.isNull() || JSON.isObject() == false)
-                throw exHTTPBadRequest(QString("Invalid JSON Object: %1").arg(Error.errorString()));
-            QJsonObject JSONObject = JSON.object();
-            for(auto JSONObjectIter = JSONObject.begin();
-                JSONObjectIter != JSONObject.end();
-                ++JSONObjectIter)
-                this->Request->addUserDefinedData(JSONObjectIter.key(), JSONObjectIter.value().toString());
-
-            break;
-        }
-        case 'm':{
-            if(this->MultipartFormDataHandler.isNull()){
-                if(ContentType.startsWith(MULTIPART_BOUNDARY_HEADER))
+            switch(ContentType.at(0)){
+            case 'a':{
+                if(ContentType != APPLICATION_JSON_HEADER)
                     throw exHTTPBadRequest(("unsupported Content-Type: " + ContentType).constData());
 
-                this->MultipartFormDataHandler.reset(
-                            new clsMultipartFormDataRequestHandler(
-                                this,
-                                ContentType.mid(sizeof(MULTIPART_BOUNDARY_HEADER))
-                                ));
-            }
+                if(_data.size() == ContentLength){
+                    this->RemainingData = _data;
+                }else if (this->RemainingData.size()){
+                    this->RemainingData += _data;
+                    if(this->RemainingData.size() < ContentLength)
+                        return;
+                }else{
+                    this->RemainingData = _data;
+                    return;
+                }
 
-            qlonglong Fed = 0;
-            while(!this->MultipartFormDataHandler->stopped() && _data.size() > Fed){
-                do {
-                    qlonglong Ret = this->MultipartFormDataHandler->feed(_data.mid(Fed), _data.size() - Fed);
-                    Fed += Ret;
-                } while (Fed < _data.size() && !this->MultipartFormDataHandler->stopped());
+                this->RemainingData = this->RemainingData.trimmed();
+                if(this->RemainingData.startsWith('{') == false || this->RemainingData.endsWith('}') == false)
+                    throw exHTTPBadRequest("Invalid JSON Object");
+                QJsonParseError Error;
+                QJsonDocument JSON = QJsonDocument::fromJson(this->RemainingData, &Error);
+                if(JSON.isNull() || JSON.isObject() == false)
+                    throw exHTTPBadRequest(QString("Invalid JSON Object: %1").arg(Error.errorString()));
+                QJsonObject JSONObject = JSON.object();
+                for(auto JSONObjectIter = JSONObject.begin();
+                    JSONObjectIter != JSONObject.end();
+                    ++JSONObjectIter)
+                    this->Request->addUserDefinedData(JSONObjectIter.key(), JSONObjectIter.value().toString());
+
+                break;
             }
-            break;
-        }
-        default:
-            throw exHTTPBadRequest(("unsupported Content-Type: " + ContentType).constData());
+            case 'm':{
+                if(this->MultipartFormDataHandler.isNull()){
+                    if(ContentType.startsWith(MULTIPART_BOUNDARY_HEADER) == false)
+                        throw exHTTPBadRequest(("unsupported Content-Type: " + ContentType + " must be " + MULTIPART_BOUNDARY_HEADER).constData());
+
+                    this->MultipartFormDataHandler.reset(
+                                new clsMultipartFormDataRequestHandler(
+                                    this,
+                                    ContentType.mid(sizeof(MULTIPART_BOUNDARY_HEADER) - 1)
+                                    ));
+                }
+
+                qlonglong Fed = 0;
+                while(!this->MultipartFormDataHandler->stopped() && _data.size() > Fed){
+                    do {
+                        qlonglong Ret = this->MultipartFormDataHandler->feed(_data.mid(Fed).constData(), _data.size() - Fed);
+                        Fed += Ret;
+                    } while (Fed < _data.size() && !this->MultipartFormDataHandler->stopped());
+                }
+                if(this->MultipartFormDataHandler->hasError())
+                    throw exHTTPBadRequest(this->MultipartFormDataHandler->getErrorMessage());
+                break;
+            }
+            default:
+                throw exHTTPBadRequest(("unsupported Content-Type: " + ContentType).constData());
+            }
+        }catch(exHTTPError &ex){
+            this->sendError((qhttp::TStatusCode)ex.code(), ex.what(), ex.code() >= 500);
+        }catch(exTargomanBase &ex){
+            this->sendError(qhttp::ESTATUS_INTERNAL_SERVER_ERROR, ex.what(), true);
         }
     });
     this->Request->onEnd([this, _api](){
@@ -228,98 +238,134 @@ void clsRequestHandler::sendResponse(qhttp::TStatusCode _code, QVariant _respons
 /**************************************************************************/
 void clsMultipartFormDataRequestHandler::onMultiPartBegin(const MultipartHeaders &_headers, void *_userData) {
     clsMultipartFormDataRequestHandler *Self = static_cast<clsMultipartFormDataRequestHandler*>(_userData);
-    std::string ContentDisposition = _headers["Content-Disposition"];
-    if(ContentDisposition.size()){
-        const char* pContentDisposition = ContentDisposition.c_str();
-        const char* pBufferStart = pContentDisposition;
-        enum enuLooking4{
-            L4Type,
-            L4Field,
-            L4Equal,
-            L4DQuote,
-            L4Value,
-        } Looking4 = L4Type;
-        char StopChar = ';';
-        std::string* pLastFieldValue;
+    try{
+        std::string ContentDisposition = _headers["Content-Disposition"];
+        if(ContentDisposition.size()){
+            const char* pContentDisposition = ContentDisposition.c_str();
+            const char* pBufferStart = pContentDisposition;
+            enum enuLooking4{
+                L4Type,
+                L4Field,
+                L4NextField,
+                L4DQuote,
+                L4Value,
+            } Looking4 = L4Type;
+            char StopChar = ';';
+            std::string* pLastFieldValue;
+            std::string Dummy;
 
-        while(pContentDisposition){
-            if(*pContentDisposition == StopChar)
-                switch(Looking4){
-                case L4Type:
-                    if(strncmp(pBufferStart, "form-data", pContentDisposition - pBufferStart))
-                        throw exHTTPBadRequest("Just form-data is allowed in multi-part request according to RFC7578");
-                    Looking4 = L4Field;
+            while(pContentDisposition && *pContentDisposition != '\0'){
+                if(*pContentDisposition == StopChar)
+                    switch(Looking4){
+                    case L4Type:
+                        if(strncmp(pBufferStart, "form-data", pContentDisposition - pBufferStart))
+                            throw exHTTPBadRequest("Just form-data is allowed in multi-part request according to RFC7578");
+                        Looking4 = L4Field;
+                        pBufferStart = pContentDisposition+1;
+                        StopChar = '=';
+                        break;
+                    case L4Field:
+                        if(strncmp(pBufferStart, " name", pContentDisposition - pBufferStart) == 0)
+                            pLastFieldValue = &Self->LastItemName;
+                        else if(strncmp(pBufferStart, " filename", pContentDisposition - pBufferStart) == 0)
+                            pLastFieldValue = &Self->LastFileName;
+                        else
+                            pLastFieldValue = &Dummy;
+                        Looking4 = L4DQuote;
+                        StopChar = '"';
+                        break;
+                    case L4NextField:
+                        Looking4 = L4Field;
+                        pBufferStart = pContentDisposition+1;
+                        StopChar = '=';
+                        break;
+                    case L4DQuote:
+                        Looking4 = L4Value;
+                        StopChar = '"';
+                        pBufferStart = pContentDisposition+1;
+                        break;
+                    case L4Value:
+                        *pLastFieldValue = pBufferStart;
+                        pLastFieldValue->erase(pContentDisposition - pBufferStart, std::string::npos);
+                        StopChar=';';
+                        Looking4 = L4NextField;
+                        pBufferStart = pContentDisposition+2;
+                        break;
+                    }
+                else if(*pContentDisposition == '\r')
                     break;
-                case L4Field:
-                    if(strncmp(pBufferStart, "name", pContentDisposition - pBufferStart))
-                        pLastFieldValue = &Self->LastItemName;
-                    else if(strcmp(pBufferStart, "filename"))
-                        pLastFieldValue = &Self->LastFileName;
-                    Looking4 = L4Equal;
-                    StopChar = '=';
-                    break;
-                case L4Equal:
-                    Looking4 = L4DQuote;
-                    StopChar = '"';
-                    break;
-                case L4DQuote:
-                    Looking4 = L4Value;
-                    StopChar = '"';
-                    pBufferStart = pContentDisposition;
-                    break;
-                case L4Value:
-                    *pLastFieldValue = pBufferStart;
-                    pLastFieldValue->erase(pContentDisposition - pBufferStart, std::string::npos);
-                }
-        }
+                ++pContentDisposition;
+            }
 
-        if(Self->LastItemName.empty())
-            throw exHTTPBadRequest(QString("No name provided for form field: ") + ContentDisposition.c_str());
-        if(Self->LastFileName.size()){
-            Self->LastTempFile.reset(new QTemporaryFile);
-            if(Self->LastTempFile.isNull() || Self->LastTempFile->isOpen() == false)
-                throw exHTTPInternalServerError("unable to create temporary file");
-            Self->LastTempFile->setAutoRemove(false);
-            Self->LastMime = _headers["Content-Type"];
-        }
-    }else
-        throw exHTTPBadRequest("No Content-Disposition header provided");
+            if(Self->LastItemName.empty())
+                throw exHTTPBadRequest(QString("No name provided for form field: ") + ContentDisposition.c_str());
+            if(Self->ToBeStoredItemName.empty())
+                Self->ToBeStoredItemName = Self->LastItemName;
+
+            if(Self->LastFileName.size()){
+                Self->LastTempFile.reset(new QTemporaryFile);
+                if(Self->LastTempFile.isNull() || Self->LastTempFile->open() == false)
+                    throw exHTTPInternalServerError("unable to create temporary file");
+                Self->LastTempFile->setAutoRemove(false);
+                Self->LastMime = _headers["Content-Type"];
+            }
+        }else
+            throw exHTTPBadRequest("No Content-Disposition header provided");
+    }catch(exHTTPError &ex){
+        Self->pRequestHandler->sendError((qhttp::TStatusCode)ex.code(), ex.what(), ex.code() >= 500);
+    }catch(exTargomanBase &ex){
+        Self->pRequestHandler->sendError(qhttp::ESTATUS_INTERNAL_SERVER_ERROR, ex.what(), true);
+    }
+
 }
 
-void clsMultipartFormDataRequestHandler::onMultiPartData(const char *_buffer, size_t _size, void *_userData) {
+void clsMultipartFormDataRequestHandler::onMultiPartData(const char *_buffer, long long _size, void *_userData) {
     clsMultipartFormDataRequestHandler *Self = static_cast<clsMultipartFormDataRequestHandler*>(_userData);
-    if(Self->LastTempFile.isNull() == false)
+    if(Self->LastTempFile.isNull() == false){
         Self->LastWrittenBytes += Self->LastTempFile->write(_buffer, _size);
-    else
-        Self->pParent->Request->addUserDefinedData(Self->LastItemName.c_str(), QString::fromUtf8(_buffer, _size));
+        if(Self->LastWrittenBytes > gConfigs.Public.MaxUploadedFileSize)
+            throw exHTTPPayloadTooLarge("Max file size limit reached");
+    }else
+        Self->LastValue = QString::fromUtf8(_buffer, _size);
 }
 
 void clsMultipartFormDataRequestHandler::onMultiPartEnd(void *_userData) {
     clsMultipartFormDataRequestHandler *Self = static_cast<clsMultipartFormDataRequestHandler*>(_userData);
-    if(Self->LastTempFile.isNull() == false){
-        if(Self->LastStoredItemName != Self->LastItemName){
-            Self->pParent->Request->addUserDefinedData(Self->LastStoredItemName.c_str(), QString("[%1]").arg(Self->UploadedFilesInfo.join(',')));
-            Self->LastStoredItemName = Self->LastItemName;
-            Self->UploadedFilesInfo.clear();
-        }else
-            Self->UploadedFilesInfo.append(
-                        QString("{\"name\":\"%1\",\"tmpname\":\"%2\",\"size\":\"%3\",\"type\":\"%4\"}").arg(
-                            Self->LastFileName.c_str()).arg(
-                            Self->LastTempFile->fileName()).arg(
-                            Self->LastWrittenBytes).arg(
-                            Self->LastMime.c_str()));
+    if(Self->ToBeStoredItemName != Self->LastItemName){
+        Self->storeDataInRequest();
+        Self->SameNameItems.clear();
+        Self->ToBeStoredItemName = Self->LastItemName;
     }
+    if(Self->LastTempFile.isNull() == false){
+        Self->SameNameItems.append(
+                    QString("{\"name\":\"%1\",\"tmpname\":\"%2\",\"size\":\"%3\",\"type\":\"%4\"}").arg(
+                        Self->LastFileName.c_str()).arg(
+                        Self->LastTempFile->fileName()).arg(
+                        Self->LastWrittenBytes).arg(
+                        Self->LastMime.c_str()));
+        Self->LastTempFile.reset();
+    }else
+        Self->SameNameItems.append(Self->LastValue);
+
+
     Self->LastFileName.clear();
     Self->LastItemName.clear();
     Self->LastMime.clear();
-    Self->LastTempFile.reset();
     Self->LastWrittenBytes = 0;
 }
 
 void clsMultipartFormDataRequestHandler::onDataEnd(void *_userData){
     clsMultipartFormDataRequestHandler *Self = static_cast<clsMultipartFormDataRequestHandler*>(_userData);
-    if(Self->UploadedFilesInfo.size())
-        Self->pParent->Request->addUserDefinedData(Self->LastStoredItemName.c_str(), QString("[%1]").arg(Self->UploadedFilesInfo.join(',')));
+    if(Self->SameNameItems.size())
+        Self->storeDataInRequest();
+}
+
+void clsMultipartFormDataRequestHandler::storeDataInRequest()
+{
+    if(this->SameNameItems.size() > 1)
+        this->pRequestHandler->Request->addUserDefinedData(this->ToBeStoredItemName.c_str(), QString("[%1]").arg(this->SameNameItems.join(',')));
+    else
+        this->pRequestHandler->Request->addUserDefinedData(this->ToBeStoredItemName.c_str(), this->SameNameItems.at(0));
 }
 
 }

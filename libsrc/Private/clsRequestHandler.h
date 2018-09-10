@@ -62,15 +62,14 @@ private:
 class clsMultipartFormDataRequestHandler : public MultipartReader{
 public:
     clsMultipartFormDataRequestHandler(clsRequestHandler* _parent, const QByteArray& _marker) :
-        pParent(_parent),
+        MultipartReader(_marker.toStdString()),
+        pRequestHandler(_parent),
         LastWrittenBytes(0){
-        this->onPartBegin = clsMultipartFormDataRequestHandler::onPartBegin;
-        this->onPartData = clsMultipartFormDataRequestHandler::onPartData;
-        this->onPartEnd = clsMultipartFormDataRequestHandler::onPartEnd;
+        this->onPartBegin = clsMultipartFormDataRequestHandler::onMultiPartBegin;
+        this->onPartData = clsMultipartFormDataRequestHandler::onMultiPartData;
+        this->onPartEnd = clsMultipartFormDataRequestHandler::onMultiPartEnd;
         this->onEnd = clsMultipartFormDataRequestHandler::onDataEnd;
         this->userData = (void*)this;
-
-        this->setBoundary(_marker.toStdString());
     }
 
     size_t feed(const char *_buffer, size_t _len){
@@ -79,19 +78,21 @@ public:
 
 private:
     static void onMultiPartBegin(const MultipartHeaders &_headers, void *_userData);
-    static void onMultiPartData(const char *_buffer, size_t _size, void *_userData);
+    static void onMultiPartData(const char *_buffer, long long _size, void *_userData);
     static void onMultiPartEnd(void *_userData);
     static void onDataEnd(void *_userData);
 
+    void storeDataInRequest();
 private:
-    clsRequestHandler* pParent;
+    clsRequestHandler* pRequestHandler;
     QScopedPointer<QTemporaryFile> LastTempFile;
     std::string LastMime;
     std::string LastFileName;
-    std::string LastStoredItemName;
+    std::string ToBeStoredItemName;
     std::string LastItemName;
+    QString     LastValue;
     int         LastWrittenBytes;
-    QStringList UploadedFilesInfo;
+    QStringList SameNameItems;
 
     friend class clsRequestHandler;
 };

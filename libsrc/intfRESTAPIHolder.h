@@ -31,7 +31,28 @@
 
 namespace QHttp {
 /**********************************************************************/
-using fnDeserializer_t = std::function<void(void* _storage, QVariant _data)>;
+namespace Private{class clsAPIObject;}
+
+class intfAPIArgManipulator{
+public:
+    intfAPIArgManipulator(const QString& _realTypeName);
+
+    virtual QGenericArgument makeGenericArgument(const QVariant& _val, const QByteArray& _paramName, void** _argStorage) = 0;
+    virtual QVariant invokeMethod(const Private::clsAPIObject* _apiObject, const QVariantList& _arguments) = 0;
+    virtual void cleanup (void* _argStorage) = 0;
+
+    QString     PrettyTypeName;
+    char*       RealTypeName;
+};
+
+template<typename _itmplType>
+class tmplAPIArg : public intfAPIArgManipulator{
+public:
+    tmplAPIArg(const QString& _prettyName);
+    virtual QGenericArgument makeGenericArgument(const QVariant& _val, const QByteArray& _paramName, void** _argStorage);
+    virtual QVariant invokeMethod(const Private::clsAPIObject* _apiObject, const QVariantList& _arguments);
+    virtual void cleanup (void* _argStorage);
+};
 
 /**
  * @brief The stuStatistics struct
@@ -120,9 +141,38 @@ protected:
     void registerMyRESTAPIs();
 };
 
+template<typename _itmplType>
+tmplAPIArg<_itmplType>::tmplAPIArg(const QString& _name) :
+    intfAPIArgManipulator(_name)
+{}
+
+template<typename _itmplType>
+inline QGenericArgument tmplAPIArg<_itmplType>::makeGenericArgument(const QVariant& _val, const QByteArray& _paramName, void** _argStorage){
+    if(!_val.canConvert<_itmplType>())
+        throw exHTTPBadRequest("Invalid value specified for parameter: " + _paramName);
+    *_argStorage = new _itmplType;
+    *((_itmplType*)*_argStorage) = _val.value<_itmplType>();
+
+    return QGenericArgument(this->RealTypeName, *_argStorage);
+}
+
+template<typename _itmplType>
+inline QVariant tmplAPIArg<_itmplType>::invokeMethod(const Private::clsAPIObject* _apiObject, const QVariantList& _arguments){
+   _itmplType Result;
+   _apiObject->invokeMethod(_arguments,Q_RETURN_ARG(_itmplType, Result));
+   return QVariant::fromValue(Result);
+}
+
+template<typename _itmplType>
+void tmplAPIArg<_itmplType>::cleanup (void* _argStorage){
+    delete ((_itmplType*)_argStorage);
+}
+
 }
 
 Q_DECLARE_METATYPE(QHttp::stuTable)
 Q_DECLARE_METATYPE(QHttp::stuStatistics)
+
+
 
 #endif // QHTTP_INTFRESTAPI_H

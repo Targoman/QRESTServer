@@ -51,13 +51,16 @@ extern stuStatistics gServerStats;
 
 class clsAPIObject;
 
-struct stuMetaTypeInfo{
-    std::function<std::function<QGenericArgument()>(const QVariant& _val, const QByteArray& _paramName)> makeGenericArgument = {};
-    std::function<QVariant(const clsAPIObject* _apiObject, const QList<std::function<QGenericArgument()>>& _arguments)> invokeMethod = {};
+/*struct stuMetaTypeInfo{
+/*    std::function<QGenericArgument(const QVariant& _val, const QByteArray& _paramName, void** _argStorage)> makeGenericArgument = {};
+    std::function<QVariant(const clsAPIObject* _apiObject, const QVariantList& _arguments)> invokeMethod = {};
+    std::function<void(void* _argStorage)> cleanup = {};
+    intfAPIArgManipulator* Manipulator;
     QString PrettyName;
-};
+};*/
 
-extern QList<stuMetaTypeInfo> OrderedMetaTypeInfo;
+//extern QList<stuMetaTypeInfo> gOrderedMetaTypeInfo;
+extern QList<intfAPIArgManipulator*> gOrderedMetaTypeInfo;
 
 }
 }

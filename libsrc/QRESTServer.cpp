@@ -153,9 +153,15 @@ QStringList intfRESTAPIHolder::apiGETListOfAPIs(bool _showParams, bool _showType
     return RESTAPIRegistry::registeredAPIs("", _showParams, _showTypes, _prettifyTypes);
 }
 
+intfAPIArgManipulator::intfAPIArgManipulator(const QString &_realTypeName)
+{
+    this->PrettyTypeName = (_realTypeName.startsWith('Q') ? _realTypeName.mid(1) : _realTypeName).toLower();
+    this->RealTypeName = new char[_realTypeName.toStdString().size()];
+    strcpy(this->RealTypeName, _realTypeName.toStdString().c_str());
+}
+
 /***********************************************************************************************/
 QHash<QString, clsAPIObject*>  RESTAPIRegistry::Registry;
-QHash<QString, fnDeserializer_t>  RESTAPIRegistry::RegisteredDeserializers;
 
 RESTServer::stuConfig::stuConfig(const QString &_basePath,
                                  const QString &_version,

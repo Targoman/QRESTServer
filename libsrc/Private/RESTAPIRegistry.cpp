@@ -33,29 +33,39 @@ namespace Private {
 #define DO_ON_TYPE(_typeName, _baseType) DO_ON_TYPE_PROXY(_baseType, IGNORE_TYPE_##_typeName)
 #define DO_ON_TYPE_SELECTOR(_1,_2,N,...) N
 #define DO_ON_TYPE_PROXY(_type, ...) DO_ON_TYPE_SELECTOR(__VA_ARGS__, DO_ON_TYPE_IGNORED, DO_ON_TYPE_VALID)(_type)
-#define DO_ON_TYPE_IGNORED(_baseType)   \
+#define DO_ON_TYPE_IGNORED(_baseType) nullptr
+
+/*#define DO_ON_TYPE_IGNORED(_baseType)   \
     nullptr, \
     nullptr,
+*/
 
-#define DO_ON_TYPE_VALID(_baseType)     \
-    [](const QVariant& _val, const QByteArray& _paramName) -> std::function<QGenericArgument()>{ \
+#define DO_ON_TYPE_VALID(_baseType)  new tmplAPIArg<_baseType>(TARGOMAN_M2STR(_baseType))
+/*    [](const QVariant& _val, const QByteArray& _paramName, void** _argStorage) -> QGenericArgument{ \
         if(!_val.canConvert<_baseType>()) \
             throw exHTTPBadRequest("Invalid value specified for parameter: " + _paramName); \
-        return [_val](){return QArgument<_baseType>(#_baseType, _val.value<_baseType>());}; \
-        /*return new QArgument<_baseType>(#_baseType, _val.value<_baseType>());*/ \
+        *_argStorage = new _baseType; *((_baseType*)*_argStorage) = _val.value<_baseType>(); \
+        return Q_ARG(_baseType, *((_baseType*)*_argStorage)); \
     }, \
-    [](const clsAPIObject* _apiObject, const QList<std::function<QGenericArgument()>>& _arguments){ \
+    [](const clsAPIObject* _apiObject, const QVariantList& _arguments){ \
        _baseType Result; \
        _apiObject->invokeMethod(_arguments,Q_RETURN_ARG(_baseType, Result)); \
        return QVariant::fromValue(Result); \
+    },\
+    [](void* _argStorage){ \
+        delete ((_baseType*)_argStorage); \
     },
+*/
 
-#define MAKE_INFO_FOR_VALID_METATYPE(_typeName, _id, _baseType) { _id, { \
+/*#define MAKE_INFO_FOR_VALID_METATYPE(_typeName, _id, _baseType) { _id, { \
     DO_ON_TYPE(_typeName, _baseType) \
     TARGOMAN_M2STR(_typeName), \
-}},
+}}*/
 
-#define MAKE_INVALID_METATYPE(_typeName, _id, _baseType) { _id, { nullptr, nullptr, "" }},
+#define MAKE_INFO_FOR_VALID_METATYPE(_typeName, _id, _baseType) { _id, { DO_ON_TYPE(_typeName, _baseType) }},
+
+//#define MAKE_INVALID_METATYPE(_typeName, _id, _baseType) { _id, { nullptr, nullptr, "" }},
+#define MAKE_INVALID_METATYPE(_typeName, _id, _baseType) { _id, { nullptr }},
 
 #define IGNORE_TYPE_Void ,
 #define IGNORE_TYPE_QByteArray ,
@@ -80,7 +90,7 @@ namespace Private {
 #define IGNORE_TYPE_Nullptr ,
 #define IGNORE_TYPE_QByteArrayList ,
 
-const QMap<int, stuMetaTypeInfo> MetaTypeInfoMap = {
+const QMap<int, intfAPIArgManipulator*> MetaTypeInfoMap = {
     QT_FOR_EACH_STATIC_PRIMITIVE_TYPE(MAKE_INFO_FOR_VALID_METATYPE)
     QT_FOR_EACH_STATIC_PRIMITIVE_POINTER(MAKE_INVALID_METATYPE)
     QT_FOR_EACH_STATIC_CORE_CLASS(MAKE_INFO_FOR_VALID_METATYPE)
@@ -90,24 +100,25 @@ const QMap<int, stuMetaTypeInfo> MetaTypeInfoMap = {
     QT_FOR_EACH_STATIC_WIDGETS_CLASS(MAKE_INVALID_METATYPE)
 };
 
-QList<stuMetaTypeInfo> OrderedMetaTypeInfo;
+//QList<stuMetaTypeInfo> gOrderedMetaTypeInfo;
+QList<intfAPIArgManipulator*> gOrderedMetaTypeInfo;
 
 /***********************************************************************************************/
 void RESTAPIRegistry::registerRESTAPI(intfRESTAPIHolder* _module, const QMetaMethod& _method){
-    if(OrderedMetaTypeInfo.isEmpty()){
-        OrderedMetaTypeInfo.reserve(MetaTypeInfoMap.lastKey());
+    if(gOrderedMetaTypeInfo.isEmpty()){
+        gOrderedMetaTypeInfo.reserve(MetaTypeInfoMap.lastKey());
         for(auto MetaTypeInfoMapIter = MetaTypeInfoMap.begin();
             MetaTypeInfoMapIter != MetaTypeInfoMap.end();
             ++MetaTypeInfoMapIter){
-            for(int i = 0; i< MetaTypeInfoMapIter.key() - OrderedMetaTypeInfo.size(); ++i)
-                OrderedMetaTypeInfo.append(stuMetaTypeInfo());
-            OrderedMetaTypeInfo.append(MetaTypeInfoMapIter.value());
-            OrderedMetaTypeInfo.last().PrettyName =
-                    OrderedMetaTypeInfo.last().invokeMethod == nullptr ?
+            for(int i = 0; i< MetaTypeInfoMapIter.key() - gOrderedMetaTypeInfo.size(); ++i)
+                gOrderedMetaTypeInfo.append(nullptr/*stuMetaTypeInfo()*/);
+            gOrderedMetaTypeInfo.append(MetaTypeInfoMapIter.value());
+/*            gOrderedMetaTypeInfo.last().PrettyName =
+                    gOrderedMetaTypeInfo.last().invokeMethod == nullptr ?
                         "" : (
-                        OrderedMetaTypeInfo.last().PrettyName.startsWith('Q') ?
-                                OrderedMetaTypeInfo.last().PrettyName.mid(1) :
-                                OrderedMetaTypeInfo.last().PrettyName).toLower();
+                        gOrderedMetaTypeInfo.last().PrettyName.startsWith('Q') ?
+                                gOrderedMetaTypeInfo.last().PrettyName.mid(1) :
+                                gOrderedMetaTypeInfo.last().PrettyName).toLower();*/
         }
     }
     if ((_method.name().startsWith("api") == false &&
@@ -150,7 +161,7 @@ QStringList RESTAPIRegistry::registeredAPIs(const QString &_module, bool _showPa
         if(_prettifyTypes == false || _typeID > 1023)
             return QString(QMetaType::typeName(_typeID));
 
-        return OrderedMetaTypeInfo.at(_typeID).PrettyName;
+        return gOrderedMetaTypeInfo.at(_typeID)->PrettyTypeName;
     };
 
     QMap<QString, QString> Methods;
@@ -186,7 +197,7 @@ QStringList RESTAPIRegistry::registeredAPIs(const QString &_module, bool _showPa
 QString RESTAPIRegistry::isValidType(int _typeID){
     if(_typeID == 0 || _typeID == QMetaType::User)
         return  "is not registered with Qt MetaTypes";
-    if(_typeID < 1024 && _typeID >= OrderedMetaTypeInfo.size())
+    if(_typeID < 1024 && _typeID >= gOrderedMetaTypeInfo.size())
         return "is complex type and not supported";
     return "";
 }

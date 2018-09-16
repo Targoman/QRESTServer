@@ -42,15 +42,9 @@ public:
     static inline QString makeRESTAPIKey(const QString& _httpMethod, const QString& _path){
         return  _httpMethod.toUpper() + " " +_path;
     }
+
     static inline clsAPIObject* getAPIObject(const QString _httpMethod, const QString& _path){
         return RESTAPIRegistry::Registry.value(RESTAPIRegistry::makeRESTAPIKey(_httpMethod, _path));
-    }
-    static inline QGenericArgument jsonToGenericArgument(const char* _type, const QString& _value, void* _storage){
-        fnDeserializer_t fnDeserializer = RESTAPIRegistry::RegisteredDeserializers.value(_type);
-        if(!fnDeserializer)
-            throw exRESTRegistry(QString("Type <%1> was not registered").arg(_type));
-        fnDeserializer(_storage, _value);
-        return QGenericArgument(_type, _storage);
     }
 
     static void registerRESTAPI(intfRESTAPIHolder* _module, const QMetaMethod& _method);
@@ -63,7 +57,6 @@ private:
 
 private:
     static QHash<QString, clsAPIObject*>  Registry;
-    static QHash<QString, fnDeserializer_t> RegisteredDeserializers;
 };
 
 }

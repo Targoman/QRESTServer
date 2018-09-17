@@ -21,45 +21,61 @@
  * @author S. Mohammad M. Ziabary <ziabary@targoman.com>
  */
 
-#ifndef QHTTP_PRIVATE_RESTAPIREGISTRY_H
-#define QHTTP_PRIVATE_RESTAPIREGISTRY_H
+#ifndef QHTTP_PRIVATE_APIRESULTCACHE_H
+#define QHTTP_PRIVATE_APIRESULTCACHE_H
 
-#include <QGenericArgument>
-#include <QMetaMethod>
-#include "QHttp/intfRESTAPIHolder.h"
+#include <QObject>
+#include <QTime>
+#include <QString>
+#include <QVariant>
+#include <QHash>
 
 #include "Private/Configs.hpp"
-#include "Private/clsAPIObject.hpp"
 
 namespace QHttp {
 namespace Private {
 
-TARGOMAN_ADD_EXCEPTION_HANDLER(exRESTRegistry, Targoman::Common::exTargomanBase);
-
-class RESTAPIRegistry
+class APIResultCache
 {
 public:
-    static inline QString makeRESTAPIKey(const QString& _httpMethod, const QString& _path){
-        return  _httpMethod.toUpper() + " " +_path;
+    struct stuCacheValue{
+        QTime InsertionTime;
+        QVariant Value;
+        qint32   TTL;
+
+        stuCacheValue(){}
+        virtual ~stuCacheValue(){}
+        stuCacheValue(const QVariant& _value, qint32 _ttl):InsertionTime(QTime::currentTime()),Value(_value), TTL(_ttl){}
+        stuCacheValue(const stuCacheValue& _other):InsertionTime(_other.InsertionTime),Value(_other.Value), TTL(_other.TTL){}
+    };
+    typedef QHash<QString, stuCacheValue> Cache_t;
+
+public:
+    static QString makeCacheKey(const QByteArray& _method, const QVariantList& _args){
+        return _method + QJsonValue::fromVariant(_args).toString();
     }
 
-    static inline clsAPIObject* getAPIObject(const QString _httpMethod, const QString& _path){
-        return RESTAPIRegistry::Registry.value(RESTAPIRegistry::makeRESTAPIKey(_httpMethod, _path));
+    static void setValue(const QString& _key, const QVariant& _value, qint32 _ttl){
+        QMutexLocker Locker(&APIResultCache::Lock);
+        if(APIResultCache::Cache.size() < (int)gConfigs.Public.MaxCachedItems)
+           APIResultCache::Cache.insert(_key, stuCacheValue(_value, _ttl));
+    }
+    static QVariant storedValue(const QString& _key){
+        auto StoredValue = APIResultCache::Cache.find(_key);
+        if(StoredValue == APIResultCache::Cache.end())
+            return QVariant();
+        if(StoredValue->InsertionTime.secsTo(QTime::currentTime()) > StoredValue->TTL)
+            return QVariant();
+        return StoredValue->Value;
     }
 
-    static void registerRESTAPI(intfRESTAPIHolder* _module, const QMetaMethod& _method);
-    static QStringList registeredAPIs(const QString &_module, bool _showParams = false, bool _showTypes = false, bool _prettifyTypes = true);
-
 private:
-    static inline QString isValidType(int _typeID, bool _validate4Input);
-    static void validateMethodInputAndOutput(const QMetaMethod& _method);
-    static void addRegistryEntry(intfRESTAPIHolder* _module, const QMetaMethod& _method, const QString& _httpMethod, const QString& _methodName);
+    static Cache_t Cache;
+    static QMutex  Lock;
 
-private:
-    static QHash<QString, clsAPIObject*>  Registry;
+    friend class clsUpdateAndPruneThread;
 };
 
 }
 }
-
-#endif // QHTTP_PRIVATE_RESTAPIREGISTRY_H
+#endif // CLSAPIRESULTCACHE_H

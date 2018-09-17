@@ -1,20 +1,20 @@
 /*******************************************************************************
- * QRESTServer a lean and mean Qt/C++ based REST server                     *
+ * QRESTServer a lean and mean Qt/C++ based REST server                        *
  *                                                                             *
  * Copyright 2018 by Targoman Intelligent Processing Co Pjc.<http://tip.co.ir> *
  *                                                                             *
  *                                                                             *
- * QRESTServer is free software: you can redistribute it and/or modify      *
+ * QRESTServer is free software: you can redistribute it and/or modify         *
  * it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE as published by *
  * the Free Software Foundation, either version 3 of the License, or           *
  * (at your option) any later version.                                         *
  *                                                                             *
- * QRESTServer is distributed in the hope that it will be useful,           *
+ * QRESTServer is distributed in the hope that it will be useful,              *
  * but WITHOUT ANY WARRANTY; without even the implied warranty of              *
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               *
  * GNU AFFERO GENERAL PUBLIC LICENSE for more details.                         *
  * You should have received a copy of the GNU AFFERO GENERAL PUBLIC LICENSE    *
- * along with QRESTServer. If not, see <http://www.gnu.org/licenses/>.      *
+ * along with QRESTServer. If not, see <http://www.gnu.org/licenses/>.         *
  *                                                                             *
  *******************************************************************************/
 /**
@@ -31,6 +31,7 @@
 
 #include "Private/Configs.hpp"
 #include "Private/RESTAPIRegistry.h"
+#include "Private/APIResultCache.hpp"
 
 namespace QHttp {
 namespace Private {
@@ -84,6 +85,7 @@ public:
                     break;
                 }
             }
+
             if(ParamNotFound)
                 foreach (auto BodyArg, _bodyArgs) {
                     bool ConversionResult = true;
@@ -126,17 +128,34 @@ public:
         else if (LastArgumentWithValue < Arguments.size() - 1)
             Arguments = Arguments.mid(0, LastArgumentWithValue + 1);
 
+        QVariant Result;
+        QString  CacheKey;
+        if(this->Cache4Secs != 0){
+            CacheKey = APIResultCache::makeCacheKey(this->BaseMethod.name(), Arguments);
+            QVariant CachedValue =  APIResultCache::storedValue(CacheKey);
+            if(CachedValue.isValid()){
+                gServerStats.APICacheStats[this->BaseMethod.name()].inc();
+                return CachedValue;
+            }
+        }
+
         if(this->BaseMethod.returnType() >= QHTTP_BASE_USER_DEFINED_TYPEID){
             Q_ASSERT(this->BaseMethod.returnType() - QHTTP_BASE_USER_DEFINED_TYPEID < gOrderedMetaTypeInfo.size());
             Q_ASSERT(gUserDefinedTypesInfo.at(this->BaseMethod.returnType() - QHTTP_BASE_USER_DEFINED_TYPEID) != nullptr);
 
-            return gUserDefinedTypesInfo.at(this->BaseMethod.returnType() - QHTTP_BASE_USER_DEFINED_TYPEID)->invokeMethod(this, Arguments);
+            Result = gUserDefinedTypesInfo.at(this->BaseMethod.returnType() - QHTTP_BASE_USER_DEFINED_TYPEID)->invokeMethod(this, Arguments);
         }else{
             Q_ASSERT(this->BaseMethod.returnType() < gOrderedMetaTypeInfo.size());
             Q_ASSERT(gOrderedMetaTypeInfo.at(this->BaseMethod.returnType()) != nullptr);
 
-            return gOrderedMetaTypeInfo.at(this->BaseMethod.returnType())->invokeMethod(this, Arguments);
+            Result = gOrderedMetaTypeInfo.at(this->BaseMethod.returnType())->invokeMethod(this, Arguments);
         }
+
+        if(this->Cache4Secs != 0)
+            APIResultCache::setValue(CacheKey, Result, this->Cache4Secs);
+
+        gServerStats.APICallsStats[this->BaseMethod.name()].inc();
+        return Result;
     }
 
 #define MAKE_ARG_AT(_i) \

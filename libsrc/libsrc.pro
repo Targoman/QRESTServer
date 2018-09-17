@@ -38,7 +38,7 @@ SOURCES += \
     libID.cpp \
     Private/clsRequestHandler.cpp \
     Private/RESTAPIRegistry.cpp \
-    QRESTServer.cpp \
+    QRESTServer.cpp
 
 # +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-#
 OTHER_FILES += \
@@ -74,6 +74,7 @@ build_static {
 HEADERS += $$DIST_HEADERS \
            $$PRIVATE_HEADERS \
            $$SUBMODULE_HEADERS \
-    intfAPIArgManipulator.h
+    intfAPIArgManipulator.h \
+    Private/APIResultCache.hpp
 
 include($$PRJDIR/qmake/install.pri)

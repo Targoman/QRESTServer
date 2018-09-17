@@ -1,20 +1,20 @@
 /*******************************************************************************
- * QRESTServer a lean and mean Qt/C++ based REST server                     *
+ * QRESTServer a lean and mean Qt/C++ based REST server                        *
  *                                                                             *
  * Copyright 2018 by Targoman Intelligent Processing Co Pjc.<http://tip.co.ir> *
  *                                                                             *
  *                                                                             *
- * QRESTServer is free software: you can redistribute it and/or modify      *
+ * QRESTServer is free software: you can redistribute it and/or modify         *
  * it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE as published by *
  * the Free Software Foundation, either version 3 of the License, or           *
  * (at your option) any later version.                                         *
  *                                                                             *
- * QRESTServer is distributed in the hope that it will be useful,           *
+ * QRESTServer is distributed in the hope that it will be useful,              *
  * but WITHOUT ANY WARRANTY; without even the implied warranty of              *
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               *
  * GNU AFFERO GENERAL PUBLIC LICENSE for more details.                         *
  * You should have received a copy of the GNU AFFERO GENERAL PUBLIC LICENSE    *
- * along with QRESTServer. If not, see <http://www.gnu.org/licenses/>.      *
+ * along with QRESTServer. If not, see <http://www.gnu.org/licenses/>.         *
  *                                                                             *
  *******************************************************************************/
 /**
@@ -64,19 +64,14 @@ public:
         *_argStorage = nullptr;
         if(this->fromVariant == nullptr && !_val.canConvert<_itmplType>())
                 throw exHTTPBadRequest("Invalid value specified for parameter: " + _paramName);
-
         *_argStorage = new _itmplType;
         *((_itmplType*)*_argStorage) =
                 this->fromVariant == nullptr ? _val.value<_itmplType>() : this->fromVariant(_val);
-
         return QGenericArgument(this->RealTypeName, *_argStorage);
     }
     inline QVariant invokeMethod(const intfAPIObject *_apiObject, const QVariantList& _arguments) final {
            _itmplType Result;
-        #pragma GCC diagnostic push
-        #pragma GCC diagnostic ignored "-Wall"
            _apiObject->invokeMethod(_arguments,QReturnArgument<_itmplType >(this->RealTypeName, Result));
-        #pragma GCC diagnostic pop
            return this->toVariant == nullptr ? QVariant::fromValue(Result) : this->toVariant(Result);
     }
     inline void cleanup (void* _argStorage) final {if(_argStorage) delete ((_itmplType*)_argStorage);}

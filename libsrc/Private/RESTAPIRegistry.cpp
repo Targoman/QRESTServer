@@ -1,20 +1,20 @@
 /*******************************************************************************
- * QRESTServer a lean and mean Qt/C++ based REST server                     *
+ * QRESTServer a lean and mean Qt/C++ based REST server                        *
  *                                                                             *
  * Copyright 2018 by Targoman Intelligent Processing Co Pjc.<http://tip.co.ir> *
  *                                                                             *
  *                                                                             *
- * QRESTServer is free software: you can redistribute it and/or modify      *
+ * QRESTServer is free software: you can redistribute it and/or modify         *
  * it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE as published by *
  * the Free Software Foundation, either version 3 of the License, or           *
  * (at your option) any later version.                                         *
  *                                                                             *
- * QRESTServer is distributed in the hope that it will be useful,           *
+ * QRESTServer is distributed in the hope that it will be useful,              *
  * but WITHOUT ANY WARRANTY; without even the implied warranty of              *
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               *
  * GNU AFFERO GENERAL PUBLIC LICENSE for more details.                         *
  * You should have received a copy of the GNU AFFERO GENERAL PUBLIC LICENSE    *
- * along with QRESTServer. If not, see <http://www.gnu.org/licenses/>.      *
+ * along with QRESTServer. If not, see <http://www.gnu.org/licenses/>.         *
  *                                                                             *
  *******************************************************************************/
 /**
@@ -22,6 +22,7 @@
  */
 
 #include <QMap>
+#include <QMutex>
 
 #include "Private/RESTAPIRegistry.h"
 
@@ -233,6 +234,19 @@ void RESTAPIRegistry::addRegistryEntry(intfRESTAPIHolder *_module, const QMetaMe
             default:
                 throw exRESTRegistry("Invalid tag numer or type defined for api: " + _method.methodSignature());
             }
+        }else if(Tag.startsWith("REDISCACHE_") && Tag.size () > 14){
+            Tag = Tag.mid(12);
+            if(Tag == "INF")
+                return -1;
+            char Type = Tag.rbegin()->toLatin1();
+            int  Number = Tag.mid(0,Tag.size() -1).toUShort();
+            switch(Type){
+            case 'S': return Number;
+            case 'M': return Number * 60;
+            case 'H': return Number * 3600;
+            default:
+                throw exRESTRegistry("Invalid tag numer or type defined for api: " + _method.methodSignature());
+            }
         }else
             throw exRESTRegistry("Invalid tag defined for api: " + _method.methodSignature());
     };
@@ -251,6 +265,9 @@ void RESTAPIRegistry::addRegistryEntry(intfRESTAPIHolder *_module, const QMetaMe
                                                           cache4Secs(_method)
                                                           ));
 }
+
+APIResultCache::Cache_t APIResultCache::Cache;
+QMutex APIResultCache::Lock;
 
 }
 }

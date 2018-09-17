@@ -1,20 +1,20 @@
 /*******************************************************************************
- * QRESTServer a lean and mean Qt/C++ based REST server                     *
+ * QRESTServer a lean and mean Qt/C++ based REST server                        *
  *                                                                             *
  * Copyright 2018 by Targoman Intelligent Processing Co Pjc.<http://tip.co.ir> *
  *                                                                             *
  *                                                                             *
- * QRESTServer is free software: you can redistribute it and/or modify      *
+ * QRESTServer is free software: you can redistribute it and/or modify         *
  * it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE as published by *
  * the Free Software Foundation, either version 3 of the License, or           *
  * (at your option) any later version.                                         *
  *                                                                             *
- * QRESTServer is distributed in the hope that it will be useful,           *
+ * QRESTServer is distributed in the hope that it will be useful,              *
  * but WITHOUT ANY WARRANTY; without even the implied warranty of              *
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               *
  * GNU AFFERO GENERAL PUBLIC LICENSE for more details.                         *
  * You should have received a copy of the GNU AFFERO GENERAL PUBLIC LICENSE    *
- * along with QRESTServer. If not, see <http://www.gnu.org/licenses/>.      *
+ * along with QRESTServer. If not, see <http://www.gnu.org/licenses/>.         *
  *                                                                             *
  *******************************************************************************/
 /**
@@ -33,11 +33,17 @@
 namespace QHttp {
 
 /********************************************************************************/
+/**
+ * @brief The enuIPBlackListStatus enum is defined to be used as result of fnIsInBlackList_t
+ */
 TARGOMAN_DEFINE_ENHANCED_ENUM(enuIPBlackListStatus,
                               Ok,
                               Banned,
                               Restricted)
 
+/**
+ * @brief The fnIsInBlackList_t type is used to define a IP checker lambda
+ */
 using fnIsInBlackList_t = std::function<enuIPBlackListStatus::Type (QHostAddress)>;
 /********************************************************************************/
 /**
@@ -63,6 +69,7 @@ public:
         bool         IndentedJson;
         qint64       MaxUploadSize;
         qint64       MaxUploadedFileSize;
+        quint32      MaxCachedItems;
 
         stuConfig(const QString& _basePath = "/",
                   const QString& _version = "v0",
@@ -72,7 +79,8 @@ public:
                   const fnIsInBlackList_t& _ipBlackListChecker = {},
                   quint8 _statisticsInterval = 3,
                   qint64 _maxUploadSize = 100 * 1024 * 1024,
-                  qint64 _maxUploadedFileSize = 100 * 1024 * 1024
+                  qint64 _maxUploadedFileSize = 100 * 1024 * 1024,
+                  quint32 _maxCachedItems = 10000
                   );
     };
 

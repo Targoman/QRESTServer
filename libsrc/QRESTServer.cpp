@@ -1,23 +1,22 @@
 /*******************************************************************************
- * QRESTServer a lean and mean Qt/C++ based REST server                     *
+ * QRESTServer a lean and mean Qt/C++ based REST server                        *
  *                                                                             *
  * Copyright 2018 by Targoman Intelligent Processing Co Pjc.<http://tip.co.ir> *
  *                                                                             *
  *                                                                             *
- * QRESTServer is free software: you can redistribute it and/or modify      *
+ * QRESTServer is free software: you can redistribute it and/or modify         *
  * it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE as published by *
  * the Free Software Foundation, either version 3 of the License, or           *
  * (at your option) any later version.                                         *
  *                                                                             *
- * QRESTServer is distributed in the hope that it will be useful,           *
+ * QRESTServer is distributed in the hope that it will be useful,              *
  * but WITHOUT ANY WARRANTY; without even the implied warranty of              *
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               *
  * GNU AFFERO GENERAL PUBLIC LICENSE for more details.                         *
  * You should have received a copy of the GNU AFFERO GENERAL PUBLIC LICENSE    *
- * along with QRESTServer. If not, see <http://www.gnu.org/licenses/>.      *
+ * along with QRESTServer. If not, see <http://www.gnu.org/licenses/>.         *
  *                                                                             *
  *******************************************************************************/
-
 /**
  * @author S.Mehran M.Ziabary <ziabary@targoman.com>
  */
@@ -43,7 +42,7 @@ void RESTServer::configure(const RESTServer::stuConfig &_configs) {
 }
 
 static qhttp::server::QHttpServer gHTTPServer;
-static clsStatisticsUpdateThread *gStatUpdateThread;
+static clsUpdateAndPruneThread *gStatUpdateThread;
 
 void RESTServer::start() {
     if(gConfigs.Private.IsStarted)
@@ -56,8 +55,8 @@ void RESTServer::start() {
     gConfigs.Private.IsStarted = true;
 
     if(gConfigs.Public.StatisticsInterval){
-        gStatUpdateThread = new clsStatisticsUpdateThread();
-        connect(gStatUpdateThread, &clsStatisticsUpdateThread::finished, gStatUpdateThread, &QObject::deleteLater);
+        gStatUpdateThread = new clsUpdateAndPruneThread();
+        connect(gStatUpdateThread, &clsUpdateAndPruneThread::finished, gStatUpdateThread, &QObject::deleteLater);
         gStatUpdateThread->start();
     }
 
@@ -179,7 +178,8 @@ RESTServer::stuConfig::stuConfig(const QString &_basePath,
                                  const fnIsInBlackList_t &_ipBlackListChecker,
                                  quint8 _statisticsInterval,
                                  qint64 _maxUploadSize,
-                                 qint64 _maxUploadedFileSize):
+                                 qint64 _maxUploadedFileSize,
+                                 quint32 _maxCachedItems):
     BasePath(_basePath),
     Version(_version),
     fnIPInBlackList(_ipBlackListChecker),
@@ -188,7 +188,8 @@ RESTServer::stuConfig::stuConfig(const QString &_basePath,
     ListenAddress(_listenAddress),
     IndentedJson(_indentedJson),
     MaxUploadSize(_maxUploadSize),
-    MaxUploadedFileSize(_maxUploadedFileSize)
+    MaxUploadedFileSize(_maxUploadedFileSize),
+    MaxCachedItems(_maxCachedItems)
 {
     if(this->BasePath.endsWith('/') == false)
         this->BasePath+='/';

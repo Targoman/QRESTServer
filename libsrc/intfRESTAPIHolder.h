@@ -1,20 +1,20 @@
 /*******************************************************************************
- * QRESTServer a lean and mean Qt/C++ based REST server                     *
+ * QRESTServer a lean and mean Qt/C++ based REST server                        *
  *                                                                             *
  * Copyright 2018 by Targoman Intelligent Processing Co Pjc.<http://tip.co.ir> *
  *                                                                             *
  *                                                                             *
- * QRESTServer is free software: you can redistribute it and/or modify      *
+ * QRESTServer is free software: you can redistribute it and/or modify         *
  * it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE as published by *
  * the Free Software Foundation, either version 3 of the License, or           *
  * (at your option) any later version.                                         *
  *                                                                             *
- * QRESTServer is distributed in the hope that it will be useful,           *
+ * QRESTServer is distributed in the hope that it will be useful,              *
  * but WITHOUT ANY WARRANTY; without even the implied warranty of              *
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               *
  * GNU AFFERO GENERAL PUBLIC LICENSE for more details.                         *
  * You should have received a copy of the GNU AFFERO GENERAL PUBLIC LICENSE    *
- * along with QRESTServer. If not, see <http://www.gnu.org/licenses/>.      *
+ * along with QRESTServer. If not, see <http://www.gnu.org/licenses/>.         *
  *                                                                             *
  *******************************************************************************/
 /**
@@ -33,7 +33,7 @@
 namespace QHttp {
 /**********************************************************************/
 /**
- * @brief The stuStatistics struct
+ * @brief The stuStatistics struct holds server statistics about APIs
  */
 struct stuStatistics {
     Targoman::Common::clsCountAndSpeed Connections;
@@ -41,8 +41,8 @@ struct stuStatistics {
     Targoman::Common::clsCountAndSpeed Blocked;
     Targoman::Common::clsCountAndSpeed Success;
 
-    QHash<QString, Targoman::Common::clsCountAndSpeed> APICallsStats;
-    QHash<QString, Targoman::Common::clsCountAndSpeed> APICacheStats;
+    QHash<QByteArray, Targoman::Common::clsCountAndSpeed> APICallsStats;
+    QHash<QByteArray, Targoman::Common::clsCountAndSpeed> APICacheStats;
 };
 
 /**********************************************************************/
@@ -80,6 +80,27 @@ struct stuTable{
 #  define CACHEABLE_12H
 #  define CACHEABLE_24H
 #  define CACHEABLE_INF
+#endif
+
+/**
+  * @brief REDISCACHE macros are predefined macros in order to mark each API Redis-based cache TTL. You can add more cache time as you wish while
+  *        following cache definition pattern "\d+(S|M|H)" where last character means S: Seconds, M: Minutes, H: Hours and digits must be between 0 to 16384
+  */
+#ifndef Q_MOC_RUN
+#  define REDISCACHE_1S
+#  define REDISCACHE_3S
+#  define REDISCACHE_5S
+#  define REDISCACHE_10S
+#  define REDISCACHE_30S
+#  define REDISCACHE_1M
+#  define REDISCACHE_5M
+#  define REDISCACHE_10M
+#  define REDISCACHE_1H
+#  define REDISCACHE_3H
+#  define REDISCACHE_6H
+#  define REDISCACHE_12H
+#  define REDISCACHE_24H
+#  define REDISCACHE_INF
 #endif
 
 /**********************************************************************/

@@ -17,7 +17,6 @@
  * along with QRESTServer. If not, see <http://www.gnu.org/licenses/>.         *
  *                                                                             *
  *******************************************************************************/
-
 /**
  * @author S.Mehran M. Ziabary <ziabary@targoman.com>
  */

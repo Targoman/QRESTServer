@@ -35,36 +35,8 @@ namespace Private {
 #define DO_ON_TYPE_PROXY(_type, ...) DO_ON_TYPE_SELECTOR(__VA_ARGS__, DO_ON_TYPE_IGNORED, DO_ON_TYPE_VALID)(_type)
 #define DO_ON_TYPE_IGNORED(_baseType) nullptr
 
-/*#define DO_ON_TYPE_IGNORED(_baseType)   \
-    nullptr, \
-    nullptr,
-*/
-
 #define DO_ON_TYPE_VALID(_baseType)  new tmplAPIArg<_baseType>(TARGOMAN_M2STR(_baseType))
-/*    [](const QVariant& _val, const QByteArray& _paramName, void** _argStorage) -> QGenericArgument{ \
-        if(!_val.canConvert<_baseType>()) \
-            throw exHTTPBadRequest("Invalid value specified for parameter: " + _paramName); \
-        *_argStorage = new _baseType; *((_baseType*)*_argStorage) = _val.value<_baseType>(); \
-        return Q_ARG(_baseType, *((_baseType*)*_argStorage)); \
-    }, \
-    [](const clsAPIObject* _apiObject, const QVariantList& _arguments){ \
-       _baseType Result; \
-       _apiObject->invokeMethod(_arguments,Q_RETURN_ARG(_baseType, Result)); \
-       return QVariant::fromValue(Result); \
-    },\
-    [](void* _argStorage){ \
-        delete ((_baseType*)_argStorage); \
-    },
-*/
-
-/*#define MAKE_INFO_FOR_VALID_METATYPE(_typeName, _id, _baseType) { _id, { \
-    DO_ON_TYPE(_typeName, _baseType) \
-    TARGOMAN_M2STR(_typeName), \
-}}*/
-
 #define MAKE_INFO_FOR_VALID_METATYPE(_typeName, _id, _baseType) { _id, { DO_ON_TYPE(_typeName, _baseType) }},
-
-//#define MAKE_INVALID_METATYPE(_typeName, _id, _baseType) { _id, { nullptr, nullptr, "" }},
 #define MAKE_INVALID_METATYPE(_typeName, _id, _baseType) { _id, { nullptr }},
 
 #define IGNORE_TYPE_Void ,
@@ -100,25 +72,20 @@ const QMap<int, intfAPIArgManipulator*> MetaTypeInfoMap = {
     QT_FOR_EACH_STATIC_WIDGETS_CLASS(MAKE_INVALID_METATYPE)
 };
 
-//QList<stuMetaTypeInfo> gOrderedMetaTypeInfo;
 QList<intfAPIArgManipulator*> gOrderedMetaTypeInfo;
+QMap<int, intfAPIArgManipulator*> gUserDefinedTypesInfoMap;
 
 /***********************************************************************************************/
 void RESTAPIRegistry::registerRESTAPI(intfRESTAPIHolder* _module, const QMetaMethod& _method){
     if(gOrderedMetaTypeInfo.isEmpty()){
-        gOrderedMetaTypeInfo.reserve(MetaTypeInfoMap.lastKey());
+        gOrderedMetaTypeInfo.reserve(qMax(gUserDefinedTypesInfoMap.lastKey(), MetaTypeInfoMap.lastKey()));
+
         for(auto MetaTypeInfoMapIter = MetaTypeInfoMap.begin();
             MetaTypeInfoMapIter != MetaTypeInfoMap.end();
             ++MetaTypeInfoMapIter){
             for(int i = 0; i< MetaTypeInfoMapIter.key() - gOrderedMetaTypeInfo.size(); ++i)
-                gOrderedMetaTypeInfo.append(nullptr/*stuMetaTypeInfo()*/);
+                gOrderedMetaTypeInfo.append(nullptr);
             gOrderedMetaTypeInfo.append(MetaTypeInfoMapIter.value());
-/*            gOrderedMetaTypeInfo.last().PrettyName =
-                    gOrderedMetaTypeInfo.last().invokeMethod == nullptr ?
-                        "" : (
-                        gOrderedMetaTypeInfo.last().PrettyName.startsWith('Q') ?
-                                gOrderedMetaTypeInfo.last().PrettyName.mid(1) :
-                                gOrderedMetaTypeInfo.last().PrettyName).toLower();*/
         }
     }
     if ((_method.name().startsWith("api") == false &&
@@ -197,8 +164,14 @@ QStringList RESTAPIRegistry::registeredAPIs(const QString &_module, bool _showPa
 QString RESTAPIRegistry::isValidType(int _typeID){
     if(_typeID == 0 || _typeID == QMetaType::User)
         return  "is not registered with Qt MetaTypes";
-    if(_typeID < 1024 && _typeID >= gOrderedMetaTypeInfo.size())
+    if(_typeID < 1024 && (_typeID >= gOrderedMetaTypeInfo.size() || gOrderedMetaTypeInfo.at(_typeID) == nullptr))
         return "is complex type and not supported";
+
+    if(_typeID > 1024 &&
+        (_typeID - 1025 >= gUserDefinedTypesInfo.size() ||
+         gUserDefinedTypesInfo.at(_typeID - 1025) == nullptr ||
+         strcmp(gUserDefinedTypesInfo.at(_typeID - 1025)->RealTypeName, QMetaType::typeName(_typeID))))
+        return "is user defined but not registered";
     return "";
 }
 

@@ -139,8 +139,11 @@ QStringList RESTServer::registeredAPIs(bool _showParams, bool _showTypes, bool _
 intfRESTAPIHolder::intfRESTAPIHolder(Targoman::Common::Configuration::intfModule *_parent) :
     Targoman::Common::Configuration::intfModule(_parent)
 {
-    qRegisterMetaType<QHttp::stuTable>();
-    qRegisterMetaType<QHttp::stuStatistics>();
+
+    QHTTP_REGISTER_METATYPE(QHttp::stuTable);
+    //QHTTP_REGISTER_METATYPE(QHttp::stuStatistics);
+
+    int a= 2;
 }
 
 void intfRESTAPIHolder::registerMyRESTAPIs(){

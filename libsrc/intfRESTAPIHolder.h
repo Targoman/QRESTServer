@@ -54,6 +54,10 @@ public:
     virtual void cleanup (void* _argStorage);
 };
 
+#define QHTTP_REGISTER_METATYPE(_type) \
+    qRegisterMetaType<_type>(); \
+    gUserDefinedTypesInfoMap.insert(QMetaType::type(TARGOMAN_M2STR(_type)), new tmplAPIArg<_type>(TARGOMAN_M2STR(_type)))
+/**********************************************************************/
 /**
  * @brief The stuStatistics struct
  */
@@ -74,6 +78,8 @@ struct stuTable{
     qint64 TotalCount;
     QVariantMap Items;
 };
+
+/** @TODO document QT_NO_CAST_FROM_ASCII */
 
 /**
   * @brief CACHEABLE macros are predefined macros in order to mark each API cache TTL. You can add more cache time as you wish while
@@ -156,10 +162,33 @@ inline QGenericArgument tmplAPIArg<_itmplType>::makeGenericArgument(const QVaria
     return QGenericArgument(this->RealTypeName, *_argStorage);
 }
 
+#define QHTTP_SPECIAL_MAKE_GENERIC_ON_NUMERIC_TYPE(_numericType, _convertor) \
+template<> inline QGenericArgument tmplAPIArg<_numericType>::makeGenericArgument(const QVariant& _val, const QByteArray& _paramName, void** _argStorage){ \
+    bool Result; *_argStorage = new _numericType; *((_numericType*)*_argStorage) = _val._convertor(&Result); \
+    if(!Result) throw exHTTPBadRequest("Invalid value specified for parameter: " + _paramName); \
+    return QGenericArgument(this->RealTypeName, *_argStorage); \
+}
+
+QHTTP_SPECIAL_MAKE_GENERIC_ON_NUMERIC_TYPE(quint8, toUInt)
+QHTTP_SPECIAL_MAKE_GENERIC_ON_NUMERIC_TYPE(quint16, toUInt)
+QHTTP_SPECIAL_MAKE_GENERIC_ON_NUMERIC_TYPE(quint32, toUInt)
+QHTTP_SPECIAL_MAKE_GENERIC_ON_NUMERIC_TYPE(quint64, toULongLong)
+QHTTP_SPECIAL_MAKE_GENERIC_ON_NUMERIC_TYPE(qint8, toInt)
+QHTTP_SPECIAL_MAKE_GENERIC_ON_NUMERIC_TYPE(qint16, toInt)
+QHTTP_SPECIAL_MAKE_GENERIC_ON_NUMERIC_TYPE(qint32, toInt)
+QHTTP_SPECIAL_MAKE_GENERIC_ON_NUMERIC_TYPE(qint64, toLongLong)
+QHTTP_SPECIAL_MAKE_GENERIC_ON_NUMERIC_TYPE(qreal, toDouble)
+QHTTP_SPECIAL_MAKE_GENERIC_ON_NUMERIC_TYPE(float, toFloat)
+
 template<typename _itmplType>
 inline QVariant tmplAPIArg<_itmplType>::invokeMethod(const Private::clsAPIObject* _apiObject, const QVariantList& _arguments){
    _itmplType Result;
-   _apiObject->invokeMethod(_arguments,Q_RETURN_ARG(_itmplType, Result));
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wall"
+   _apiObject->invokeMethod(_arguments,QReturnArgument<_itmplType >(this->RealTypeName, Result));
+#pragma GCC diagnostic pop
+
    return QVariant::fromValue(Result);
 }
 

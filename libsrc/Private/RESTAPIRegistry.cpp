@@ -60,6 +60,7 @@ namespace Private {
 #define IGNORE_TYPE_QPersistentModelIndex ,
 #define IGNORE_TYPE_QPersistentModelIndex ,
 #define IGNORE_TYPE_Nullptr ,
+#define IGNORE_TYPE_QVariantHash ,
 #define IGNORE_TYPE_QByteArrayList ,
 
 const QMap<int, intfAPIArgManipulator*> MetaTypeInfoMap = {
@@ -73,12 +74,12 @@ const QMap<int, intfAPIArgManipulator*> MetaTypeInfoMap = {
 };
 
 QList<intfAPIArgManipulator*> gOrderedMetaTypeInfo;
-QMap<int, intfAPIArgManipulator*> gUserDefinedTypesInfoMap;
+QList<intfAPIArgManipulator*> gUserDefinedTypesInfo;
 
 /***********************************************************************************************/
 void RESTAPIRegistry::registerRESTAPI(intfRESTAPIHolder* _module, const QMetaMethod& _method){
     if(gOrderedMetaTypeInfo.isEmpty()){
-        gOrderedMetaTypeInfo.reserve(qMax(gUserDefinedTypesInfoMap.lastKey(), MetaTypeInfoMap.lastKey()));
+        gOrderedMetaTypeInfo.reserve(MetaTypeInfoMap.lastKey());
 
         for(auto MetaTypeInfoMapIter = MetaTypeInfoMap.begin();
             MetaTypeInfoMapIter != MetaTypeInfoMap.end();
@@ -101,15 +102,15 @@ void RESTAPIRegistry::registerRESTAPI(intfRESTAPIHolder* _module, const QMetaMet
         if(MethodName.startsWith("GET"))
             RESTAPIRegistry::addRegistryEntry(_module, _method, "GET", MethodName.at(3).toLower() + MethodName.mid(4));
         else if(MethodName.startsWith("POST"))
-            RESTAPIRegistry::addRegistryEntry(_module, _method, "POST", MethodName.at(3).toLower() + MethodName.mid(4));
+            RESTAPIRegistry::addRegistryEntry(_module, _method, "POST", MethodName.at(4).toLower() + MethodName.mid(5));
         else if(MethodName.startsWith("PUT"))
             RESTAPIRegistry::addRegistryEntry(_module, _method, "PUT", MethodName.at(3).toLower() + MethodName.mid(4));
         else if(MethodName.startsWith("PATCH"))
-            RESTAPIRegistry::addRegistryEntry(_module, _method, "PATCH", MethodName.at(3).toLower() + MethodName.mid(4));
+            RESTAPIRegistry::addRegistryEntry(_module, _method, "PATCH", MethodName.at(5).toLower() + MethodName.mid(6));
         else if (MethodName.startsWith("DELETE"))
             RESTAPIRegistry::addRegistryEntry(_module, _method, "DELETE", MethodName.at(6).toLower() + MethodName.mid(7));
         else if (MethodName.startsWith("UPDATE"))
-            addRegistryEntry(_module, _method, "UPDATE", MethodName.at(6).toLower() + MethodName.mid(7));
+            RESTAPIRegistry::addRegistryEntry(_module, _method, "PATCH", MethodName.at(6).toLower() + MethodName.mid(7));
         else{
             RESTAPIRegistry::addRegistryEntry(_module, _method, "GET", MethodName.at(0).toLower() + MethodName.mid(1));
             RESTAPIRegistry::addRegistryEntry(_module, _method, "POST", MethodName.at(0).toLower() + MethodName.mid(1));
@@ -162,15 +163,15 @@ QStringList RESTAPIRegistry::registeredAPIs(const QString &_module, bool _showPa
 }
 
 QString RESTAPIRegistry::isValidType(int _typeID){
-    if(_typeID == 0 || _typeID == QMetaType::User)
+    if(_typeID == 0 || _typeID == QMetaType::User || _typeID == 1025)
         return  "is not registered with Qt MetaTypes";
-    if(_typeID < 1024 && (_typeID >= gOrderedMetaTypeInfo.size() || gOrderedMetaTypeInfo.at(_typeID) == nullptr))
+    if(_typeID < QHTTP_BASE_USER_DEFINED_TYPEID && (_typeID >= gOrderedMetaTypeInfo.size() || gOrderedMetaTypeInfo.at(_typeID) == nullptr))
         return "is complex type and not supported";
 
-    if(_typeID > 1024 &&
-        (_typeID - 1025 >= gUserDefinedTypesInfo.size() ||
-         gUserDefinedTypesInfo.at(_typeID - 1025) == nullptr ||
-         strcmp(gUserDefinedTypesInfo.at(_typeID - 1025)->RealTypeName, QMetaType::typeName(_typeID))))
+    if(_typeID >= QHTTP_BASE_USER_DEFINED_TYPEID &&
+        (_typeID - QHTTP_BASE_USER_DEFINED_TYPEID >= gUserDefinedTypesInfo.size() ||
+         gUserDefinedTypesInfo.at(_typeID - QHTTP_BASE_USER_DEFINED_TYPEID) == nullptr ||
+         strcmp(gUserDefinedTypesInfo.at(_typeID - QHTTP_BASE_USER_DEFINED_TYPEID)->RealTypeName, QMetaType::typeName(_typeID))))
         return "is user defined but not registered";
     return "";
 }

@@ -40,6 +40,7 @@ public:
     virtual QGenericArgument makeGenericArgument(const QVariant& _val, const QByteArray& _paramName, void** _argStorage) = 0;
     virtual QVariant invokeMethod(const Private::clsAPIObject* _apiObject, const QVariantList& _arguments) = 0;
     virtual void cleanup (void* _argStorage) = 0;
+    virtual QJsonValue toJsonValue(const QVariant& _value) = 0;
 
     QString     PrettyTypeName;
     char*       RealTypeName;
@@ -52,11 +53,17 @@ public:
     virtual QGenericArgument makeGenericArgument(const QVariant& _val, const QByteArray& _paramName, void** _argStorage);
     virtual QVariant invokeMethod(const Private::clsAPIObject* _apiObject, const QVariantList& _arguments);
     virtual void cleanup (void* _argStorage);
+    virtual QJsonValue toJsonValue(const QVariant& _value){QJsonValue::fromVariant(_value);}
 };
 
+/*#define QHTTP_DECLARE_METATYPE(_type, _lambdaToJsonValue) \
+    Q_DECLARE_METATYPE(_type) \
+    template<> inline QJsonValue tmplAPIArg<_type>::toJsonValue(const QVariant& _value) {return  _lambdaToJsonValue(_value); } \
+*/
 #define QHTTP_REGISTER_METATYPE(_type) \
     qRegisterMetaType<_type>(); \
-    gUserDefinedTypesInfoMap.insert(QMetaType::type(TARGOMAN_M2STR(_type)), new tmplAPIArg<_type>(TARGOMAN_M2STR(_type)))
+    gUserDefinedTypesInfo.insert(QMetaType::type(TARGOMAN_M2STR(_type)) - 1025, new tmplAPIArg<_type>(TARGOMAN_M2STR(_type)))
+
 /**********************************************************************/
 /**
  * @brief The stuStatistics struct
@@ -75,8 +82,12 @@ struct stuStatistics {
  * @brief The stuTable struct
  */
 struct stuTable{
-    qint64 TotalCount;
-    QVariantMap Items;
+    qint64 TotalRows;
+    QVariantMap Rows;
+    stuTable(qint64 _totalRows = -1, const QVariantMap& _rows = QVariantMap()):
+        TotalRows(_totalRows),
+        Rows(_rows)
+    {}
 };
 
 /** @TODO document QT_NO_CAST_FROM_ASCII */
@@ -200,7 +211,7 @@ void tmplAPIArg<_itmplType>::cleanup (void* _argStorage){
 }
 
 Q_DECLARE_METATYPE(QHttp::stuTable)
-Q_DECLARE_METATYPE(QHttp::stuStatistics)
+//Q_DECLARE_METATYPE(QHttp::stuStatistics)
 
 
 

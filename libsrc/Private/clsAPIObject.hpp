@@ -80,7 +80,7 @@ public:
             foreach (const QString& Arg, _args){
                 if(Arg.startsWith(this->ParamNames.at(i)+ '=')){
                     ParamNotFound = false;
-                    ArgumentValue = parseArgValue(this->ParamNames.at(i), Arg.mid(Arg.indexOf('=')));
+                    ArgumentValue = parseArgValue(this->ParamNames.at(i), Arg.mid(Arg.indexOf('=') + 1));
                     break;
                 }
             }
@@ -107,8 +107,11 @@ public:
                 FirstArgumentWithValue = i;
             LastArgumentWithValue = i;
 
-            if(this->BaseMethod.parameterType(i) > 1024){
-                //TODO handle user defined types
+            if(this->BaseMethod.parameterType(i) >= QHTTP_BASE_USER_DEFINED_TYPEID){
+                Q_ASSERT(this->BaseMethod.parameterType(i) - QHTTP_BASE_USER_DEFINED_TYPEID < gOrderedMetaTypeInfo.size());
+                Q_ASSERT(gUserDefinedTypesInfo.at(this->BaseMethod.parameterType(i) - QHTTP_BASE_USER_DEFINED_TYPEID) != nullptr);
+
+                Arguments.append(ArgumentValue);
             }else{
                 Q_ASSERT(this->BaseMethod.parameterType(i) < gOrderedMetaTypeInfo.size());
                 Q_ASSERT(gOrderedMetaTypeInfo.at(this->BaseMethod.parameterType(i)) != nullptr);
@@ -122,9 +125,11 @@ public:
         else if (LastArgumentWithValue < Arguments.size() - 1)
             Arguments = Arguments.mid(0, LastArgumentWithValue + 1);
 
-        if(this->BaseMethod.returnType() > 1024){
-            //TODO handle user defined types
-            throw Targoman::Common::exTargomanMustBeImplemented();
+        if(this->BaseMethod.returnType() >= QHTTP_BASE_USER_DEFINED_TYPEID){
+            Q_ASSERT(this->BaseMethod.returnType() - QHTTP_BASE_USER_DEFINED_TYPEID < gOrderedMetaTypeInfo.size());
+            Q_ASSERT(gUserDefinedTypesInfo.at(this->BaseMethod.returnType() - QHTTP_BASE_USER_DEFINED_TYPEID) != nullptr);
+
+            return gUserDefinedTypesInfo.at(this->BaseMethod.returnType() - QHTTP_BASE_USER_DEFINED_TYPEID)->invokeMethod(this, Arguments);
         }else{
             Q_ASSERT(this->BaseMethod.returnType() < gOrderedMetaTypeInfo.size());
             Q_ASSERT(gOrderedMetaTypeInfo.at(this->BaseMethod.returnType()) != nullptr);

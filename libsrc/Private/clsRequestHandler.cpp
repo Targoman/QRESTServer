@@ -47,8 +47,6 @@ clsRequestHandler::clsRequestHandler(QHttpRequest *_req, QHttpResponse *_res, QO
     Response(_res)
 {}
 
-
-
 void clsRequestHandler::process(const QString& _api) {
     this->Request->onData([this](QByteArray _data){
         try{
@@ -206,7 +204,6 @@ void clsRequestHandler::findAndCallAPI(const QString &_api)
 
     QStringList Queries = this->Request->url().query().split('&', QString::SkipEmptyParts);
     this->sendResponse(StatusCodeOnMethod[this->Request->method()], APIObject->invoke(Queries, this->Request->userDefinedValues()));
-
 }
 
 void clsRequestHandler::sendError(qhttp::TStatusCode _code, const QString &_message, bool _closeConnection)
@@ -226,7 +223,7 @@ void clsRequestHandler::sendError(qhttp::TStatusCode _code, const QString &_mess
 
 void clsRequestHandler::sendResponse(qhttp::TStatusCode _code, QVariant _response)
 {
-    QByteArray Data = QJsonDocument(QJsonObject({ {"data", QJsonValue::fromVariant(_response) } })).toJson(gConfigs.Public.IndentedJson ? QJsonDocument::Indented : QJsonDocument::Compact);
+    QByteArray Data = QJsonDocument(QJsonObject({{"result", QJsonValue::fromVariant(_response) }})).toJson(gConfigs.Public.IndentedJson ? QJsonDocument::Indented : QJsonDocument::Compact);
 
     this->Response->setStatusCode(_code);
     this->Response->addHeaderValue("content-length", Data.length());

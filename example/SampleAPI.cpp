@@ -55,16 +55,27 @@ int SampleAPI::apiDELETESampleData(quint64 _id)
     return 3;
 }
 
-int SampleAPI::apiUPDATESampleData(quint64 _id, const QString& _info)
+QVariantList SampleAPI::apiUPDATESampleData(quint64 _id, const QString& _info)
 {
     TargomanDebug(1, "Called: " <<__FUNCTION__<<" Params: ("<<_id<<","<<_info<<")");
-    return 2;
+    return QVariantList({{1},{"sdjkfh"}});
 }
 
 stuTable SampleAPI::apiTranslate(const QString &_text, bool _detailed)
 {
     TargomanDebug(1, "Called: " <<__FUNCTION__<<" Params: ("<<_text<<","<<_detailed<<")");
     return stuTable();
+}
+
+QVariantMap SampleAPI::apiVariant()
+{
+    TargomanDebug(1, "Called: " <<__FUNCTION__<<" Params: ()");
+
+    QVariantMap A = {
+        {"aaa", "ee"}
+    };
+
+    return A;
 }
 
 }

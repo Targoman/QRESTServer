@@ -39,8 +39,9 @@ private slots:
     int apiDELETESampleData(quint64 _id = 5);
     QVariantList apiUPDATESampleData(quint64 _id, const QString &_info = "dfdsf");
 
+
     QHttp::stuTable apiTranslate(const QString& _text, bool _info = ",");
-    QVariantMap apiVariant();
+    QHttp::stuTable apiSampleList(const QVariantList& _list);
 
 private:
     SampleAPI();

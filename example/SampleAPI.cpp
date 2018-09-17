@@ -67,15 +67,11 @@ stuTable SampleAPI::apiTranslate(const QString &_text, bool _detailed)
     return stuTable();
 }
 
-QVariantMap SampleAPI::apiVariant()
+
+stuTable SampleAPI::apiSampleList(const QVariantList &_list)
 {
-    TargomanDebug(1, "Called: " <<__FUNCTION__<<" Params: ()");
-
-    QVariantMap A = {
-        {"aaa", "ee"}
-    };
-
-    return A;
+    return stuTable(_list   .size(), {{"data", _list}});
 }
+
 
 }

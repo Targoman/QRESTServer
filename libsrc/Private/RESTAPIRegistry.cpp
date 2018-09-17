@@ -35,7 +35,7 @@ namespace Private {
 #define DO_ON_TYPE_PROXY(_type, ...) DO_ON_TYPE_SELECTOR(__VA_ARGS__, DO_ON_TYPE_IGNORED, DO_ON_TYPE_VALID)(_type)
 #define DO_ON_TYPE_IGNORED(_baseType) nullptr
 
-#define DO_ON_TYPE_VALID(_baseType)  new tmplAPIArg<_baseType>(TARGOMAN_M2STR(_baseType), nullptr)
+#define DO_ON_TYPE_VALID(_baseType)  new tmplAPIArg<_baseType>(TARGOMAN_M2STR(_baseType))
 #define MAKE_INFO_FOR_VALID_METATYPE(_typeName, _id, _baseType) { _id, { DO_ON_TYPE(_typeName, _baseType) }},
 #define MAKE_INVALID_METATYPE(_typeName, _id, _baseType) { _id, { nullptr }},
 
@@ -162,17 +162,26 @@ QStringList RESTAPIRegistry::registeredAPIs(const QString &_module, bool _showPa
     return Methods.values();
 }
 
-QString RESTAPIRegistry::isValidType(int _typeID){
+QString RESTAPIRegistry::isValidType(int _typeID, bool _validate4Input){
     if(_typeID == 0 || _typeID == QMetaType::User || _typeID == 1025)
         return  "is not registered with Qt MetaTypes";
     if(_typeID < QHTTP_BASE_USER_DEFINED_TYPEID && (_typeID >= gOrderedMetaTypeInfo.size() || gOrderedMetaTypeInfo.at(_typeID) == nullptr))
         return "is complex type and not supported";
 
-    if(_typeID >= QHTTP_BASE_USER_DEFINED_TYPEID &&
-        (_typeID - QHTTP_BASE_USER_DEFINED_TYPEID >= gUserDefinedTypesInfo.size() ||
-         gUserDefinedTypesInfo.at(_typeID - QHTTP_BASE_USER_DEFINED_TYPEID) == nullptr ||
-         strcmp(gUserDefinedTypesInfo.at(_typeID - QHTTP_BASE_USER_DEFINED_TYPEID)->RealTypeName, QMetaType::typeName(_typeID))))
-        return "is user defined but not registered";
+    if(_typeID >= QHTTP_BASE_USER_DEFINED_TYPEID){
+        if((_typeID - QHTTP_BASE_USER_DEFINED_TYPEID >= gUserDefinedTypesInfo.size() ||
+            gUserDefinedTypesInfo.at(_typeID - QHTTP_BASE_USER_DEFINED_TYPEID) == nullptr ||
+            strcmp(gUserDefinedTypesInfo.at(_typeID - QHTTP_BASE_USER_DEFINED_TYPEID)->RealTypeName, QMetaType::typeName(_typeID))))
+            return "is user defined but not registered";
+
+        if(_validate4Input){
+            if(!gUserDefinedTypesInfo.at(_typeID - QHTTP_BASE_USER_DEFINED_TYPEID)->hasFromVariantMethod())
+                return "has no fromVariant lambda so can not be used as input";
+        }else{
+            if(!gUserDefinedTypesInfo.at(_typeID - QHTTP_BASE_USER_DEFINED_TYPEID)->hasToVariantMethod())
+                return "has no toVariant lambda so can not be used as output";
+        }
+    }
     return "";
 }
 
@@ -181,13 +190,13 @@ void RESTAPIRegistry::validateMethodInputAndOutput(const QMetaMethod &_method){
         throw exRESTRegistry("Unable to register methods with more than 9 input args");
 
     QString ErrMessage;
-    if ((ErrMessage = RESTAPIRegistry::isValidType(_method.returnType())).size())
+    if ((ErrMessage = RESTAPIRegistry::isValidType(_method.returnType(), false)).size())
         throw exRESTRegistry(QString("Invalid return type(%1): %2").arg(_method.typeName()).arg(ErrMessage));
 
     ErrMessage.clear();
 
     for(int i=0; i<_method.parameterCount(); ++i){
-        if ((ErrMessage = RESTAPIRegistry::isValidType(_method.returnType())).size())
+        if ((ErrMessage = RESTAPIRegistry::isValidType(_method.parameterType(i), true)).size())
             throw exRESTRegistry(QString("Invalid parameter (%1 %2): %3").arg(
                                      _method.parameterTypes().at(i).constData()).arg(
                                      _method.parameterNames().at(i).constData()).arg(
@@ -230,9 +239,11 @@ void RESTAPIRegistry::addRegistryEntry(intfRESTAPIHolder *_module, const QMetaMe
 
     QString MethodKey = RESTAPIRegistry::makeRESTAPIKey(_httpMethod, "/" + _module->moduleFullName().replace("::", "/")+ '/' + _methodName);
 
-    if(RESTAPIRegistry::Registry.contains(MethodKey))
+    if(RESTAPIRegistry::Registry.contains(MethodKey)){
+        if(RESTAPIRegistry::Registry.value(MethodKey)->isPolymorphic(_method))
+            throw exRESTRegistry(QString("Polymorphism is not supported: %1").arg(_method.methodSignature().constData()));
         RESTAPIRegistry::Registry.value(MethodKey)->updateDefaultValues(_method);
-    else
+    }else
         RESTAPIRegistry::Registry.insert(MethodKey,
                                          new clsAPIObject(_module,
                                                           _method,

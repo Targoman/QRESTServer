@@ -64,13 +64,13 @@ public:
             bool ParamNotFound = true;
             QVariant ArgumentValue;
 
-            static auto parseArgValue = [this, ArgumentValue](const QString& _paramNamne, const QString& _value) -> QVariant {
+            static auto parseArgValue = [this, ArgumentValue](const QString& _paramName, const QString& _value) -> QVariant {
                 if((_value.startsWith('[') && _value.endsWith(']')) ||
                    (_value.startsWith('{') && _value.endsWith('}'))){
                     QJsonParseError Error;
                     QJsonDocument JSON = QJsonDocument::fromJson(_value.toUtf8(), &Error);
                     if(JSON.isNull())
-                        throw exHTTPBadRequest(QString("Invalid value for %1: %2").arg(_paramNamne).arg(Error.errorString()));
+                        throw exHTTPBadRequest(QString("Invalid value for %1: %2").arg(_paramName).arg(Error.errorString()));
                     return JSON.toVariant();
                 }else{
                     return _value;
@@ -80,7 +80,7 @@ public:
             foreach (const QString& Arg, _args){
                 if(Arg.startsWith(this->ParamNames.at(i)+ '=')){
                     ParamNotFound = false;
-                    ArgumentValue = parseArgValue(this->ParamNames.at(i), Arg.mid(Arg.indexOf('=') + 1));
+                    ArgumentValue = parseArgValue(this->ParamNames.at(i), QUrl::fromPercentEncoding(Arg.mid(Arg.indexOf('=') + 1).toUtf8()));
                     break;
                 }
             }
@@ -111,12 +111,13 @@ public:
                 Q_ASSERT(this->BaseMethod.parameterType(i) - QHTTP_BASE_USER_DEFINED_TYPEID < gOrderedMetaTypeInfo.size());
                 Q_ASSERT(gUserDefinedTypesInfo.at(this->BaseMethod.parameterType(i) - QHTTP_BASE_USER_DEFINED_TYPEID) != nullptr);
 
-                Arguments.append(ArgumentValue);
+                Arguments.push_back(
+                            ArgumentValue);
             }else{
                 Q_ASSERT(this->BaseMethod.parameterType(i) < gOrderedMetaTypeInfo.size());
                 Q_ASSERT(gOrderedMetaTypeInfo.at(this->BaseMethod.parameterType(i)) != nullptr);
 
-                Arguments.append(ArgumentValue);
+                Arguments.push_back(ArgumentValue);
             }
         }
 
@@ -138,8 +139,15 @@ public:
         }
     }
 
-#define MAKE_ARG_AT(_i) gOrderedMetaTypeInfo.at(this->BaseMethod.parameterType(_i))->makeGenericArgument(_arguments.at(_i), this->ParamNames.at(_i), &ArgStorage[_i])
-#define CLEAN_ARG_AT(_i) gOrderedMetaTypeInfo.at(this->BaseMethod.parameterType(_i))->cleanup(ArgStorage[_i])
+#define MAKE_ARG_AT(_i) \
+    InvokableMethod.parameterType(_i) < QHTTP_BASE_USER_DEFINED_TYPEID ? \
+    gOrderedMetaTypeInfo.at(InvokableMethod.parameterType(_i))->makeGenericArgument(_arguments.at(_i), this->ParamNames.at(_i), &ArgStorage[_i]) : \
+    gUserDefinedTypesInfo.at(InvokableMethod.parameterType(_i) - QHTTP_BASE_USER_DEFINED_TYPEID)->makeGenericArgument(_arguments.at(_i), this->ParamNames.at(_i), &ArgStorage[_i])
+
+#define CLEAN_ARG_AT(_i) \
+    InvokableMethod.parameterType(_i) < QHTTP_BASE_USER_DEFINED_TYPEID ? \
+    gOrderedMetaTypeInfo.at(InvokableMethod.parameterType(_i))->cleanup(ArgStorage[_i]) : \
+    gUserDefinedTypesInfo.at(InvokableMethod.parameterType(_i) - QHTTP_BASE_USER_DEFINED_TYPEID)->cleanup(ArgStorage[_i])
 
     void invokeMethod(const QVariantList& _arguments, QGenericReturnArgument _returnArg) const{
         bool InvocationResult= true;
@@ -194,8 +202,17 @@ public:
         }
     }
 
+    bool isPolymorphic(const QMetaMethod& _method){
+        if(_method.parameterCount() == 0)
+            return false;
+        for(int i=0; i< qMin(_method.parameterCount(), this->BaseMethod.parameterCount()); ++i)
+            if(this->BaseMethod.parameterType(i) != _method.parameterType(i))
+                return true;
+        return false;
+    }
+
 private:
-    void updateDefaultValues(QMetaMethod _method){
+    void updateDefaultValues(const QMetaMethod& _method){
         if(_method.parameterNames().size() < this->RequiredParamsCount){
             this->RequiredParamsCount = _method.parameterNames().size();
             this->LessArgumentMethods.append(_method);

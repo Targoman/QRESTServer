@@ -51,7 +51,7 @@ public:
     static QStringList registeredAPIs(const QString &_module, bool _showParams = false, bool _showTypes = false, bool _prettifyTypes = true);
 
 private:
-    static inline QString isValidType(int _typeID);
+    static inline QString isValidType(int _typeID, bool _validate4Input);
     static void validateMethodInputAndOutput(const QMetaMethod& _method);
     static void addRegistryEntry(intfRESTAPIHolder* _module, const QMetaMethod& _method, const QString& _httpMethod, const QString& _methodName);
 

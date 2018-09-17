@@ -74,5 +74,6 @@ build_static {
 HEADERS += $$DIST_HEADERS \
            $$PRIVATE_HEADERS \
            $$SUBMODULE_HEADERS \
+    intfAPIArgManipulator.h
 
 include($$PRJDIR/qmake/install.pri)

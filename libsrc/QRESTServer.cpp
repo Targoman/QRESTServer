@@ -139,10 +139,13 @@ QStringList RESTServer::registeredAPIs(bool _showParams, bool _showTypes, bool _
 intfRESTAPIHolder::intfRESTAPIHolder(Targoman::Common::Configuration::intfModule *_parent) :
     Targoman::Common::Configuration::intfModule(_parent)
 {
-
-    QHTTP_REGISTER_METATYPE(QHttp::stuTable, [](const QHttp::stuTable& _value) -> QVariant{
-        return QVariantMap({{"totalRows", _value.TotalRows}, {"Rows", _value.Rows}});
-    });
+    QHTTP_REGISTER_METATYPE(
+        QHttp::stuTable,
+                [](const QHttp::stuTable& _value) -> QVariant{
+                    return QVariantMap({{"totalRows", _value.TotalRows}, {"Rows", _value.Rows}});
+                },
+                nullptr
+    );
 
 
     //QHTTP_REGISTER_METATYPE(QHttp::stuStatistics);

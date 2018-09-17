@@ -35,7 +35,7 @@ namespace Private {
 #define DO_ON_TYPE_PROXY(_type, ...) DO_ON_TYPE_SELECTOR(__VA_ARGS__, DO_ON_TYPE_IGNORED, DO_ON_TYPE_VALID)(_type)
 #define DO_ON_TYPE_IGNORED(_baseType) nullptr
 
-#define DO_ON_TYPE_VALID(_baseType)  new tmplAPIArg<_baseType>(TARGOMAN_M2STR(_baseType))
+#define DO_ON_TYPE_VALID(_baseType)  new tmplAPIArg<_baseType>(TARGOMAN_M2STR(_baseType), nullptr)
 #define MAKE_INFO_FOR_VALID_METATYPE(_typeName, _id, _baseType) { _id, { DO_ON_TYPE(_typeName, _baseType) }},
 #define MAKE_INVALID_METATYPE(_typeName, _id, _baseType) { _id, { nullptr }},
 

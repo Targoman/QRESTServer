@@ -35,7 +35,7 @@
 namespace QHttp {
 namespace Private {
 
-class clsAPIObject : public QObject
+class clsAPIObject : public intfAPIObject, public QObject
 {
 public:
     clsAPIObject(intfRESTAPIHolder* _module, QMetaMethod _method, bool _async, qint32 _cache4) :

@@ -140,18 +140,12 @@ intfRESTAPIHolder::intfRESTAPIHolder(Targoman::Common::Configuration::intfModule
     Targoman::Common::Configuration::intfModule(_parent)
 {
 
-    QHTTP_REGISTER_METATYPE(QHttp::stuTable);
-    QMetaType::registerConverter<QHttp::stuTable,QVariant>( [](const QHttp::stuTable& _value) -> QVariant{
+    QHTTP_REGISTER_METATYPE(QHttp::stuTable, [](const QHttp::stuTable& _value) -> QVariant{
         return QVariantMap({{"totalRows", _value.TotalRows}, {"Rows", _value.Rows}});
     });
 
-    QMetaType::registerConverter<QString, QHttp::stuTable>( [](const QString& _value) {
-        return stuTable();
-    });
 
     //QHTTP_REGISTER_METATYPE(QHttp::stuStatistics);
-
-    int a= 2;
 }
 
 void intfRESTAPIHolder::registerMyRESTAPIs(){

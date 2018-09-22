@@ -38,7 +38,8 @@ SOURCES += \
     libID.cpp \
     Private/clsRequestHandler.cpp \
     Private/RESTAPIRegistry.cpp \
-    QRESTServer.cpp
+    QRESTServer.cpp \
+    Private/clsRedisConnector.cpp
 
 # +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-#
 OTHER_FILES += \
@@ -75,6 +76,8 @@ HEADERS += $$DIST_HEADERS \
            $$PRIVATE_HEADERS \
            $$SUBMODULE_HEADERS \
     Private/intfAPIArgManipulator.h \
-    Private/APICache.hpp
+    Private/APICache.hpp \
+    Private/intfCacheConnector.hpp \
+    Private/clsRedisConnector.h
 
 include($$PRJDIR/qmake/install.pri)

@@ -145,9 +145,6 @@ intfRESTAPIHolder::intfRESTAPIHolder(Targoman::Common::Configuration::intfModule
                 },
                 nullptr
     );
-
-
-    //QHTTP_REGISTER_METATYPE(QHttp::stuStatistics);
 }
 
 void intfRESTAPIHolder::registerMyRESTAPIs(){
@@ -176,6 +173,7 @@ RESTServer::stuConfig::stuConfig(const QString &_basePath,
                                  bool _indentedJson,
                                  const QHostAddress &_listenAddress,
                                  const fnIsInBlackList_t &_ipBlackListChecker,
+                                 const QString &_cacheConnector,
                                  quint8 _statisticsInterval,
                                  qint64 _maxUploadSize,
                                  qint64 _maxUploadedFileSize,
@@ -193,6 +191,16 @@ RESTServer::stuConfig::stuConfig(const QString &_basePath,
 {
     if(this->BasePath.endsWith('/') == false)
         this->BasePath+='/';
+
+    if(_cacheConnector.size() && QUrl::fromUserInput(_cacheConnector).isValid() == false)
+        throw exRESTRegistry("Invalid connector url specified for central cache");
+
+    if(_cacheConnector.startsWith(TARGOMAN_M2STR(QHTTP_REDIS_PROTOCOL)))
+        this->CacheConnector = _cacheConnector;
+
+
+    if(_cacheConnector.size() && this->CacheConnector.isEmpty())
+        throw exRESTRegistry("Unsupported cache connector protocol.");
 }
 
 }

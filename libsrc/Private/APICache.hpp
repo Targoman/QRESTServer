@@ -56,9 +56,11 @@ public:
            InternalCache::Cache.insert(_key, stuCacheValue(_value, _ttl));
     }
     static QVariant storedValue(const QString& _key){
+        QMutexLocker Locker(&InternalCache::Lock);
         auto StoredValue = InternalCache::Cache.find(_key);
         if(StoredValue == InternalCache::Cache.end())
             return QVariant();
+        Locker.unlock();
         if(StoredValue->InsertionTime.secsTo(QTime::currentTime()) > StoredValue->TTL)
             return QVariant();
         return StoredValue->Value;
@@ -75,21 +77,15 @@ class CentralCache
 {
 public:
     static void setValue(const QString& _key, const QVariant& _value, qint32 _ttl){
-        QMutexLocker Locker(&InternalCache::Lock);
-        if(InternalCache::Cache.size() < (int)gConfigs.Public.MaxCachedItems)
-           InternalCache::Cache.insert(_key, stuCacheValue(_value, _ttl));
+        Q_UNUSED(_key)
+        Q_UNUSED(_value)
+        Q_UNUSED(_ttl)
     }
     static QVariant storedValue(const QString& _key){
-        auto StoredValue = InternalCache::Cache.find(_key);
-        if(StoredValue == InternalCache::Cache.end())
-            return QVariant();
-        if(StoredValue->InsertionTime.secsTo(QTime::currentTime()) > StoredValue->TTL)
-            return QVariant();
-        return StoredValue->Value;
+        Q_UNUSED(_key)
     }
 
 private:
-    static Cache_t Cache;
     static QMutex  Lock;
 
     friend class clsUpdateAndPruneThread;

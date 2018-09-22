@@ -151,8 +151,5 @@ protected:
 
 /**********************************************************************/
 Q_DECLARE_METATYPE(QHttp::stuTable)
-Q_DECLARE_METATYPE(QHttp::stuStatistics)
-
-
 
 #endif // QHTTP_INTFRESTAPIHOLDER_H

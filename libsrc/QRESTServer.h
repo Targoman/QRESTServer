@@ -70,6 +70,7 @@ public:
         qint64       MaxUploadSize;
         qint64       MaxUploadedFileSize;
         quint32      MaxCachedItems;
+        QString      CacheConnector;
 
         stuConfig(const QString& _basePath = "/",
                   const QString& _version = "v0",
@@ -77,6 +78,7 @@ public:
                   bool _indentedJson = false,
                   const QHostAddress& _listenAddress = QHostAddress::Any,
                   const fnIsInBlackList_t& _ipBlackListChecker = {},
+                  const QString& _cacheConnector = "redis://127.0.0.1",
                   quint8 _statisticsInterval = 3,
                   qint64 _maxUploadSize = 100 * 1024 * 1024,
                   qint64 _maxUploadedFileSize = 100 * 1024 * 1024,

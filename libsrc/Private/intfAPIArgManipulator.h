@@ -24,10 +24,12 @@
 #ifndef QHTTP_INTFAPIARGMANIPULATOR_H
 #define QHTTP_INTFAPIARGMANIPULATOR_H
 
-#include "libTargomanCommon/exTargomanBase.h"
 #include "QHttp/HTTPExceptions.h"
 
 namespace QHttp {
+namespace Private{
+
+class intfCacheConnector;
 /**********************************************************************/
 class intfAPIObject{
 public:
@@ -44,6 +46,7 @@ public:
     virtual void cleanup (void* _argStorage) = 0;
     virtual bool hasFromVariantMethod() = 0;
     virtual bool hasToVariantMethod() = 0;
+    virtual QString toString(const QVariant _val) = 0;
 
     QString     PrettyTypeName;
     char*       RealTypeName;
@@ -77,10 +80,16 @@ public:
     inline void cleanup (void* _argStorage) final {if(_argStorage) delete ((_itmplType*)_argStorage);}
     inline bool hasFromVariantMethod() final {return this->fromVariant != nullptr;}
     inline bool hasToVariantMethod() final {return this->toVariant != nullptr;}
-
+    inline QString toString(const QVariant _val) {
+        if(this->hasFromVariantMethod() && this->hasToVariantMethod())
+            return this->toVariant(this->fromVariant(_val)).toString();
+        return QString();
+    }
 private:
     std::function<QVariant(_itmplType _value)> toVariant;
     std::function<_itmplType(QVariant _value)> fromVariant;
+
+    friend class intfCacheConnector;
 };
 
 /**********************************************************************/
@@ -113,5 +122,5 @@ QHTTP_SPECIAL_MAKE_GENERIC_ON_NUMERIC_TYPE(qreal, toDouble)
 QHTTP_SPECIAL_MAKE_GENERIC_ON_NUMERIC_TYPE(float, toFloat)
 
 }
-
+}
 #endif // QHTTP_INTFAPIARGMANIPULATOR_H

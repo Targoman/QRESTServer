@@ -4,7 +4,7 @@
  * Copyright 2018 by Targoman Intelligent Processing Co Pjc.<http://tip.co.ir> *
  *                                                                             *
  *                                                                             *
- * QRESTServer is free software: you can redistribute it and/or modify         *
+ * QRESTServer is free software: you can CENTRALtribute it and/or modify         *
  * it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE as published by *
  * the Free Software Foundation, either version 3 of the License, or           *
  * (at your option) any later version.                                         *
@@ -28,7 +28,6 @@
 #include "libTargomanCommon/clsCountAndSpeed.h"
 #include "libTargomanCommon/Configuration/intfConfigurableModule.hpp"
 #include "QHttp/HTTPExceptions.h"
-#include "QHttp/intfAPIArgManipulator.h"
 
 namespace QHttp {
 /**********************************************************************/
@@ -42,7 +41,8 @@ struct stuStatistics {
     Targoman::Common::clsCountAndSpeed Success;
 
     QHash<QByteArray, Targoman::Common::clsCountAndSpeed> APICallsStats;
-    QHash<QByteArray, Targoman::Common::clsCountAndSpeed> APICacheStats;
+    QHash<QByteArray, Targoman::Common::clsCountAndSpeed> APIInternalCacheStats;
+    QHash<QByteArray, Targoman::Common::clsCountAndSpeed> APICentralCacheStats;
 };
 
 /**********************************************************************/
@@ -83,24 +83,23 @@ struct stuTable{
 #endif
 
 /**
-  * @brief REDISCACHE macros are predefined macros in order to mark each API Redis-based cache TTL. You can add more cache time as you wish while
+  * @brief CENTRALCACHE macros are predefined macros in order to mark each API central cache TTL. You can add more cache time as you wish while
   *        following cache definition pattern "\d+(S|M|H)" where last character means S: Seconds, M: Minutes, H: Hours and digits must be between 0 to 16384
   */
 #ifndef Q_MOC_RUN
-#  define REDISCACHE_1S
-#  define REDISCACHE_3S
-#  define REDISCACHE_5S
-#  define REDISCACHE_10S
-#  define REDISCACHE_30S
-#  define REDISCACHE_1M
-#  define REDISCACHE_5M
-#  define REDISCACHE_10M
-#  define REDISCACHE_1H
-#  define REDISCACHE_3H
-#  define REDISCACHE_6H
-#  define REDISCACHE_12H
-#  define REDISCACHE_24H
-#  define REDISCACHE_INF
+#  define CENTRALCACHE_1S
+#  define CENTRALCACHE_3S
+#  define CENTRALCACHE_5S
+#  define CENTRALCACHE_10S
+#  define CENTRALCACHE_30S
+#  define CENTRALCACHE_1M
+#  define CENTRALCACHE_5M
+#  define CENTRALCACHE_10M
+#  define CENTRALCACHE_1H
+#  define CENTRALCACHE_3H
+#  define CENTRALCACHE_6H
+#  define CENTRALCACHE_12H
+#  define CENTRALCACHE_24H
 #endif
 
 /**********************************************************************/

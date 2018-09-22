@@ -35,34 +35,53 @@
 namespace QHttp {
 namespace Private {
 
-class APIResultCache
+struct stuCacheValue{
+    QTime InsertionTime;
+    QVariant Value;
+    qint32   TTL;
+
+    stuCacheValue(){}
+    virtual ~stuCacheValue(){}
+    stuCacheValue(const QVariant& _value, qint32 _ttl):InsertionTime(QTime::currentTime()),Value(_value), TTL(_ttl){}
+    stuCacheValue(const stuCacheValue& _other):InsertionTime(_other.InsertionTime),Value(_other.Value), TTL(_other.TTL){}
+};
+typedef QHash<QString, stuCacheValue> Cache_t;
+
+class InternalCache
 {
 public:
-    struct stuCacheValue{
-        QTime InsertionTime;
-        QVariant Value;
-        qint32   TTL;
-
-        stuCacheValue(){}
-        virtual ~stuCacheValue(){}
-        stuCacheValue(const QVariant& _value, qint32 _ttl):InsertionTime(QTime::currentTime()),Value(_value), TTL(_ttl){}
-        stuCacheValue(const stuCacheValue& _other):InsertionTime(_other.InsertionTime),Value(_other.Value), TTL(_other.TTL){}
-    };
-    typedef QHash<QString, stuCacheValue> Cache_t;
-
-public:
-    static QString makeCacheKey(const QByteArray& _method, const QVariantList& _args){
-        return _method + QJsonValue::fromVariant(_args).toString();
-    }
-
     static void setValue(const QString& _key, const QVariant& _value, qint32 _ttl){
-        QMutexLocker Locker(&APIResultCache::Lock);
-        if(APIResultCache::Cache.size() < (int)gConfigs.Public.MaxCachedItems)
-           APIResultCache::Cache.insert(_key, stuCacheValue(_value, _ttl));
+        QMutexLocker Locker(&InternalCache::Lock);
+        if(InternalCache::Cache.size() < (int)gConfigs.Public.MaxCachedItems)
+           InternalCache::Cache.insert(_key, stuCacheValue(_value, _ttl));
     }
     static QVariant storedValue(const QString& _key){
-        auto StoredValue = APIResultCache::Cache.find(_key);
-        if(StoredValue == APIResultCache::Cache.end())
+        auto StoredValue = InternalCache::Cache.find(_key);
+        if(StoredValue == InternalCache::Cache.end())
+            return QVariant();
+        if(StoredValue->InsertionTime.secsTo(QTime::currentTime()) > StoredValue->TTL)
+            return QVariant();
+        return StoredValue->Value;
+    }
+
+public:
+    static Cache_t Cache;
+    static QMutex  Lock;
+
+    friend class clsUpdateAndPruneThread;
+};
+
+class CentralCache
+{
+public:
+    static void setValue(const QString& _key, const QVariant& _value, qint32 _ttl){
+        QMutexLocker Locker(&InternalCache::Lock);
+        if(InternalCache::Cache.size() < (int)gConfigs.Public.MaxCachedItems)
+           InternalCache::Cache.insert(_key, stuCacheValue(_value, _ttl));
+    }
+    static QVariant storedValue(const QString& _key){
+        auto StoredValue = InternalCache::Cache.find(_key);
+        if(StoredValue == InternalCache::Cache.end())
             return QVariant();
         if(StoredValue->InsertionTime.secsTo(QTime::currentTime()) > StoredValue->TTL)
             return QVariant();

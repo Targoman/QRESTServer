@@ -49,22 +49,22 @@ private:
                  ListIter != gServerStats.APICallsStats.end ();
                  ++ListIter)
                 ListIter->snapshot(gConfigs.Public.StatisticsInterval);
-            for (auto ListIter = gServerStats.APICacheStats.begin ();
-                 ListIter != gServerStats.APICacheStats.end ();
+            for (auto ListIter = gServerStats.APIInternalCacheStats.begin ();
+                 ListIter != gServerStats.APIInternalCacheStats.end ();
                  ++ListIter)
                 ListIter->snapshot(gConfigs.Public.StatisticsInterval);
 
-            QList<APIResultCache::Cache_t::const_iterator> ToDeleteIters;
-            for(auto CacheIter = APIResultCache::Cache.begin();
-                CacheIter != APIResultCache::Cache.end();
+            QList<Cache_t::const_iterator> ToDeleteIters;
+            for(auto CacheIter = InternalCache::Cache.begin();
+                CacheIter != InternalCache::Cache.end();
                 ++CacheIter)
                 if(CacheIter->InsertionTime.secsTo(QTime::currentTime()) > CacheIter->TTL)
                     ToDeleteIters.append(CacheIter);
 
             if(ToDeleteIters.size()){
-                QMutexLocker Locker(&APIResultCache::Lock);
+                QMutexLocker Locker(&InternalCache::Lock);
                 foreach(auto Iter, ToDeleteIters)
-                    APIResultCache::Cache.erase(Iter);
+                    InternalCache::Cache.erase(Iter);
             }
         });
         Timer.start(gConfigs.Public.StatisticsInterval * 1000);

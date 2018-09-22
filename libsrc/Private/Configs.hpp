@@ -28,9 +28,10 @@
 #include <QMap>
 
 #include "libTargomanCommon/Macros.h"
+#include "libTargomanCommon/exTargomanBase.h"
 #include "QHttp/QHttpServer"
 
-#include "libTargomanCommon/exTargomanBase.h"
+#include "Private/intfAPIArgManipulator.h"
 #include "intfRESTAPIHolder.h"
 #include "QRESTServer.h"
 

@@ -216,14 +216,17 @@ void RESTAPIRegistry::validateMethodInputAndOutput(const QMetaMethod &_method){
     //TODO if either return or parameter type is of user defined types check they can be converted to Json
 }
 
+const char* CACHE_INTERNAL = "CACHEABLE_";
+const char* CACHE_CENTRAL  = "CENTRALCACHE_";
+
 void RESTAPIRegistry::addRegistryEntry(intfRESTAPIHolder *_module, const QMetaMethod &_method, const QString &_httpMethod, const QString &_methodName){
-    auto cache4Secs = [](const QMetaMethod& _method){
+    auto cache4Secs = [](const QMetaMethod& _method, const char* _type){
         if(_method.tag() == NULL || _method.tag()[0] == '\0')
             return 0;
         QString Tag = _method.tag();
-        if(Tag.startsWith("CACHEABLE_") && Tag.size () > 12){
+        if(Tag.startsWith(_type) && Tag.size () > 12){
             Tag = Tag.mid(10);
-            if(Tag == "INF")
+            if(_type == CACHE_INTERNAL && Tag == "INF")
                 return -1;
             char Type = Tag.rbegin()->toLatin1();
             int  Number = Tag.mid(0,Tag.size() -1).toUShort();
@@ -232,20 +235,7 @@ void RESTAPIRegistry::addRegistryEntry(intfRESTAPIHolder *_module, const QMetaMe
             case 'M': return Number * 60;
             case 'H': return Number * 3600;
             default:
-                throw exRESTRegistry("Invalid tag numer or type defined for api: " + _method.methodSignature());
-            }
-        }else if(Tag.startsWith("REDISCACHE_") && Tag.size () > 14){
-            Tag = Tag.mid(12);
-            if(Tag == "INF")
-                return -1;
-            char Type = Tag.rbegin()->toLatin1();
-            int  Number = Tag.mid(0,Tag.size() -1).toUShort();
-            switch(Type){
-            case 'S': return Number;
-            case 'M': return Number * 60;
-            case 'H': return Number * 3600;
-            default:
-                throw exRESTRegistry("Invalid tag numer or type defined for api: " + _method.methodSignature());
+                throw exRESTRegistry("Invalid CACHE numer or type defined for api: " + _method.methodSignature());
             }
         }else
             throw exRESTRegistry("Invalid tag defined for api: " + _method.methodSignature());
@@ -257,17 +247,22 @@ void RESTAPIRegistry::addRegistryEntry(intfRESTAPIHolder *_module, const QMetaMe
         if(RESTAPIRegistry::Registry.value(MethodKey)->isPolymorphic(_method))
             throw exRESTRegistry(QString("Polymorphism is not supported: %1").arg(_method.methodSignature().constData()));
         RESTAPIRegistry::Registry.value(MethodKey)->updateDefaultValues(_method);
-    }else
+    }else{
+        if(cache4Secs(_method, CACHE_INTERNAL) > 0 && cache4Secs(_method, CACHE_CENTRAL) >0)
+            throw exRESTRegistry("Both internal and central cache can not be defined on an API");
+
         RESTAPIRegistry::Registry.insert(MethodKey,
                                          new clsAPIObject(_module,
                                                           _method,
                                                           QString(_method.name()).startsWith("async"),
-                                                          cache4Secs(_method)
+                                                          cache4Secs(_method, CACHE_INTERNAL),
+                                                          cache4Secs(_method, CACHE_CENTRAL)
                                                           ));
+    }
 }
 
-APIResultCache::Cache_t APIResultCache::Cache;
-QMutex APIResultCache::Lock;
+Cache_t InternalCache::Cache;
+QMutex InternalCache::Lock;
 
 }
 }

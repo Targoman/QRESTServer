@@ -74,7 +74,7 @@ build_static {
 HEADERS += $$DIST_HEADERS \
            $$PRIVATE_HEADERS \
            $$SUBMODULE_HEADERS \
-    intfAPIArgManipulator.h \
-    Private/APIResultCache.hpp
+    Private/intfAPIArgManipulator.h \
+    Private/APICache.hpp
 
 include($$PRJDIR/qmake/install.pri)

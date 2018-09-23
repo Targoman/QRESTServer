@@ -33,7 +33,7 @@ DEFINES += TARGOMAN_SHOW_NORMAL=1
 
 #Comment this in order to disable redis integration
 DEFINES += QHTTP_REDIS_PROTOCOL="redis://"
-
+DEFINES += QHTTP_ENABLE_WEBSOCKET=1
 
 DEFINES += PROJ_VERSION=$$VERSION
 
@@ -101,4 +101,8 @@ HEADERS+= $$VERSIONINGHEADER
 
 contains(DEFINES, QHTTP_REDIS_PROTOCOL) {
 LIBS += -lhiredis
+}
+
+contains(DEFINES, QHTTP_ENABLE_WEBSOCKET) {
+QT+= websockets
 }

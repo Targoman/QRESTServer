@@ -71,12 +71,20 @@ public:
         qint64       MaxUploadedFileSize;
         quint32      MaxCachedItems;
         QString      CacheConnector;
+#ifdef QHTTP_ENABLE_WEBSOCKET
+        QString WebsocketServerName;
+        bool    WebSocketSecure;
+#endif
 
         stuConfig(const QString& _basePath = "/",
                   const QString& _version = "v0",
                   quint16 _listenPort = 9000,
                   bool _indentedJson = false,
                   const QHostAddress& _listenAddress = QHostAddress::Any,
+          #ifdef QHTTP_ENABLE_WEBSOCKET
+                  const QString& _websocketServerName = "",
+                  bool    _webSocketSecure,
+          #endif
                   const fnIsInBlackList_t& _ipBlackListChecker = {},
                   const QString& _cacheConnector = "redis://127.0.0.1",
                   quint8 _statisticsInterval = 3,

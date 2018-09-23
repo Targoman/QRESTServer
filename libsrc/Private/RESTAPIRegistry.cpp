@@ -112,7 +112,13 @@ void RESTAPIRegistry::registerRESTAPI(intfRESTAPIHolder* _module, const QMetaMet
             RESTAPIRegistry::addRegistryEntry(_module, _method, "DELETE", MethodName.at(6).toLower() + MethodName.mid(7));
         else if (MethodName.startsWith("UPDATE"))
             RESTAPIRegistry::addRegistryEntry(_module, _method, "PATCH", MethodName.at(6).toLower() + MethodName.mid(7));
-        else{
+        else if (MethodName.startsWith("WS")){
+#ifdef QHTTP_ENABLE_WEBSOCKET
+            RESTAPIRegistry::addRegistryEntry(_module, _method, "", MethodName.at(6).toLower() + MethodName.mid(7));
+#else
+            throw exRESTRegistry("Websockets are not enabled in this QRestServer please compile with websockets support");
+#endif
+        }else{
             RESTAPIRegistry::addRegistryEntry(_module, _method, "GET", MethodName.at(0).toLower() + MethodName.mid(1));
             RESTAPIRegistry::addRegistryEntry(_module, _method, "POST", MethodName.at(0).toLower() + MethodName.mid(1));
         }

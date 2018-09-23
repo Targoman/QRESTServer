@@ -27,6 +27,7 @@
 #include "QRESTServer.h"
 #include "Private/Configs.hpp"
 #include "Private/clsRequestHandler.h"
+#include "Private/clsRedisConnector.h"
 
 namespace QHttp {
 
@@ -47,6 +48,20 @@ static clsUpdateAndPruneThread *gStatUpdateThread;
 void RESTServer::start() {
     if(gConfigs.Private.IsStarted)
         throw exTargomanInitialization("QRESTServer can be started one time only");
+
+    if(gConfigs.Public.BasePath.endsWith('/') == false)
+        gConfigs.Public.BasePath+='/';
+
+    if(gConfigs.Public.CacheConnector.size() && QUrl::fromUserInput(gConfigs.Public.CacheConnector).isValid() == false)
+        throw exRESTRegistry("Invalid connector url specified for central cache");
+
+#ifdef QHTTP_REDIS_PROTOCOL
+    if(gConfigs.Public.CacheConnector.startsWith(TARGOMAN_M2STR(QHTTP_REDIS_PROTOCOL)))
+        CentralCache::setup(new clsRedisConnector(gConfigs.Public.CacheConnector));
+#endif
+
+    if(gConfigs.Public.CacheConnector.size() && CentralCache::isValid() == false)
+        throw exRESTRegistry("Unsupported cache connector protocol.");
 
     gConfigs.Private.BaseParthWithVersion = gConfigs.Public.BasePath + gConfigs.Public.Version;
     if(gConfigs.Private.BaseParthWithVersion.endsWith('/') == false)
@@ -187,21 +202,24 @@ RESTServer::stuConfig::stuConfig(const QString &_basePath,
     IndentedJson(_indentedJson),
     MaxUploadSize(_maxUploadSize),
     MaxUploadedFileSize(_maxUploadedFileSize),
-    MaxCachedItems(_maxCachedItems)
+    MaxCachedItems(_maxCachedItems),
+    CacheConnector(_cacheConnector)
 {
-    if(this->BasePath.endsWith('/') == false)
-        this->BasePath+='/';
-
-    if(_cacheConnector.size() && QUrl::fromUserInput(_cacheConnector).isValid() == false)
-        throw exRESTRegistry("Invalid connector url specified for central cache");
-
-    if(_cacheConnector.startsWith(TARGOMAN_M2STR(QHTTP_REDIS_PROTOCOL)))
-        this->CacheConnector = _cacheConnector;
-
-
-    if(_cacheConnector.size() && this->CacheConnector.isEmpty())
-        throw exRESTRegistry("Unsupported cache connector protocol.");
 }
+
+RESTServer::stuConfig::stuConfig(const RESTServer::stuConfig &_other) :
+    BasePath(_other.BasePath),
+    Version(_other.Version),
+    fnIPInBlackList(_other.fnIPInBlackList),
+    StatisticsInterval(_other.StatisticsInterval),
+    ListenPort(_other.ListenPort),
+    ListenAddress(_other.ListenAddress),
+    IndentedJson(_other.IndentedJson),
+    MaxUploadSize(_other.MaxUploadSize),
+    MaxUploadedFileSize(_other.MaxUploadedFileSize),
+    MaxCachedItems(_other.MaxCachedItems),
+    CacheConnector(_other.CacheConnector)
+{}
 
 }
 

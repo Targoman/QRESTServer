@@ -263,6 +263,7 @@ void RESTAPIRegistry::addRegistryEntry(intfRESTAPIHolder *_module, const QMetaMe
 
 Cache_t InternalCache::Cache;
 QMutex InternalCache::Lock;
+QScopedPointer<intfCacheConnector> CentralCache::Connector;
 
 }
 }

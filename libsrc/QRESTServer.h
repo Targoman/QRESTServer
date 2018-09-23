@@ -92,6 +92,8 @@ public:
                   qint64 _maxUploadedFileSize = 100 * 1024 * 1024,
                   quint32 _maxCachedItems = 10000
                   );
+
+        stuConfig(const stuConfig& _other);
     };
 
 public:

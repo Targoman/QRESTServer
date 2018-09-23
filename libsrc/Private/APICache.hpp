@@ -31,6 +31,7 @@
 #include <QHash>
 
 #include "Private/Configs.hpp"
+#include "Private/intfCacheConnector.hpp"
 
 namespace QHttp {
 namespace Private {
@@ -76,19 +77,18 @@ public:
 class CentralCache
 {
 public:
+    static bool isValid(){return CentralCache::Connector.isNull() == false;}
+    static void setup(intfCacheConnector* _connector){ CentralCache::Connector.reset(_connector); }
     static void setValue(const QString& _key, const QVariant& _value, qint32 _ttl){
-        Q_UNUSED(_key)
-        Q_UNUSED(_value)
-        Q_UNUSED(_ttl)
+        if(CentralCache::Connector.isNull() == false)
+            CentralCache::Connector->setKeyVal(_key, _value, _ttl);
     }
     static QVariant storedValue(const QString& _key){
-        Q_UNUSED(_key)
+        return CentralCache::Connector.isNull() ? QVariant() : CentralCache::Connector->getValue(_key);
     }
 
 private:
-    static QMutex  Lock;
-
-    friend class clsUpdateAndPruneThread;
+    static QScopedPointer<intfCacheConnector> Connector;
 };
 
 }

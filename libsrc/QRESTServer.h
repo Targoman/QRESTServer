@@ -72,7 +72,9 @@ public:
         quint32      MaxCachedItems;
         QString      CacheConnector;
 #ifdef QHTTP_ENABLE_WEBSOCKET
-        QString WebsocketServerName;
+        QString WebSocketServerName;
+        quint16 WebSocketServerPort;
+        QString WebSocketServerAdderss;
         bool    WebSocketSecure;
 #endif
 
@@ -83,7 +85,9 @@ public:
                   const QHostAddress& _listenAddress = QHostAddress::Any,
           #ifdef QHTTP_ENABLE_WEBSOCKET
                   const QString& _websocketServerName = "",
-                  bool    _webSocketSecure,
+                  quint16        _websocketServerPort = 9010,
+                  const QHostAddress& _websocketListenAddress = QHostAddress::Any,
+                  bool    _webSocketSecure = false,
           #endif
                   const fnIsInBlackList_t& _ipBlackListChecker = {},
                   const QString& _cacheConnector = "redis://127.0.0.1",

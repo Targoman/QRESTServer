@@ -101,26 +101,26 @@ void RESTAPIRegistry::registerRESTAPI(intfRESTAPIHolder* _module, const QMetaMet
         MethodName = MethodName.mid(MethodName.indexOf("api",0,Qt::CaseInsensitive) + 3);
 
         if(MethodName.startsWith("GET"))
-            RESTAPIRegistry::addRegistryEntry(_module, _method, "GET", MethodName.at(3).toLower() + MethodName.mid(4));
+            RESTAPIRegistry::addRegistryEntry(RESTAPIRegistry::Registry, _module, _method, "GET", MethodName.at(3).toLower() + MethodName.mid(4));
         else if(MethodName.startsWith("POST"))
-            RESTAPIRegistry::addRegistryEntry(_module, _method, "POST", MethodName.at(4).toLower() + MethodName.mid(5));
+            RESTAPIRegistry::addRegistryEntry(RESTAPIRegistry::Registry, _module, _method, "POST", MethodName.at(4).toLower() + MethodName.mid(5));
         else if(MethodName.startsWith("PUT"))
-            RESTAPIRegistry::addRegistryEntry(_module, _method, "PUT", MethodName.at(3).toLower() + MethodName.mid(4));
+            RESTAPIRegistry::addRegistryEntry(RESTAPIRegistry::Registry, _module, _method, "PUT", MethodName.at(3).toLower() + MethodName.mid(4));
         else if(MethodName.startsWith("PATCH"))
-            RESTAPIRegistry::addRegistryEntry(_module, _method, "PATCH", MethodName.at(5).toLower() + MethodName.mid(6));
+            RESTAPIRegistry::addRegistryEntry(RESTAPIRegistry::Registry, _module, _method, "PATCH", MethodName.at(5).toLower() + MethodName.mid(6));
         else if (MethodName.startsWith("DELETE"))
-            RESTAPIRegistry::addRegistryEntry(_module, _method, "DELETE", MethodName.at(6).toLower() + MethodName.mid(7));
+            RESTAPIRegistry::addRegistryEntry(RESTAPIRegistry::Registry, _module, _method, "DELETE", MethodName.at(6).toLower() + MethodName.mid(7));
         else if (MethodName.startsWith("UPDATE"))
-            RESTAPIRegistry::addRegistryEntry(_module, _method, "PATCH", MethodName.at(6).toLower() + MethodName.mid(7));
+            RESTAPIRegistry::addRegistryEntry(RESTAPIRegistry::Registry, _module, _method, "PATCH", MethodName.at(6).toLower() + MethodName.mid(7));
         else if (MethodName.startsWith("WS")){
 #ifdef QHTTP_ENABLE_WEBSOCKET
-            RESTAPIRegistry::addRegistryEntry(_module, _method, "", MethodName.at(6).toLower() + MethodName.mid(7));
+            RESTAPIRegistry::addRegistryEntry(RESTAPIRegistry::WSRegistry, _module, _method, "", MethodName.at(6).toLower() + MethodName.mid(7));
 #else
             throw exRESTRegistry("Websockets are not enabled in this QRestServer please compile with websockets support");
 #endif
         }else{
-            RESTAPIRegistry::addRegistryEntry(_module, _method, "GET", MethodName.at(0).toLower() + MethodName.mid(1));
-            RESTAPIRegistry::addRegistryEntry(_module, _method, "POST", MethodName.at(0).toLower() + MethodName.mid(1));
+            RESTAPIRegistry::addRegistryEntry(RESTAPIRegistry::Registry, _module, _method, "GET", MethodName.at(0).toLower() + MethodName.mid(1));
+            RESTAPIRegistry::addRegistryEntry(RESTAPIRegistry::Registry, _module, _method, "POST", MethodName.at(0).toLower() + MethodName.mid(1));
         }
     }catch(Targoman::Common::exTargomanBase& ex){
         TargomanError("Fatal Error: "<<ex.what());
@@ -128,10 +128,8 @@ void RESTAPIRegistry::registerRESTAPI(intfRESTAPIHolder* _module, const QMetaMet
     }
 }
 
-QStringList RESTAPIRegistry::registeredAPIs(const QString &_module, bool _showParams, bool _showTypes, bool _prettifyTypes){
-    if(_showParams == false)
-        return RESTAPIRegistry::Registry.keys();
-
+QMap<QString, QString> RESTAPIRegistry::extractMethods(QHash<QString, clsAPIObject*>& _registry, const QString &_module, bool _showTypes, bool _prettifyTypes)
+{
     static auto type2Str = [_prettifyTypes](int _typeID) {
         if(_prettifyTypes == false || _typeID > 1023)
             return QString(QMetaType::typeName(_typeID));
@@ -140,12 +138,12 @@ QStringList RESTAPIRegistry::registeredAPIs(const QString &_module, bool _showPa
     };
 
     QMap<QString, QString> Methods;
-    foreach(const QString& Key, RESTAPIRegistry::Registry.keys()){
+    foreach(const QString& Key, _registry.keys()){
         QString Path = Key.split(" ").last();
         if(Path.startsWith(_module) == false)
             continue;
 
-        clsAPIObject* APIObject = RESTAPIRegistry::Registry.value(Key);
+        clsAPIObject* APIObject = _registry.value(Key);
         QStringList Parameters;
         for(int i=0; i< APIObject->BaseMethod.parameterCount(); ++i){
             Parameters.append((_showTypes ? type2Str(APIObject->BaseMethod.parameterType(i)) + " " : "" ) + (
@@ -166,6 +164,24 @@ QStringList RESTAPIRegistry::registeredAPIs(const QString &_module, bool _showPa
                        );
     }
 
+    return Methods;
+}
+
+QStringList RESTAPIRegistry::registeredAPIs(const QString &_module, bool _showParams, bool _showTypes, bool _prettifyTypes){
+    if(_showParams == false){
+#ifdef QHTTP_ENABLE_WEBSOCKET
+        QStringList Methods = RESTAPIRegistry::Registry.keys();
+        Methods.append(RESTAPIRegistry::WSRegistry.keys());
+        return  Methods;
+#else
+        return  RESTAPIRegistry::Registry.keys();
+#endif
+    }
+
+    QMap<QString, QString> Methods = RESTAPIRegistry::extractMethods(RESTAPIRegistry::Registry, _module, _showTypes, _prettifyTypes);
+#ifdef QHTTP_ENABLE_WEBSOCKET
+    Methods.unite(RESTAPIRegistry::extractMethods(RESTAPIRegistry::WSRegistry, _module, _showTypes, _prettifyTypes));
+#endif
     return Methods.values();
 }
 
@@ -218,54 +234,57 @@ void RESTAPIRegistry::validateMethodInputAndOutput(const QMetaMethod &_method){
                                          ));
         }
     }
-
-    //TODO if either return or parameter type is of user defined types check they can be converted to Json
 }
 
 const char* CACHE_INTERNAL = "CACHEABLE_";
 const char* CACHE_CENTRAL  = "CENTRALCACHE_";
 
-void RESTAPIRegistry::addRegistryEntry(intfRESTAPIHolder *_module, const QMetaMethod &_method, const QString &_httpMethod, const QString &_methodName){
-    auto cache4Secs = [](const QMetaMethod& _method, const char* _type){
-        if(_method.tag() == NULL || _method.tag()[0] == '\0')
-            return 0;
-        QString Tag = _method.tag();
-        if(Tag.startsWith(_type) && Tag.size () > 12){
-            Tag = Tag.mid(10);
-            if(_type == CACHE_INTERNAL && Tag == "INF")
-                return -1;
-            char Type = Tag.rbegin()->toLatin1();
-            int  Number = Tag.mid(0,Tag.size() -1).toUShort();
-            switch(Type){
-            case 'S': return Number;
-            case 'M': return Number * 60;
-            case 'H': return Number * 3600;
-            default:
-                throw exRESTRegistry("Invalid CACHE numer or type defined for api: " + _method.methodSignature());
-            }
-        }else
-            throw exRESTRegistry("Invalid tag defined for api: " + _method.methodSignature());
-    };
-
+void RESTAPIRegistry::addRegistryEntry(QHash<QString, QHttp::Private::clsAPIObject *> &_registry,
+                                       intfRESTAPIHolder *_module,
+                                       const QMetaMethod &_method,
+                                       const QString &_httpMethod,
+                                       const QString &_methodName){
     QString MethodKey = RESTAPIRegistry::makeRESTAPIKey(_httpMethod, "/" + _module->moduleFullName().replace("::", "/")+ '/' + _methodName);
 
-    if(RESTAPIRegistry::Registry.contains(MethodKey)){
+    if(_registry.contains(MethodKey)){
         if(RESTAPIRegistry::Registry.value(MethodKey)->isPolymorphic(_method))
             throw exRESTRegistry(QString("Polymorphism is not supported: %1").arg(_method.methodSignature().constData()));
-        RESTAPIRegistry::Registry.value(MethodKey)->updateDefaultValues(_method);
+        _registry.value(MethodKey)->updateDefaultValues(_method);
     }else{
-        if(cache4Secs(_method, CACHE_INTERNAL) > 0 && cache4Secs(_method, CACHE_CENTRAL) >0)
+        if(RESTAPIRegistry::getCacheSeconds(_method, CACHE_INTERNAL) > 0 && RESTAPIRegistry::getCacheSeconds(_method, CACHE_CENTRAL) >0)
             throw exRESTRegistry("Both internal and central cache can not be defined on an API");
 
-        RESTAPIRegistry::Registry.insert(MethodKey,
+        _registry.insert(MethodKey,
                                          new clsAPIObject(_module,
                                                           _method,
                                                           QString(_method.name()).startsWith("async"),
-                                                          cache4Secs(_method, CACHE_INTERNAL),
-                                                          cache4Secs(_method, CACHE_CENTRAL)
+                                                          RESTAPIRegistry::getCacheSeconds(_method, CACHE_INTERNAL),
+                                                          RESTAPIRegistry::getCacheSeconds(_method, CACHE_CENTRAL)
                                                           ));
     }
 }
+
+int RESTAPIRegistry::getCacheSeconds(const QMetaMethod& _method, const char* _type){
+    if(_method.tag() == NULL || _method.tag()[0] == '\0')
+        return 0;
+    QString Tag = _method.tag();
+    if(Tag.startsWith(_type) && Tag.size () > 12){
+        Tag = Tag.mid(10);
+        if(_type == CACHE_INTERNAL && Tag == "INF")
+            return -1;
+        char Type = Tag.rbegin()->toLatin1();
+        int  Number = Tag.mid(0,Tag.size() -1).toUShort();
+        switch(Type){
+        case 'S': return Number;
+        case 'M': return Number * 60;
+        case 'H': return Number * 3600;
+        default:
+            throw exRESTRegistry("Invalid CACHE numer or type defined for api: " + _method.methodSignature());
+        }
+    }else
+        throw exRESTRegistry("Invalid tag defined for api: " + _method.methodSignature());
+}
+
 
 Cache_t InternalCache::Cache;
 QMutex InternalCache::Lock;

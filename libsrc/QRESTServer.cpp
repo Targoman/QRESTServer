@@ -28,12 +28,29 @@
 #include "Private/Configs.hpp"
 #include "Private/clsRequestHandler.h"
 #include "Private/clsRedisConnector.h"
+#include "Private/WebSocketServer.hpp"
 
 namespace QHttp {
 
 using namespace Targoman::Common;
 using namespace qhttp::server;
 using namespace Private;
+
+bool validateConnection(const QHostAddress& _peerAddress, quint16 _peerPort){
+
+    enuIPBlackListStatus::Type IPBlackListStatus;
+
+    if(gConfigs.Public.fnIPInBlackList &&
+            (IPBlackListStatus = gConfigs.Public.fnIPInBlackList(_peerAddress)) != enuIPBlackListStatus::Ok){
+        TargomanLogWarn(1,"Connection from " + _peerAddress.toString() + " was closed by security provider due to: "+enuIPBlackListStatus::toStr(IPBlackListStatus));
+        gServerStats.Blocked.inc();
+        return false;
+    }
+    gServerStats.Connections.inc();
+
+    TargomanLogInfo(7, "New connection accepted from: "<<_peerAddress.toString()<<":"<<_peerPort);
+    return true;
+}
 
 void RESTServer::configure(const RESTServer::stuConfig &_configs) {
     if(gConfigs.Private.IsStarted)
@@ -43,6 +60,9 @@ void RESTServer::configure(const RESTServer::stuConfig &_configs) {
 }
 
 static qhttp::server::QHttpServer gHTTPServer;
+#ifdef QHTTP_ENABLE_WEBSOCKET
+static WebSocketServer gWSServer;
+#endif
 static clsUpdateAndPruneThread *gStatUpdateThread;
 
 void RESTServer::start() {
@@ -77,20 +97,8 @@ void RESTServer::start() {
 
 
     QObject::connect(&gHTTPServer, &QHttpServer::newConnection, [](QHttpConnection* _con){
-        QTcpSocket* Connection = _con->tcpSocket();
-
-        enuIPBlackListStatus::Type IPBlackListStatus;
-
-        if(gConfigs.Public.fnIPInBlackList &&
-                (IPBlackListStatus = gConfigs.Public.fnIPInBlackList(Connection->peerAddress())) != enuIPBlackListStatus::Ok){
-            TargomanWarn(1,"Connection from " + Connection->peerAddress().toString() + " was closed by security provider due to: "+enuIPBlackListStatus::toStr(IPBlackListStatus))
-                    _con->killConnection();
-            gServerStats.Blocked.inc();
-            return;
-        }
-        gServerStats.Connections.inc();
-
-        TargomanLogInfo(7, "New connection: "<<Connection->peerAddress().toString().toLatin1().constData()<<":"<<Connection->peerPort());
+        if(!validateConnection (_con->tcpSocket()->peerAdress(), _con->tcpSocket()->peerPort))
+            _con->killConnection();
     });
 
     gHTTPServer.listen (gConfigs.Public.ListenAddress, gConfigs.Public.ListenPort, [&](QHttpRequest* _req, QHttpResponse* _res){
@@ -124,19 +132,36 @@ void RESTServer::start() {
     });
 
     if(gHTTPServer.isListening()){
-        TargomanInfo(1, "Server is listening on "<<gConfigs.Public.ListenAddress.toString()<<":"<<gConfigs.Public.ListenPort);
+        TargomanLogInfo(1, "Server is listening on "<<gConfigs.Public.ListenAddress.toString()<<":"<<gConfigs.Public.ListenPort);
     }else{
-        TargomanError("Unable to start server to listen on "<<gConfigs.Public.ListenAddress.toString()<<":"<<gConfigs.Public.ListenPort);
+        TargomanLogError("Unable to start server to listen on "<<gConfigs.Public.ListenAddress.toString()<<":"<<gConfigs.Public.ListenPort);
         exit (1);
     }
+
+#ifdef QHTTP_ENABLE_WEBSOCKET
+    if(gConfigs.Public.WebSocketServerName.size()){
+        QObject::connect(&gWSServer, SIGNAL(sigNewConnection(QWebSocket*)), [](QWebSocket* _con){
+            if(!validateConnection (_con->peerAdress(), _con->peerPort()))
+                _con->close(QWebSocketProtocol::CloseCodePolicyViolated,"IP banned");
+        });
+
+        gWSServer.start();
+    }
+#endif
 }
 
 void RESTServer::stop()
 {
     gHTTPServer.stopListening();
+#ifdef QHTTP_ENABLE_WEBSOCKET
+    gWSServer.stopListening();
+#endif
+
     gConfigs.Private.IsStarted = false;
     if(gStatUpdateThread)
         gStatUpdateThread->quit();
+
+
 }
 
 stuStatistics RESTServer::stats()
@@ -187,6 +212,12 @@ RESTServer::stuConfig::stuConfig(const QString &_basePath,
                                  quint16 _listenPort,
                                  bool _indentedJson,
                                  const QHostAddress &_listenAddress,
+                         #ifdef QHTTP_ENABLE_WEBSOCKET
+                                 const QString& _websocketServerName,
+                                 quint16        _websocketServerPort,
+                                 const QHostAddress& _websocketListenAddress,
+                                 bool    _webSocketSecure,
+                         #endif
                                  const fnIsInBlackList_t &_ipBlackListChecker,
                                  const QString &_cacheConnector,
                                  quint8 _statisticsInterval,
@@ -204,6 +235,11 @@ RESTServer::stuConfig::stuConfig(const QString &_basePath,
     MaxUploadedFileSize(_maxUploadedFileSize),
     MaxCachedItems(_maxCachedItems),
     CacheConnector(_cacheConnector)
+#ifdef QHTTP_ENABLE_WEBSOCKET
+    ,WebsocketServerName(_websocketServerName),
+    WebSocketServerPort(_websocketServerPort),
+    WebSocketSecure(_webSocketSecure)
+#endif
 {
 }
 
@@ -219,6 +255,11 @@ RESTServer::stuConfig::stuConfig(const RESTServer::stuConfig &_other) :
     MaxUploadedFileSize(_other.MaxUploadedFileSize),
     MaxCachedItems(_other.MaxCachedItems),
     CacheConnector(_other.CacheConnector)
+  #ifdef QHTTP_ENABLE_WEBSOCKET
+      ,WebSocketServerName(_other.WebsocketServerName),
+      WebSocketServerPort(_other.WebSocketServerPort),
+      WebSocketSecure(_other.WebSocketSecure)
+  #endif
 {}
 
 }

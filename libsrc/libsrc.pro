@@ -78,6 +78,7 @@ HEADERS += $$DIST_HEADERS \
     Private/intfAPIArgManipulator.h \
     Private/APICache.hpp \
     Private/intfCacheConnector.hpp \
-    Private/clsRedisConnector.h
+    Private/clsRedisConnector.h \
+    Private/WebSocketServer.hpp
 
 include($$PRJDIR/qmake/install.pri)

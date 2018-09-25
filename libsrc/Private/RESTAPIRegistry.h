@@ -46,6 +46,11 @@ public:
     static inline clsAPIObject* getAPIObject(const QString _httpMethod, const QString& _path){
         return RESTAPIRegistry::Registry.value(RESTAPIRegistry::makeRESTAPIKey(_httpMethod, _path));
     }
+#ifdef QHTTP_ENABLE_WEBSOCKET
+    static inline clsAPIObject* getWSAPIObject(const QString _httpMethod, const QString& _path){
+        return RESTAPIRegistry::WSRegistry.value(RESTAPIRegistry::makeRESTAPIKey(_httpMethod, _path));
+    }
+#endif
 
     static void registerRESTAPI(intfRESTAPIHolder* _module, const QMetaMethod& _method);
     static QStringList registeredAPIs(const QString &_module, bool _showParams = false, bool _showTypes = false, bool _prettifyTypes = true);
@@ -53,10 +58,15 @@ public:
 private:
     static inline QString isValidType(int _typeID, bool _validate4Input);
     static void validateMethodInputAndOutput(const QMetaMethod& _method);
-    static void addRegistryEntry(intfRESTAPIHolder* _module, const QMetaMethod& _method, const QString& _httpMethod, const QString& _methodName);
+    static void addRegistryEntry(QHash<QString, clsAPIObject*>& _registry, intfRESTAPIHolder* _module, const QMetaMethod& _method, const QString& _httpMethod, const QString& _methodName);
+    static int  getCacheSeconds(const QMetaMethod& _method, const char* _type);
+    static QMap<QString, QString> extractMethods(QHash<QString, clsAPIObject*>& _registry, const QString &_module, bool _showTypes, bool _prettifyTypes);
 
 private:
     static QHash<QString, clsAPIObject*>  Registry;
+#ifdef QHTTP_ENABLE_WEBSOCKET
+    static QHash<QString, clsAPIObject*>  WSRegistry;
+#endif
 };
 
 }

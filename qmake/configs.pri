@@ -32,8 +32,8 @@ DEFINES += TARGOMAN_SHOW_HAPPY=1
 DEFINES += TARGOMAN_SHOW_NORMAL=1
 
 #Comment this in order to disable redis integration
-DEFINES += QHTTP_REDIS_PROTOCOL="redis://"
-DEFINES += QHTTP_ENABLE_WEBSOCKET=1
+CONFIG += enable_redis
+CONFIG += enable_websocket
 
 DEFINES += PROJ_VERSION=$$VERSION
 
@@ -99,10 +99,13 @@ QMAKE_DISTCLEAN += $$DEPS_BUILT
 
 HEADERS+= $$VERSIONINGHEADER
 
-contains(DEFINES, QHTTP_REDIS_PROTOCOL) {
+
+CONFIG(enable_redis) {
+DEFINES += QHTTP_REDIS_PROTOCOL="redis://"
 LIBS += -lhiredis
 }
 
-contains(DEFINES, QHTTP_ENABLE_WEBSOCKET) {
+CONFIG(enable_websocket) {
+DEFINES += QHTTP_ENABLE_WEBSOCKET=1
 QT+= websockets
 }

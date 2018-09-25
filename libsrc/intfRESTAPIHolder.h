@@ -36,6 +36,7 @@ namespace QHttp {
  */
 struct stuStatistics {
     Targoman::Common::clsCountAndSpeed Connections;
+    Targoman::Common::clsCountAndSpeed WSConnections;
     Targoman::Common::clsCountAndSpeed Errors;
     Targoman::Common::clsCountAndSpeed Blocked;
     Targoman::Common::clsCountAndSpeed Success;

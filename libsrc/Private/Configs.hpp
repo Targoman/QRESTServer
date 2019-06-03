@@ -42,7 +42,7 @@ struct stuConfigs
 {
     RESTServer::stuConfig Public;
     struct stuPrivate{
-        QString BaseParthWithVersion;
+        QString BasePathWithVersion;
         bool IsStarted = false;
     } Private;
 };

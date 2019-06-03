@@ -40,12 +40,13 @@ int main(int _argc, char *_argv[])
         QCoreApplication App(_argc, _argv);
 
         Targoman::Common::TARGOMAN_IO_SETTINGS.setFull();
-        //Targoman::Common::Logger::instance().init();
+        Targoman::Common::Logger::instance().setActive();
+        Targoman::Common::Logger::instance().setVisible();
 
         Sample1::SampleAPI::instance().init();
 
         std::cout<<qPrintable(RESTServer::registeredAPIs(true, true).join("\n"))<<std::endl;
-        RESTServer::configure (RESTServer::stuConfig("/a", "v2", 9009, true));
+        RESTServer::configure (RESTServer::stuConfig("/a", "v2", 9009, true,QHostAddress::Any,"ws"));
         RESTServer::start();
 
        App.exec();

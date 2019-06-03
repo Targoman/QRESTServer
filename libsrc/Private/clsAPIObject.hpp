@@ -56,7 +56,7 @@ public:
     }
 
 
-    inline QVariant invoke(const QStringList& _args, QList<QPair<QString, QString>> _bodyArgs) const{
+    inline QVariant invoke(const QStringList& _args, QList<QPair<QString, QString>> _bodyArgs = QList<QPair<QString, QString>>()) const{
         Q_ASSERT_X(this->parent(), "parent module", "Parent module not found to invoke method");
 
         if(_args.size() + _bodyArgs.size() < this->RequiredParamsCount)

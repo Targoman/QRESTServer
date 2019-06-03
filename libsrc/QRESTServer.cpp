@@ -83,9 +83,9 @@ void RESTServer::start() {
     if(gConfigs.Public.CacheConnector.size() && CentralCache::isValid() == false)
         throw exRESTRegistry("Unsupported cache connector protocol.");
 
-    gConfigs.Private.BaseParthWithVersion = gConfigs.Public.BasePath + gConfigs.Public.Version;
-    if(gConfigs.Private.BaseParthWithVersion.endsWith('/') == false)
-        gConfigs.Private.BaseParthWithVersion += '/';
+    gConfigs.Private.BasePathWithVersion = gConfigs.Public.BasePath + gConfigs.Public.Version;
+    if(gConfigs.Private.BasePathWithVersion.endsWith('/') == false)
+        gConfigs.Private.BasePathWithVersion += '/';
 
     gConfigs.Private.IsStarted = true;
 
@@ -97,7 +97,7 @@ void RESTServer::start() {
 
 
     QObject::connect(&gHTTPServer, &QHttpServer::newConnection, [](QHttpConnection* _con){
-        if(!validateConnection (_con->tcpSocket()->peerAdress(), _con->tcpSocket()->peerPort))
+        if(!validateConnection (_con->tcpSocket()->peerAddress(), _con->tcpSocket()->peerPort()))
             _con->killConnection();
     });
 
@@ -110,9 +110,9 @@ void RESTServer::start() {
 
             if(Path.startsWith(gConfigs.Public.BasePath) == false)
                 return RequestHandler->sendError(qhttp::ESTATUS_NOT_FOUND, "Path not found: '" + Path + "'", true);
-            if(Path.startsWith(gConfigs.Private.BaseParthWithVersion) == false)
+            if(Path.startsWith(gConfigs.Private.BasePathWithVersion) == false)
                 return RequestHandler->sendError(qhttp::ESTATUS_NOT_ACCEPTABLE, "Invalid Version or version not specified", true);
-            if(Path == gConfigs.Private.BaseParthWithVersion )
+            if(Path == gConfigs.Private.BasePathWithVersion )
                 return RequestHandler->sendError(qhttp::ESTATUS_NOT_ACCEPTABLE, "No API call provided", true);
 
             TargomanLogInfo(7,
@@ -123,7 +123,7 @@ void RESTServer::start() {
                             "]: "<<
                             Path<<
                             _req->url().query());
-            RequestHandler->process(Path.mid(gConfigs.Private.BaseParthWithVersion.size() - 1));
+            RequestHandler->process(Path.mid(gConfigs.Private.BasePathWithVersion.size() - 1));
         }catch(exHTTPError &ex){
             RequestHandler->sendError((qhttp::TStatusCode)ex.code(), ex.what(), ex.code() >= 500);
         }catch(exTargomanBase &ex){
@@ -140,8 +140,8 @@ void RESTServer::start() {
 
 #ifdef QHTTP_ENABLE_WEBSOCKET
     if(gConfigs.Public.WebSocketServerName.size()){
-        QObject::connect(&gWSServer, SIGNAL(sigNewConnection(QWebSocket*)), [](QWebSocket* _con){
-            if(!validateConnection (_con->peerAdress(), _con->peerPort()))
+        QObject::connect(&gWSServer, &WebSocketServer::sigNewConnection, [](QWebSocket* _con){
+            if(!validateConnection (_con->peerAddress(), _con->peerPort()))
                 _con->close(QWebSocketProtocol::CloseCodePolicyViolated,"IP banned");
         });
 
@@ -205,8 +205,6 @@ intfAPIArgManipulator::intfAPIArgManipulator(const QString &_realTypeName)
 }
 
 /***********************************************************************************************/
-QHash<QString, clsAPIObject*>  RESTAPIRegistry::Registry;
-
 RESTServer::stuConfig::stuConfig(const QString &_basePath,
                                  const QString &_version,
                                  quint16 _listenPort,
@@ -236,8 +234,9 @@ RESTServer::stuConfig::stuConfig(const QString &_basePath,
     MaxCachedItems(_maxCachedItems),
     CacheConnector(_cacheConnector)
 #ifdef QHTTP_ENABLE_WEBSOCKET
-    ,WebsocketServerName(_websocketServerName),
+    ,WebSocketServerName(_websocketServerName),
     WebSocketServerPort(_websocketServerPort),
+    WebSocketServerAdderss(_websocketListenAddress.toString()),
     WebSocketSecure(_webSocketSecure)
 #endif
 {
@@ -256,8 +255,9 @@ RESTServer::stuConfig::stuConfig(const RESTServer::stuConfig &_other) :
     MaxCachedItems(_other.MaxCachedItems),
     CacheConnector(_other.CacheConnector)
   #ifdef QHTTP_ENABLE_WEBSOCKET
-      ,WebSocketServerName(_other.WebsocketServerName),
+      ,WebSocketServerName(_other.WebSocketServerName),
       WebSocketServerPort(_other.WebSocketServerPort),
+      WebSocketServerAdderss(_other.WebSocketServerAdderss),
       WebSocketSecure(_other.WebSocketSecure)
   #endif
 {}

@@ -195,11 +195,10 @@ void clsRequestHandler::findAndCallAPI(const QString &_api)
 {
     clsAPIObject* APIObject = RESTAPIRegistry::getAPIObject(this->Request->methodString(), _api);
 
-    if(!APIObject){
+    if(!APIObject)
         return this->sendError(qhttp::ESTATUS_NOT_FOUND,
                                "API not found("+this->Request->methodString()+": "+_api+")",
                                true);
-    }
 
     QStringList Queries = this->Request->url().query().split('&', QString::SkipEmptyParts);
     this->sendResponse(StatusCodeOnMethod[this->Request->method()], APIObject->invoke(Queries, this->Request->userDefinedValues()));

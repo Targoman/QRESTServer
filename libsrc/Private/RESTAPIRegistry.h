@@ -47,8 +47,8 @@ public:
         return RESTAPIRegistry::Registry.value(RESTAPIRegistry::makeRESTAPIKey(_httpMethod, _path));
     }
 #ifdef QHTTP_ENABLE_WEBSOCKET
-    static inline clsAPIObject* getWSAPIObject(const QString _httpMethod, const QString& _path){
-        return RESTAPIRegistry::WSRegistry.value(RESTAPIRegistry::makeRESTAPIKey(_httpMethod, _path));
+    static inline clsAPIObject* getWSAPIObject(const QString& _path){
+        return RESTAPIRegistry::WSRegistry.value(RESTAPIRegistry::makeRESTAPIKey("WS", _path));
     }
 #endif
 

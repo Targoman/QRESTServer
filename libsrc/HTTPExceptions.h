@@ -36,7 +36,7 @@ public:
         Code(_errorCode)
     {}
 
-    virtual void toEnsureAvoidanceOFUsingBaseClass()=0;
+    virtual void toEnsureAvoidanceOfUsingBaseClass()=0;
 
     inline quint16 code() const{return this->Code;}
     inline const QString definition() const{return this->Definition;}
@@ -52,58 +52,58 @@ protected:
 };
 
 /*******************************************************************************/
-#define TARGOMAN_ADD_HTTP_EXCEPTION(_code,_name) \
+#define QRESTSERVER_ADD_HTTP_EXCEPTION(_code,_name) \
     class _name : public exHTTPError{\
     public: _name (const QString& _message = "", int _line = 0) : \
             exHTTPError (QString(TARGOMAN_M2STR(_name)).mid(2), _code, _message, _line) \
             {} \
-            void toEnsureAvoidanceOFUsingBaseClass(){} \
+            void toEnsureAvoidanceOfUsingBaseClass(){} \
     }
 
 /*******************************************************************************/
-TARGOMAN_ADD_HTTP_EXCEPTION(400, exHTTPBadRequest);
-TARGOMAN_ADD_HTTP_EXCEPTION(401, exHTTPUnauthorized);
-TARGOMAN_ADD_HTTP_EXCEPTION(402, exHTTPPaymentRequired);
-TARGOMAN_ADD_HTTP_EXCEPTION(403, exHTTPForbidden);
-TARGOMAN_ADD_HTTP_EXCEPTION(404, exHTTPNotFound);
-TARGOMAN_ADD_HTTP_EXCEPTION(405, exHTTPMethodNotAllowed);
-TARGOMAN_ADD_HTTP_EXCEPTION(406, exHTTPNotAcceptable);
-TARGOMAN_ADD_HTTP_EXCEPTION(407, exHTTPProxyAuthenticationRequired);
-TARGOMAN_ADD_HTTP_EXCEPTION(408, exHTTPRequestTimeout);
-TARGOMAN_ADD_HTTP_EXCEPTION(409, exHTTPConflict);
-TARGOMAN_ADD_HTTP_EXCEPTION(410, exHTTPGone);
-TARGOMAN_ADD_HTTP_EXCEPTION(411, exHTTPLengthRequired);
-TARGOMAN_ADD_HTTP_EXCEPTION(412, exHTTPPreconditionFailed);
-TARGOMAN_ADD_HTTP_EXCEPTION(413, exHTTPPayloadTooLarge);
-TARGOMAN_ADD_HTTP_EXCEPTION(414, exHTTPURITooLong);
-TARGOMAN_ADD_HTTP_EXCEPTION(415, exHTTPUnsupportedMediaType);
-TARGOMAN_ADD_HTTP_EXCEPTION(416, exHTTPRangeNotSatisfiable);
-TARGOMAN_ADD_HTTP_EXCEPTION(417, exHTTPExpectationFailed);
-TARGOMAN_ADD_HTTP_EXCEPTION(421, exHTTPMisdirectedRequest);
-TARGOMAN_ADD_HTTP_EXCEPTION(422, exHTTPUnprocessableEntity);
-TARGOMAN_ADD_HTTP_EXCEPTION(423, exHTTPLocked);
-TARGOMAN_ADD_HTTP_EXCEPTION(424, exHTTPFailedDependency);
-TARGOMAN_ADD_HTTP_EXCEPTION(426, exHTTPUpgradeRequired);
-TARGOMAN_ADD_HTTP_EXCEPTION(428, exHTTPPreconditionRequired);
-TARGOMAN_ADD_HTTP_EXCEPTION(429, exHTTPTooManyRequests);
-TARGOMAN_ADD_HTTP_EXCEPTION(431, exHTTPRequestHeaderFieldsTooLarge);
-TARGOMAN_ADD_HTTP_EXCEPTION(431, exHTTPLoginTimedout);
-TARGOMAN_ADD_HTTP_EXCEPTION(451, exHTTPUnavailableForLegalReasons);
-TARGOMAN_ADD_HTTP_EXCEPTION(498, exHTTPInvalidToken);
-TARGOMAN_ADD_HTTP_EXCEPTION(499, exHTTPTokenRequired);
+QRESTSERVER_ADD_HTTP_EXCEPTION(400, exHTTPBadRequest);
+QRESTSERVER_ADD_HTTP_EXCEPTION(401, exHTTPUnauthorized);
+QRESTSERVER_ADD_HTTP_EXCEPTION(402, exHTTPPaymentRequired);
+QRESTSERVER_ADD_HTTP_EXCEPTION(403, exHTTPForbidden);
+QRESTSERVER_ADD_HTTP_EXCEPTION(404, exHTTPNotFound);
+QRESTSERVER_ADD_HTTP_EXCEPTION(405, exHTTPMethodNotAllowed);
+QRESTSERVER_ADD_HTTP_EXCEPTION(406, exHTTPNotAcceptable);
+QRESTSERVER_ADD_HTTP_EXCEPTION(407, exHTTPProxyAuthenticationRequired);
+QRESTSERVER_ADD_HTTP_EXCEPTION(408, exHTTPRequestTimeout);
+QRESTSERVER_ADD_HTTP_EXCEPTION(409, exHTTPConflict);
+QRESTSERVER_ADD_HTTP_EXCEPTION(410, exHTTPGone);
+QRESTSERVER_ADD_HTTP_EXCEPTION(411, exHTTPLengthRequired);
+QRESTSERVER_ADD_HTTP_EXCEPTION(412, exHTTPPreconditionFailed);
+QRESTSERVER_ADD_HTTP_EXCEPTION(413, exHTTPPayloadTooLarge);
+QRESTSERVER_ADD_HTTP_EXCEPTION(414, exHTTPURITooLong);
+QRESTSERVER_ADD_HTTP_EXCEPTION(415, exHTTPUnsupportedMediaType);
+QRESTSERVER_ADD_HTTP_EXCEPTION(416, exHTTPRangeNotSatisfiable);
+QRESTSERVER_ADD_HTTP_EXCEPTION(417, exHTTPExpectationFailed);
+QRESTSERVER_ADD_HTTP_EXCEPTION(421, exHTTPMisdirectedRequest);
+QRESTSERVER_ADD_HTTP_EXCEPTION(422, exHTTPUnprocessableEntity);
+QRESTSERVER_ADD_HTTP_EXCEPTION(423, exHTTPLocked);
+QRESTSERVER_ADD_HTTP_EXCEPTION(424, exHTTPFailedDependency);
+QRESTSERVER_ADD_HTTP_EXCEPTION(426, exHTTPUpgradeRequired);
+QRESTSERVER_ADD_HTTP_EXCEPTION(428, exHTTPPreconditionRequired);
+QRESTSERVER_ADD_HTTP_EXCEPTION(429, exHTTPTooManyRequests);
+QRESTSERVER_ADD_HTTP_EXCEPTION(431, exHTTPRequestHeaderFieldsTooLarge);
+QRESTSERVER_ADD_HTTP_EXCEPTION(431, exHTTPLoginTimedout);
+QRESTSERVER_ADD_HTTP_EXCEPTION(451, exHTTPUnavailableForLegalReasons);
+QRESTSERVER_ADD_HTTP_EXCEPTION(498, exHTTPInvalidToken);
+QRESTSERVER_ADD_HTTP_EXCEPTION(499, exHTTPTokenRequired);
 //-----------------------------------------------------------------
-TARGOMAN_ADD_HTTP_EXCEPTION(500, exHTTPInternalServerError);
-TARGOMAN_ADD_HTTP_EXCEPTION(501, exHTTPNotImplemented);
-TARGOMAN_ADD_HTTP_EXCEPTION(502, exHTTPBadGateway);
-TARGOMAN_ADD_HTTP_EXCEPTION(503, exHTTPServiceUnavailable);
-TARGOMAN_ADD_HTTP_EXCEPTION(504, exHTTPGatewayTimeout);
-TARGOMAN_ADD_HTTP_EXCEPTION(505, exHTTPVersionNotSupported);
-TARGOMAN_ADD_HTTP_EXCEPTION(506, exHTTPVariantAlsoNegotiates);
-TARGOMAN_ADD_HTTP_EXCEPTION(507, exHTTPInsufficientStorage);
-TARGOMAN_ADD_HTTP_EXCEPTION(508, exHTTPLoopDetected);
-TARGOMAN_ADD_HTTP_EXCEPTION(510, exHTTPNotExtended);
-TARGOMAN_ADD_HTTP_EXCEPTION(511, exHTTPNetworkAuthenticationRequired);
-TARGOMAN_ADD_HTTP_EXCEPTION(520, exHTTPUnknownError);
+QRESTSERVER_ADD_HTTP_EXCEPTION(500, exHTTPInternalServerError);
+QRESTSERVER_ADD_HTTP_EXCEPTION(501, exHTTPNotImplemented);
+QRESTSERVER_ADD_HTTP_EXCEPTION(502, exHTTPBadGateway);
+QRESTSERVER_ADD_HTTP_EXCEPTION(503, exHTTPServiceUnavailable);
+QRESTSERVER_ADD_HTTP_EXCEPTION(504, exHTTPGatewayTimeout);
+QRESTSERVER_ADD_HTTP_EXCEPTION(505, exHTTPVersionNotSupported);
+QRESTSERVER_ADD_HTTP_EXCEPTION(506, exHTTPVariantAlsoNegotiates);
+QRESTSERVER_ADD_HTTP_EXCEPTION(507, exHTTPInsufficientStorage);
+QRESTSERVER_ADD_HTTP_EXCEPTION(508, exHTTPLoopDetected);
+QRESTSERVER_ADD_HTTP_EXCEPTION(510, exHTTPNotExtended);
+QRESTSERVER_ADD_HTTP_EXCEPTION(511, exHTTPNetworkAuthenticationRequired);
+QRESTSERVER_ADD_HTTP_EXCEPTION(520, exHTTPUnknownError);
 /*******************************************************************************/
 
 }

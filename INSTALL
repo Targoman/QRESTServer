@@ -41,9 +41,6 @@ Here is a brief guide on how to build QRESTServer
 
     * Following Qt development packages are optional and activated if existent
             - Qt5WebSocket
-            - Qt5Sql-mysql
-            - Qt5Sql-odbc
-            - Qt5Sql-mssql
 
     * Following projects are needed and defined as submodules
             - TargomanCommon (https://github.com/Targoman/TargomanCommon.git)

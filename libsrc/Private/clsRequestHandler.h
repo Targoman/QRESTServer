@@ -42,7 +42,9 @@ private:
         QTimer Timer;
         QObject::connect(&Timer, &QTimer::timeout, [](){
             gServerStats.Connections.snapshot(gConfigs.Public.StatisticsInterval);
+            gServerStats.WSConnections.snapshot(gConfigs.Public.StatisticsInterval);
             gServerStats.Errors.snapshot(gConfigs.Public.StatisticsInterval);
+            gServerStats.Blocked.snapshot(gConfigs.Public.StatisticsInterval);
             gServerStats.Success.snapshot(gConfigs.Public.StatisticsInterval);
 
             for (auto ListIter = gServerStats.APICallsStats.begin ();
@@ -67,6 +69,7 @@ private:
                     InternalCache::Cache.erase(Iter);
             }
         });
+
         Timer.start(gConfigs.Public.StatisticsInterval * 1000);
         this->exec();
     }
@@ -97,15 +100,15 @@ private:
 
     void storeDataInRequest();
 private:
-    clsRequestHandler* pRequestHandler;
-    QScopedPointer<QTemporaryFile> LastTempFile;
-    std::string LastMime;
-    std::string LastFileName;
-    std::string ToBeStoredItemName;
-    std::string LastItemName;
-    QString     LastValue;
-    int         LastWrittenBytes;
-    QStringList SameNameItems;
+    clsRequestHandler*              pRequestHandler;
+    QScopedPointer<QTemporaryFile>  LastTempFile;
+    std::string                     LastMime;
+    std::string                     LastFileName;
+    std::string                     ToBeStoredItemName;
+    std::string                     LastItemName;
+    QString                         LastValue;
+    int                             LastWrittenBytes;
+    QStringList                     SameNameItems;
 
     friend class clsRequestHandler;
 };
@@ -113,17 +116,21 @@ private:
 class clsRequestHandler :QObject
 {
 public:
-    clsRequestHandler(qhttp::server::QHttpRequest* _req, qhttp::server::QHttpResponse* _res, QObject *_parent = nullptr);
+    clsRequestHandler(qhttp::server::QHttpRequest* _req,
+                      qhttp::server::QHttpResponse* _res,
+                      QObject *_parent = nullptr);
     void process(const QString &_api);
     void findAndCallAPI(const QString &_api);
-    void sendError(qhttp::TStatusCode _code, const QString& _message, bool _closeConnection = false);
+    void sendError(qhttp::TStatusCode _code,
+                   const QString& _message,
+                   bool _closeConnection = false);
     void sendResponse(qhttp::TStatusCode _code, QVariant _response);
 
 private:
-    QByteArray      RemainingData;
-    qhttp::server::QHttpRequest* Request;
-    qhttp::server::QHttpResponse *Response;
-    QScopedPointer<clsMultipartFormDataRequestHandler> MultipartFormDataHandler;
+    QByteArray                                          RemainingData;
+    qhttp::server::QHttpRequest*                        Request;
+    qhttp::server::QHttpResponse*                       Response;
+    QScopedPointer<clsMultipartFormDataRequestHandler>  MultipartFormDataHandler;
 
     friend class clsMultipartFormDataRequestHandler;
 };

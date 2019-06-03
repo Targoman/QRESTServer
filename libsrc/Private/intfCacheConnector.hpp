@@ -55,8 +55,8 @@ public:
     }
 
 private:
-    virtual void setKeyValImpl(const QString& _key, const QString& _value, qint32 _ttl);
-    virtual QString getValueImpl(const QString& _key);
+    virtual void setKeyValImpl(const QString& _key, const QString& _value, qint32 _ttl) = 0;
+    virtual QString getValueImpl(const QString& _key) = 0;
 
 protected:
     QUrl ConnectorURL;

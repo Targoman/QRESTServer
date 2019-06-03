@@ -114,7 +114,7 @@ void RESTAPIRegistry::registerRESTAPI(intfRESTAPIHolder* _module, const QMetaMet
             RESTAPIRegistry::addRegistryEntry(RESTAPIRegistry::Registry, _module, _method, "PATCH", MethodName.at(6).toLower() + MethodName.mid(7));
         else if (MethodName.startsWith("WS")){
 #ifdef QHTTP_ENABLE_WEBSOCKET
-            RESTAPIRegistry::addRegistryEntry(RESTAPIRegistry::WSRegistry, _module, _method, "", MethodName.at(6).toLower() + MethodName.mid(7));
+            RESTAPIRegistry::addRegistryEntry(RESTAPIRegistry::WSRegistry, _module, _method, "WS", MethodName.at(2).toLower() + MethodName.mid(3));
 #else
             throw exRESTRegistry("Websockets are not enabled in this QRestServer please compile with websockets support");
 #endif
@@ -255,12 +255,12 @@ void RESTAPIRegistry::addRegistryEntry(QHash<QString, QHttp::Private::clsAPIObje
             throw exRESTRegistry("Both internal and central cache can not be defined on an API");
 
         _registry.insert(MethodKey,
-                                         new clsAPIObject(_module,
-                                                          _method,
-                                                          QString(_method.name()).startsWith("async"),
-                                                          RESTAPIRegistry::getCacheSeconds(_method, CACHE_INTERNAL),
-                                                          RESTAPIRegistry::getCacheSeconds(_method, CACHE_CENTRAL)
-                                                          ));
+                         new clsAPIObject(_module,
+                                          _method,
+                                          QString(_method.name()).startsWith("async"),
+                                          RESTAPIRegistry::getCacheSeconds(_method, CACHE_INTERNAL),
+                                          RESTAPIRegistry::getCacheSeconds(_method, CACHE_CENTRAL)
+                                          ));
     }
 }
 
@@ -281,14 +281,19 @@ int RESTAPIRegistry::getCacheSeconds(const QMetaMethod& _method, const char* _ty
         default:
             throw exRESTRegistry("Invalid CACHE numer or type defined for api: " + _method.methodSignature());
         }
-    }else
-        throw exRESTRegistry("Invalid tag defined for api: " + _method.methodSignature());
+    }
+    return 0;
 }
 
 
 Cache_t InternalCache::Cache;
 QMutex InternalCache::Lock;
+
 QScopedPointer<intfCacheConnector> CentralCache::Connector;
+QHash<QString, clsAPIObject*>  RESTAPIRegistry::Registry;
+#ifdef QHTTP_ENABLE_WEBSOCKET
+QHash<QString, clsAPIObject*>  RESTAPIRegistry::WSRegistry;
+#endif
 
 }
 }

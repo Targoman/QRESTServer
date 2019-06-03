@@ -70,7 +70,14 @@ stuTable SampleAPI::apiTranslate(const QString &_text, bool _detailed)
 
 stuTable SampleAPI::apiSampleList(const QVariantList &_list)
 {
-    return stuTable(_list   .size(), {{"data", _list}});
+    TargomanDebug(1, "Called: " <<__FUNCTION__<<" Params: (_list)");
+    return stuTable(_list.size(), {{"data", _list}});
+}
+
+QString SampleAPI::apiWSSample(const QString _value)
+{
+    TargomanDebug(1, "Called: " <<__FUNCTION__<<" Params: ("<<_value<<")");
+    return _value;
 }
 
 

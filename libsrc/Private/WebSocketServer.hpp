@@ -30,22 +30,24 @@
 
 #include "libTargomanCommon/Logger.h"
 #include "Private/Configs.hpp"
+#include "Private/RESTAPIRegistry.h"
 
 namespace QHttp {
 namespace Private {
 
 class WebSocketServer : public QObject{
     Q_OBJECT
+
 public:
     void start(){
-        this->WS.reset = new QWebSocketServer(gConfigs.Public.WebSocketServerName,
-                                              gConfigs.Public.WebSocketSecure ? QWebSocketServer::SecureMode : QWebSocketServer::NonSecureMode);
+        this->WS.reset(new QWebSocketServer(gConfigs.Public.WebSocketServerName,
+                                            gConfigs.Public.WebSocketSecure ? QWebSocketServer::SecureMode : QWebSocketServer::NonSecureMode));
 
 
         if (this->WS->listen(QHostAddress::Any, gConfigs.Public.WebSocketServerPort)) {
-            TargomanInfo(1, "WebSocketServer is listening on "<<gConfigs.Public.WebSocketServerPort<< " Name: "<<gConfigs.Public.WebSocketServerName);
-            connect(m_pWebSocketServer, &QWebSocketServer::newConnection, this,SLOT(onNewConnection());
-            connect(gWSServer, &QWebSocketServer::closed, this, &WebSocketServer::closed);
+            TargomanLogInfo(1, "WebSocketServer is listening on "<<gConfigs.Public.WebSocketServerPort<< " Name: "<<gConfigs.Public.WebSocketServerName);
+            connect(this->WS.data(), &QWebSocketServer::newConnection, this, &WebSocketServer::onNewConnection);
+            connect(this->WS.data(), &QWebSocketServer::closed, this, &WebSocketServer::closed);
         }
     }
 
@@ -55,27 +57,79 @@ public:
     }
 signals:
     void sigNewConnection(QWebSocket* _connection);
+    void closed();
 
 private slots:
     void onNewConnection(){
         QWebSocket *pSocket = this->WS->nextPendingConnection();
 
-        connect(pSocket, &QWebSocket::textMessageReceived, this, SLOT(processTextMessage(QString)));
-        connect(pSocket, &QWebSocket::binaryMessageReceived, this, SLOT(processBinaryMessage(QByteArray)));
-        connect(pSocket, &QWebSocket::disconnected, this, SLOT(socketDisconnected()));
+        connect(pSocket, &QWebSocket::textMessageReceived, this, &WebSocketServer::processTextMessage);
+        connect(pSocket, &QWebSocket::binaryMessageReceived, this, &WebSocketServer::processBinaryMessage);
+        connect(pSocket, &QWebSocket::disconnected, this, &WebSocketServer::socketDisconnected);
 
         this->Clients << pSocket;
 
         emit sigNewConnection(pSocket);
     }
-    void processTextMessage(QString message);
-    void processBinaryMessage(QByteArray message);
+
+    void processTextMessage(QString _message){
+        QWebSocket *pSocket = qobject_cast<QWebSocket *>(sender());
+        TargomanDebug(5, "Text Message Received:" << _message);
+
+        if (pSocket) {
+            auto sendError = [pSocket](qhttp::TStatusCode _code, QString _message){
+                QJsonObject ErrorInfo = QJsonObject({
+                                                        {"code", _code},
+                                                        {"message", _message}
+                                                    });
+                pSocket->sendTextMessage(QJsonDocument(QJsonObject({{"error",
+                                                                     ErrorInfo
+                                                                    }})).toJson(gConfigs.Public.IndentedJson ? QJsonDocument::Indented : QJsonDocument::Compact).data());
+            };
+
+            try{
+                QJsonParseError Error;
+                QJsonDocument JSON = QJsonDocument::fromJson(_message.toUtf8(), &Error);
+                if(JSON.isNull())
+                    throw exHTTPBadRequest(QString("Invalid JSON request: %1").arg(Error.errorString()));
+
+                QJsonObject JSONReqObject = JSON.object();
+                clsAPIObject* APIObject = RESTAPIRegistry::getWSAPIObject (JSONReqObject.begin().key());
+                QString API = JSONReqObject.begin().key();
+                QVariantMap APIArgs = JSONReqObject.begin().value().toObject().toVariantMap();
+                QStringList Queries;
+                for(auto Map = APIArgs.begin(); Map != APIArgs.end(); ++Map)
+                    Queries.append(Map.key() + '=' + Map.value().toString());
+
+
+                if(!APIObject)
+                    return sendError(qhttp::ESTATUS_NOT_FOUND, "WS API not found ("+API+")");
+                QByteArray Data = QJsonDocument(QJsonObject({{"result",
+                                                              QJsonValue::fromVariant(APIObject->invoke(Queries))
+                                                             }})).toJson(gConfigs.Public.IndentedJson ? QJsonDocument::Indented : QJsonDocument::Compact);
+                pSocket->sendTextMessage(Data.data());
+            }catch(exHTTPError &ex){
+                sendError((qhttp::TStatusCode)ex.code(), ex.what());
+            }catch(Targoman::Common::exTargomanBase &ex){
+                sendError(qhttp::ESTATUS_INTERNAL_SERVER_ERROR, ex.what());
+            }
+        }
+    }
+
+    void processBinaryMessage(QByteArray _message){
+        QWebSocket *pSocket = qobject_cast<QWebSocket *>(sender());
+        TargomanDebug(5, "Binary Message Received:" << _message);
+        if (pSocket) {
+            pSocket->sendBinaryMessage(_message);
+        }
+    }
+
     void socketDisconnected(){
         QWebSocket *pClient = qobject_cast<QWebSocket *>(sender());
         if (pClient) {
             TargomanLogDebug(5, "Client Disconnected: "<<pClient)
-            this->Clients.removeAll(pClient);
-            this->Clients->deleteLater();
+                    this->Clients.removeAll(pClient);
+            pClient->deleteLater();
         }
     }
 

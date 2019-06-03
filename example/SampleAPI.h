@@ -42,6 +42,7 @@ private slots:
 
     QHttp::stuTable apiTranslate(const QString& _text, bool _info = ",");
     QHttp::stuTable apiSampleList(const QVariantList& _list);
+    QString apiWSSample(const QString _value);
 
 private:
     SampleAPI();

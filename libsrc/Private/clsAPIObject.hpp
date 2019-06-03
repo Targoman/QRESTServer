@@ -225,6 +225,8 @@ public:
             case 10: InvocationResult = InvokableMethod.invoke(this->parent(), this->IsAsync ? Qt::QueuedConnection : Qt::DirectConnection,
                                                                _returnArg, USE_ARG_AT(0),USE_ARG_AT(1),USE_ARG_AT(2),USE_ARG_AT(3),USE_ARG_AT(4),
                                                                USE_ARG_AT(5),USE_ARG_AT(6),USE_ARG_AT(7),USE_ARG_AT(8),USE_ARG_AT(9));break;
+            default:
+                throw exHTTPInternalServerError(QString("At most 10 method params are supported"));
             }
 
             if (InvocationResult == false)

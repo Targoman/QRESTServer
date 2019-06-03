@@ -96,6 +96,9 @@ private slots:
                 QJsonObject JSONReqObject = JSON.object();
                 clsAPIObject* APIObject = RESTAPIRegistry::getWSAPIObject (JSONReqObject.begin().key());
                 QString API = JSONReqObject.begin().key();
+                if(API.isEmpty())
+                    return sendError(qhttp::ESTATUS_BAD_REQUEST, "No API path specified");
+
                 QVariantMap APIArgs = JSONReqObject.begin().value().toObject().toVariantMap();
                 QStringList Queries;
                 for(auto Map = APIArgs.begin(); Map != APIArgs.end(); ++Map)

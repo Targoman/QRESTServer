@@ -49,3 +49,6 @@ RCC_DIR      = $$BuildFolderPattern/$$TARGET/rcc
 UI_DIR       = $$BuildFolderPattern/$$TARGET/ui
 
 LIBS += -l$$ProjectName
+
+DISTFILES += \
+    sampleWSClient.html

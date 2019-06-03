@@ -37,7 +37,7 @@ void SampleAPI::init()
 {
 }
 
-int SampleAPI::apiGETSampleData()
+CACHEABLE_3H int SampleAPI::apiGETSampleData()
 {
     TargomanDebug(1, "Called: " <<__FUNCTION__<<" Params: ()");
     return 5;

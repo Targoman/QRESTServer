@@ -45,6 +45,7 @@ TARGOMAN_DEFINE_ENHANCED_ENUM(enuIPBlackListStatus,
  * @brief The fnIsInBlackList_t type is used to define a IP checker lambda
  */
 using fnIsInBlackList_t = std::function<enuIPBlackListStatus::Type (QHostAddress)>;
+
 /********************************************************************************/
 /**
  * @brief The RESTServer class is a static class which starts the REST server and listens on a address/port specified in configs.

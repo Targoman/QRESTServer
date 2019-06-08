@@ -201,7 +201,17 @@ void clsRequestHandler::findAndCallAPI(const QString &_api)
                                true);
 
     QStringList Queries = this->Request->url().query().split('&', QString::SkipEmptyParts);
-    this->sendResponse(StatusCodeOnMethod[this->Request->method()], APIObject->invoke(Queries, this->Request->userDefinedValues()));
+    QMap<QString, QString> Headers = this->Request->headers();
+    QMap<QString, QString> Cookies = this->Request->cookies();
+    QJsonObject JWT = this->extractJWT();
+
+    this->sendResponse(
+                StatusCodeOnMethod[this->Request->method()],
+                APIObject->invoke(Queries,
+                                  this->Request->userDefinedValues(),
+                                  Headers,
+                                  Cookies,
+                                  JWT));
 }
 
 void clsRequestHandler::sendError(qhttp::TStatusCode _code, const QString &_message, bool _closeConnection)

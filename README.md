@@ -20,7 +20,26 @@
  # Motivation
  [TOC](#table-of-contents)
 
- Nowadays most of the APIs are written in High-Level Languages such as PHP, python, JS, ruby, C#, etc. But why not to use the
+ Nowadays most of the APIs are written in high-level languages such as PHP, python, GO, JS, ruby, etc.
+ While using these high-level languages causes rapid development it will decrease performance.
+ Fig.1 shows a performance comparison between common RESTfull API Servers
+
+ As can be seen in Fig.1 vanilla PHP is too slow and can be ignored and other frameworks are some near in results.
+ Fig.2 show a detailed comparison ignoring PHP as a choice.
+
+
+ Apart from performance issue which can be ignored in most of cases, in complex tasks where there are multiple
+ inter-communiactions betwen low-level/high-level componenets are required to respond an API call
+ (ex. inter-communicaiton betwwen micro-services), using such langugaes make things some complex.
+ In Targoman Translation Framework, on each call to translation API we need to first normalize/tokenize input text,
+ then classify and choose appropiate translation engine, next call the chosen translation engine and get back results
+ and detokenize final translation. This process requires inter-communication between at least 4 independent microservices,
+ while high-level logic also depends on the result of intermediate micro-services results. Using QRESTServer we could
+ embed some of these micro-services (as libraries) in the main API and avoid multiple intermediate API calls.
+
+ You may ask:
+ * why C++? A short answer is performance and easy integration to our other developed libraries.
+ * But why Qt?
 
  # Sample codes
 [TOC](#table-of-contents)

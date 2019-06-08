@@ -55,8 +55,13 @@ public:
         return (this->BaseMethod.name() + QJsonValue::fromVariant(_args).toString().toUtf8()).constData();
     }
 
-
-    inline QVariant invoke(const QStringList& _args, QList<QPair<QString, QString>> _bodyArgs = QList<QPair<QString, QString>>()) const{
+//TODO add headers, JWT, COOKIE default params
+    inline QVariant invoke(const QStringList& _args,
+                           QList<QPair<QString, QString>> _bodyArgs = QList<QPair<QString, QString>>(),
+                           QMap<QString, QString> _headers = QMap<QString, QString>(),
+                           QMap<QString, QString> _cookies = QMap<QString, QString>(),
+                           QJsonObject _jwt = QJsonObject(),
+                           ) const{
         Q_ASSERT_X(this->parent(), "parent module", "Parent module not found to invoke method");
 
         if(_args.size() + _bodyArgs.size() < this->RequiredParamsCount)
@@ -84,13 +89,29 @@ public:
                 }
             };
 
-            foreach (const QString& Arg, _args){
-                if(Arg.startsWith(this->ParamNames.at(i)+ '=')){
-                    ParamNotFound = false;
-                    ArgumentValue = parseArgValue(this->ParamNames.at(i), QUrl::fromPercentEncoding(Arg.mid(Arg.indexOf('=') + 1).toUtf8()));
-                    break;
-                }
+            if(ParamNames.at(i) == "_COOKIES"){
+                ParamNotFound = false;
+                ArgumentValue = _cookies;
             }
+
+            if(ParamNotFound && ParamNames.at(i) == "_HEADERS"){
+                ParamNotFound = false;
+                ArgumentValue = _headers;
+            }
+
+            if(ParamNotFound && ParamNames.at(i) == "_JWT"){
+                ParamNotFound = false;
+                ArgumentValue = _jwt;
+            }
+
+            if(ParamNotFound)
+                foreach (const QString& Arg, _args){
+                    if(Arg.startsWith(this->ParamNames.at(i)+ '=')){
+                        ParamNotFound = false;
+                        ArgumentValue = parseArgValue(this->ParamNames.at(i), QUrl::fromPercentEncoding(Arg.mid(Arg.indexOf('=') + 1).toUtf8()));
+                        break;
+                    }
+                }
 
             if(ParamNotFound)
                 foreach (auto BodyArg, _bodyArgs) {
@@ -119,8 +140,7 @@ public:
                 Q_ASSERT(this->BaseMethod.parameterType(i) - QHTTP_BASE_USER_DEFINED_TYPEID < gOrderedMetaTypeInfo.size());
                 Q_ASSERT(gUserDefinedTypesInfo.at(this->BaseMethod.parameterType(i) - QHTTP_BASE_USER_DEFINED_TYPEID) != nullptr);
 
-                Arguments.push_back(
-                            ArgumentValue);
+                Arguments.push_back(ArgumentValue);
             }else{
                 Q_ASSERT(this->BaseMethod.parameterType(i) < gOrderedMetaTypeInfo.size());
                 Q_ASSERT(gOrderedMetaTypeInfo.at(this->BaseMethod.parameterType(i)) != nullptr);

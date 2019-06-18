@@ -28,6 +28,7 @@
 #include "libTargomanCommon/clsCountAndSpeed.h"
 #include "libTargomanCommon/Configuration/intfConfigurableModule.hpp"
 #include "QHttp/HTTPExceptions.h"
+#include <QHttp/qhttpfwd.hpp>
 
 namespace QHttp {
 /**********************************************************************/
@@ -146,11 +147,21 @@ protected:
      * This method must be called in subclasses constructor
      */
     void registerMyRESTAPIs();
+
+    /**
+     * @brief createSignedJWT
+     * @param _payload
+     * @param _expiry
+     * @param _sessionID
+     * @return
+     */
+    QByteArray createSignedJWT(QJsonObject _payload, const qint32 _expiry = -1, const QString &_sessionID = QString());
 };
 
 }
 
 /**********************************************************************/
 Q_DECLARE_METATYPE(QHttp::stuTable)
+Q_DECLARE_METATYPE(qhttp::THeaderHash)
 
 #endif // QHTTP_INTFRESTAPIHOLDER_H

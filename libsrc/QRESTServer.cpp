@@ -29,6 +29,8 @@
 #include "Private/clsRequestHandler.h"
 #include "Private/clsRedisConnector.h"
 #include "Private/WebSocketServer.hpp"
+#include "Private/QJWT.h"
+#include "QHttp/qhttpfwd.hpp"
 
 namespace QHttp {
 
@@ -160,8 +162,6 @@ void RESTServer::stop()
     gConfigs.Private.IsStarted = false;
     if(gStatUpdateThread)
         gStatUpdateThread->quit();
-
-
 }
 
 stuStatistics RESTServer::stats()
@@ -185,12 +185,25 @@ intfRESTAPIHolder::intfRESTAPIHolder(Targoman::Common::Configuration::intfModule
                 },
                 nullptr
     );
+
+    QHTTP_REGISTER_METATYPE(
+        qhttp::THeaderHash,
+            [](const qhttp::THeaderHash& _value) -> QVariant {
+                return _value.toVariant();
+            },
+            nullptr
+    );
 }
 
 void intfRESTAPIHolder::registerMyRESTAPIs(){
     for (int i=0; i<this->metaObject()->methodCount(); ++i)
         RESTAPIRegistry::registerRESTAPI(this, this->metaObject()->method(i));
 
+}
+
+QByteArray intfRESTAPIHolder::createSignedJWT(QJsonObject _payload, const qint32 _expiry, const QString &_sessionID)
+{
+    return Private::QJWT::createSigned(_payload, _expiry, _sessionID);
 }
 
 QStringList intfRESTAPIHolder::apiGETListOfAPIs(bool _showParams, bool _showTypes, bool _prettifyTypes){
@@ -210,12 +223,16 @@ RESTServer::stuConfig::stuConfig(const QString &_basePath,
                                  quint16 _listenPort,
                                  bool _indentedJson,
                                  const QHostAddress &_listenAddress,
-                         #ifdef QHTTP_ENABLE_WEBSOCKET
+                                 const QString& _jwtSecret,
+                                 enuJWTHashAlgs::Type _jwtHashAlgorithm,
+
+                        #ifdef QHTTP_ENABLE_WEBSOCKET
                                  const QString& _websocketServerName,
                                  quint16        _websocketServerPort,
                                  const QHostAddress& _websocketListenAddress,
                                  bool    _webSocketSecure,
                          #endif
+
                                  const fnIsInBlackList_t &_ipBlackListChecker,
                                  const QString &_cacheConnector,
                                  quint8 _statisticsInterval,
@@ -228,6 +245,8 @@ RESTServer::stuConfig::stuConfig(const QString &_basePath,
     StatisticsInterval(_statisticsInterval),
     ListenPort(_listenPort),
     ListenAddress(_listenAddress),
+    JWTSecret(_jwtSecret),
+    JWTHashAlgorithm(_jwtHashAlgorithm),
     IndentedJson(_indentedJson),
     MaxUploadSize(_maxUploadSize),
     MaxUploadedFileSize(_maxUploadedFileSize),
@@ -249,6 +268,8 @@ RESTServer::stuConfig::stuConfig(const RESTServer::stuConfig &_other) :
     StatisticsInterval(_other.StatisticsInterval),
     ListenPort(_other.ListenPort),
     ListenAddress(_other.ListenAddress),
+    JWTSecret(_other.JWTSecret),
+    JWTHashAlgorithm(_other.JWTHashAlgorithm),
     IndentedJson(_other.IndentedJson),
     MaxUploadSize(_other.MaxUploadSize),
     MaxUploadedFileSize(_other.MaxUploadedFileSize),

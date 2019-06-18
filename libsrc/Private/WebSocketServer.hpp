@@ -143,6 +143,6 @@ private:
 
 }
 }
-#endif
+#endif // QHTTP_ENABLE_WEBSOCKET
 
 #endif // QHTTP_CLSWEBSOCKETSERVER_HPP

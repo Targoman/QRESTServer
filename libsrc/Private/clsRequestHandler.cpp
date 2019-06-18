@@ -31,6 +31,7 @@
 #include "libTargomanCommon/CmdIO.h"
 #include "intfRESTAPIHolder.h"
 #include "Configs.hpp"
+#include "QJWT.h"
 
 namespace QHttp {
 namespace Private {
@@ -201,9 +202,26 @@ void clsRequestHandler::findAndCallAPI(const QString &_api)
                                true);
 
     QStringList Queries = this->Request->url().query().split('&', QString::SkipEmptyParts);
-    QMap<QString, QString> Headers = this->Request->headers();
-    QMap<QString, QString> Cookies = this->Request->cookies();
-    QJsonObject JWT = this->extractJWT();
+    qhttp::THeaderHash Headers = this->Request->headers();
+    qhttp::THeaderHash Cookies;
+    QJsonObject JWT;
+
+    if(APIObject->requiresJWT()){
+        QString Auth = Headers.value("authorization");
+        if(Auth.startsWith("Bearer "))
+            JWT = QJWT::verifyReturnPayload(Auth.mid(sizeof("Bearer ")));
+    }
+
+
+    if(Headers.value("cookie").size()){
+        foreach (auto Cookie, Headers.value("cookie").split(';')) {
+            auto CookieParts = Cookie.split('=');
+            Cookies.insert(CookieParts.first(), CookieParts.size() > 1 ? CookieParts.last() : QByteArray());
+        }
+    }
+
+    Headers.remove("cookie");
+
 
     this->sendResponse(
                 StatusCodeOnMethod[this->Request->method()],

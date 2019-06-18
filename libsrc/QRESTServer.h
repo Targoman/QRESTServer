@@ -48,6 +48,14 @@ using fnIsInBlackList_t = std::function<enuIPBlackListStatus::Type (QHostAddress
 
 /********************************************************************************/
 /**
+ * @brief The enuIPBlackListStatus enum is defined to be used as result of fnIsInBlackList_t
+ */
+TARGOMAN_DEFINE_ENHANCED_ENUM(enuJWTHashAlgs,
+                              HS256,
+                              HS384,
+                              HS512)
+
+/**
  * @brief The RESTServer class is a static class which starts the REST server and listens on a address/port specified in configs.
  *        In order to use this class you must start a QCoreApplication and then call configure"()" if wish to configure server
  *        and then call start"()"
@@ -67,11 +75,14 @@ public:
         quint8 StatisticsInterval;
         quint16 ListenPort;
         QHostAddress ListenAddress;
+        QString      JWTSecret;
+        enuJWTHashAlgs::Type JWTHashAlgorithm;
         bool         IndentedJson;
         qint64       MaxUploadSize;
         qint64       MaxUploadedFileSize;
         quint32      MaxCachedItems;
         QString      CacheConnector;
+
 #ifdef QHTTP_ENABLE_WEBSOCKET
         QString WebSocketServerName;
         quint16 WebSocketServerPort;
@@ -84,12 +95,15 @@ public:
                   quint16 _listenPort = 9000,
                   bool _indentedJson = false,
                   const QHostAddress& _listenAddress = QHostAddress::Any,
-          #ifdef QHTTP_ENABLE_WEBSOCKET
-                  const QString& _websocketServerName = "",
-                  quint16        _websocketServerPort = 9010,
-                  const QHostAddress& _websocketListenAddress = QHostAddress::Any,
-                  bool    _webSocketSecure = false,
-          #endif
+                  const QString& _jwtSecret = "sampleSecret",
+                  enuJWTHashAlgs::Type _jwtHashAlgorithm = enuJWTHashAlgs::HS256,
+#ifdef QHTTP_ENABLE_WEBSOCKET
+                          const QString& _websocketServerName = "",
+                          quint16        _websocketServerPort = 9001,
+                          const QHostAddress& _websocketListenAddress = QHostAddress::Any,
+                          bool    _webSocketSecure = false,
+#endif
+
                   const fnIsInBlackList_t& _ipBlackListChecker = {},
                   const QString& _cacheConnector = "redis://127.0.0.1",
                   quint8 _statisticsInterval = 3,

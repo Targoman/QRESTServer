@@ -21,36 +21,27 @@
  * @author S. Mohammad M. Ziabary <ziabary@targoman.com>
  */
 
-#ifndef QHTTP_CLSREDISCONNECTOR_H
-#define QHTTP_CLSREDISCONNECTOR_H
+#ifndef QHTTP_CLSJWT_H
+#define QHTTP_CLSJWT_H
 
-#ifdef QHTTP_REDIS_PROTOCOL
-
-extern "C" {
-    #include "hiredis/hiredis.h"
-}
-
-#include "Private/intfCacheConnector.hpp"
+#include <QMessageAuthenticationCode>
+#include <QJsonDocument>
+#include <QJsonObject>
 
 namespace QHttp {
 namespace Private{
 
-
-class clsRedisConnector : public intfCacheConnector {
+class QJWT
+{
 public:
-    clsRedisConnector(const QUrl& _connector);
-
-    void connect();
-    bool reconnect();
-    void setKeyValImpl(const QString& _key, const QString& _value, qint32 _ttl);
-    QString getValueImpl(const QString& _key);
+    static QByteArray createSigned(QJsonObject _payload, const qint32 _expiry = -1, const QString &_sessionID = QString());
+    static QJsonObject verifyReturnPayload(const QString& _jwt);
 
 private:
-    QScopedPointer<redisContext> Connection;
+    static const QByteArray hash(const QByteArray& _data);
 };
 
 }
 }
-#endif //QHTTP_REDIS_PROTOCOL
 
-#endif // QHTTP_CLSREDISCONNECTOR_H
+#endif // QHTTP_CLSJWT_H

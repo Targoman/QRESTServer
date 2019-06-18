@@ -55,12 +55,15 @@ public:
         return (this->BaseMethod.name() + QJsonValue::fromVariant(_args).toString().toUtf8()).constData();
     }
 
-//TODO add headers, JWT, COOKIE default params
+    inline bool requiresJWT(){
+        return ParamNames.contains("_JWT");
+    }
+
     inline QVariant invoke(const QStringList& _args,
                            QList<QPair<QString, QString>> _bodyArgs = QList<QPair<QString, QString>>(),
-                           QMap<QString, QString> _headers = QMap<QString, QString>(),
-                           QMap<QString, QString> _cookies = QMap<QString, QString>(),
-                           QJsonObject _jwt = QJsonObject(),
+                           qhttp::THeaderHash _headers = qhttp::THeaderHash(),
+                           qhttp::THeaderHash _cookies = qhttp::THeaderHash(),
+                           QJsonObject _jwt = QJsonObject()
                            ) const{
         Q_ASSERT_X(this->parent(), "parent module", "Parent module not found to invoke method");
 
@@ -89,17 +92,17 @@ public:
                 }
             };
 
-            if(ParamNames.at(i) == "_COOKIES"){
+            if(this->ParamNames.at(i) == "_COOKIES"){
                 ParamNotFound = false;
-                ArgumentValue = _cookies;
+                ArgumentValue = _cookies.toVariant();
             }
 
-            if(ParamNotFound && ParamNames.at(i) == "_HEADERS"){
+            if(ParamNotFound && this->ParamNames.at(i) == "_HEADERS"){
                 ParamNotFound = false;
-                ArgumentValue = _headers;
+                ArgumentValue = _headers.toVariant();
             }
 
-            if(ParamNotFound && ParamNames.at(i) == "_JWT"){
+            if(ParamNotFound && this->ParamNames.at(i) == "_JWT"){
                 ParamNotFound = false;
                 ArgumentValue = _jwt;
             }
@@ -290,6 +293,8 @@ private:
     friend class RESTAPIRegistry;
 };
 
+
 }
 }
+
 #endif // QHTTP_PRIVATE_CLSAPIOBJECT_HPP

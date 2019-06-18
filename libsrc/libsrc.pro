@@ -39,7 +39,8 @@ SOURCES += \
     Private/clsRequestHandler.cpp \
     Private/RESTAPIRegistry.cpp \
     QRESTServer.cpp \
-    Private/clsRedisConnector.cpp
+    Private/clsRedisConnector.cpp \
+    Private/QJWT.cpp
 
 # +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-#
 OTHER_FILES += \
@@ -79,6 +80,7 @@ HEADERS += $$DIST_HEADERS \
     Private/APICache.hpp \
     Private/intfCacheConnector.hpp \
     Private/clsRedisConnector.h \
-    Private/WebSocketServer.hpp
+    Private/WebSocketServer.hpp \
+    Private/QJWT.h
 
 include($$PRJDIR/qmake/install.pri)

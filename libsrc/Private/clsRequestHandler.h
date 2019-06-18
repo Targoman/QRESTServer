@@ -99,6 +99,7 @@ private:
     static void onDataEnd(void *_userData);
 
     void storeDataInRequest();
+
 private:
     clsRequestHandler*              pRequestHandler;
     QScopedPointer<QTemporaryFile>  LastTempFile;

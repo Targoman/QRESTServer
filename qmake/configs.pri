@@ -90,7 +90,8 @@ QMAKE_LIBDIR +=  $$FullDependencySearchPaths
 #+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-++-+-+-
 DEPS_BUILT = $$PRJDIR/out/.depsBuilt
 Dependencies.target  = $$DEPS_BUILT
-unix: Dependencies.commands = $$PRJDIR/buildDependencies.sh $$PRJDIR out/.depsBuilt;
+Dependencies.depends = FORCE
+unix: Dependencies.commands = $$PRJDIR/buildDependencies.sh $$PRJDIR $$DEPS_BUILT;
 win32: error(submodule auto-compile has not yet been implemented for windows)
 
 PRE_TARGETDEPS += $$DEPS_BUILT

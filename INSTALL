@@ -25,8 +25,7 @@ Here is a brief guide on how to build QRESTServer
     script.
 
 2- Update dependencies:
-    * git submodule init
-    * git submodule update --recursive
+    * git submodule update --init --recursive
 
 3 - Requirements:
     * Linux x86 64bit machine
@@ -46,6 +45,8 @@ Here is a brief guide on how to build QRESTServer
             - TargomanCommon (https://github.com/Targoman/TargomanCommon.git)
             - QHttp (https://github.com/Targoman/QHttp.git)
             - multipart-parser (https://github.com/FooBarWidget/multipart-parser.git)
+    * hiredis library is also needed for compiling the library
+            - run `apt install libhiredis-dev` in ubuntu to install this dependency
 
 4 - run qmake with following options:
     * CONFIG+=debug if you want to build a debugging version

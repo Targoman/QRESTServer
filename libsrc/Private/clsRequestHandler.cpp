@@ -208,12 +208,14 @@ void clsRequestHandler::findAndCallAPI(const QString &_api)
 
     if(APIObject->requiresJWT()){
         QString Auth = Headers.value("authorization");
-        if(Auth.startsWith("Bearer "))
+        if(Auth.startsWith("Bearer ")){
             JWT = QJWT::verifyReturnPayload(Auth.mid(sizeof("Bearer ")));
+            Headers.remove("authorization");
+        } else
+            throw exHTTPForbidden("No valid authentication header is present");
     }
 
-
-    if(Headers.value("cookie").size()){
+    if(APIObject->requiresCookies() && Headers.value("cookie").size()){
         foreach (auto Cookie, Headers.value("cookie").split(';')) {
             auto CookieParts = Cookie.split('=');
             Cookies.insert(CookieParts.first(), CookieParts.size() > 1 ? CookieParts.last() : QByteArray());
@@ -221,7 +223,6 @@ void clsRequestHandler::findAndCallAPI(const QString &_api)
     }
 
     Headers.remove("cookie");
-
 
     this->sendResponse(
                 StatusCodeOnMethod[this->Request->method()],

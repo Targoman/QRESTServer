@@ -59,6 +59,10 @@ public:
         return ParamNames.contains("_JWT");
     }
 
+    inline bool requiresCookies(){
+        return this->ParamNames.contains("_COOKIES");
+    }
+
     inline QVariant invoke(const QStringList& _args,
                            QList<QPair<QString, QString>> _bodyArgs = QList<QPair<QString, QString>>(),
                            qhttp::THeaderHash _headers = qhttp::THeaderHash(),

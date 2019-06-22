@@ -77,6 +77,7 @@ public:
         QHostAddress ListenAddress;
         QString      JWTSecret;
         enuJWTHashAlgs::Type JWTHashAlgorithm;
+        quint64      SimpleCryptKey;
         bool         IndentedJson;
         qint64       MaxUploadSize;
         qint64       MaxUploadedFileSize;
@@ -97,6 +98,7 @@ public:
                   const QHostAddress& _listenAddress = QHostAddress::Any,
                   const QString& _jwtSecret = "sampleSecret",
                   enuJWTHashAlgs::Type _jwtHashAlgorithm = enuJWTHashAlgs::HS256,
+                  quint64 _simpleCryptKey = 0x25443770f10af379,
 #ifdef QHTTP_ENABLE_WEBSOCKET
                           const QString& _websocketServerName = "",
                           quint16        _websocketServerPort = 9001,

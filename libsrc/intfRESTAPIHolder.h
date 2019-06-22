@@ -47,6 +47,25 @@ struct stuStatistics {
     QHash<QByteArray, Targoman::Common::clsCountAndSpeed> APICentralCacheStats;
 };
 
+/*using COOKIES_t = qhttp::THeaderHash;
+using HEADERS_t = qhttp::THeaderHash ;*/
+class COOKIES_t : public qhttp::THeaderHash{
+public:
+    COOKIES_t fromVariant (const QVariant &_value){
+        THeaderHash Value = THeaderHash::fromVariant (_value);
+        return *reinterpret_cast<COOKIES_t*>(&Value);
+    }
+};
+
+class HEADERS_t : public qhttp::THeaderHash{
+public:
+    HEADERS_t fromVariant (const QVariant &_value){
+        THeaderHash Value = THeaderHash::fromVariant (_value);
+        return *reinterpret_cast<HEADERS_t*>(&Value);
+    }
+};
+
+using JWT_t = QJsonObject;
 /**********************************************************************/
 /**
  * @brief The stuTable struct
@@ -155,13 +174,14 @@ protected:
      * @param _sessionID
      * @return
      */
-    QByteArray createSignedJWT(QJsonObject _payload, const qint32 _expiry = -1, const QString &_sessionID = QString());
+    QByteArray createSignedJWT(QJsonObject _payload, QJsonObject _privatePayload = QJsonObject(), const qint32 _expiry = -1, const QString &_sessionID = QString());
 };
 
 }
 
 /**********************************************************************/
 Q_DECLARE_METATYPE(QHttp::stuTable)
-Q_DECLARE_METATYPE(qhttp::THeaderHash)
+Q_DECLARE_METATYPE(QHttp::COOKIES_t)
+Q_DECLARE_METATYPE(QHttp::HEADERS_t)
 
 #endif // QHTTP_INTFRESTAPIHOLDER_H

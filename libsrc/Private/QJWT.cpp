@@ -24,11 +24,21 @@
 #include <QStringList>
 #include "QJWT.h"
 #include "Configs.hpp"
+#include "clsSimpleCrypt.h"
 
 namespace QHttp {
 namespace Private{
 
-QByteArray QJWT::createSigned(QJsonObject _payload, const qint32 _expiry, const QString& _sessionID)
+thread_local static clsSimpleCrypt* SimpleCryptInstance = NULL;
+static clsSimpleCrypt* simpleCryptInstance(){
+    if(Q_UNLIKELY(!SimpleCryptInstance)){
+        SimpleCryptInstance = new clsSimpleCrypt(gConfigs.Public.SimpleCryptKey);
+        SimpleCryptInstance->setIntegrityProtectionMode(clsSimpleCrypt::ProtectionHash);
+    }
+    return SimpleCryptInstance;
+}
+
+QByteArray QJWT::createSigned(QJsonObject _payload, QJsonObject _privatePayload, const qint32 _expiry, const QString& _sessionID)
 {
     const QString Header = QString("{\"typ\":\"JWT\",\"alg\":\"%1\"}").arg(enuJWTHashAlgs::toStr(gConfigs.Public.JWTHashAlgorithm));
 
@@ -42,6 +52,11 @@ QByteArray QJWT::createSigned(QJsonObject _payload, const qint32 _expiry, const 
         _payload["jti"] = _sessionID;
     else
         _payload.remove("jti");
+
+    if(!_privatePayload.isEmpty())
+        _payload["prv"] = simpleCryptInstance()->encryptToString(QJsonDocument(_privatePayload).toJson());
+    else
+        _payload.remove("prv");
 
     QByteArray Data   = Header.toUtf8().toBase64() + "." + QJsonDocument(_payload).toJson().toBase64();
 
@@ -66,6 +81,18 @@ QJsonObject QJWT::verifyReturnPayload(const QString &_jwt)
     if(JWTPayload.contains("exp") &&
        (quint64)JWTPayload.value("exp").toInt() <= QDateTime::currentDateTime().toTime_t())
             throw exHTTPUnauthorized("JWT expired");
+
+    if(JWTPayload.contains("prv")){
+        QString Decrypted= simpleCryptInstance()->decryptToString(JWTPayload.value("prv").toString());
+        if(Decrypted.isEmpty())
+            throw exHTTPExpectationFailed(QString("Invalid empty private JWT payload: DEC ErrNo: %1").arg(simpleCryptInstance()->lastError()));
+
+        QJsonDocument Private = QJsonDocument::fromJson(Decrypted.toUtf8(), &Error);
+        if(Private.isNull())
+            throw exHTTPExpectationFailed("Invalid private JWT payload: " + Error.errorString());
+
+        JWTPayload["prv"] = Private.object();
+    }
 
     return JWTPayload;
 }

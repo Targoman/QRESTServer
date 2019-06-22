@@ -13,7 +13,7 @@
 - [Features](#features)
 - [Setup](#setup)
 - [Source tree](#source-tree)
-- [Disclaimer](#disclaimer)
+- [Credits](#credits)
 - [License](#license)
 
 
@@ -54,10 +54,20 @@
 # Source Tree
  [TOC](#table-of-contents)
 
+# Credits 
+ [TOC](#table-of-contents)
+ 
+ Some parts of this source code were mainly derived from other OSS projects: 
+ * QttpServer: https://github.com/supamii/QttpServer 
+ * QJWT: https://github.com/juangburgos/QJsonWebToken
+ * QWebSocket: https://doc.qt.io/qt-5/qtwebsockets-examples.html
+ * SimpleCrypt: https://wiki.qt.io/Simple_encryption_with_SimpleCrypt
 
 # License
 [TOC](#table-of-contents)
 
 QRESTServer has been published under the terms of [GNU AFFERO GENERAL PUBLIC LICENSE](./LICENSE) as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+
+
 
 

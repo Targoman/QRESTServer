@@ -187,11 +187,39 @@ intfRESTAPIHolder::intfRESTAPIHolder(Targoman::Common::Configuration::intfModule
     );
 
     QHTTP_REGISTER_METATYPE(
-        qhttp::THeaderHash,
-            [](const qhttp::THeaderHash& _value) -> QVariant {
-                return _value.toVariant();
-            },
-            nullptr
+        QHttp::COOKIES_t,
+        [](const QHttp::COOKIES_t& _value) -> QVariant {
+            return _value.toVariant();
+        },
+        [](const QVariant& _value) -> QHttp::COOKIES_t {
+            QHttp::COOKIES_t  TempValue;
+            return TempValue.fromVariant(_value);
+        }
+    );
+    QHTTP_REGISTER_METATYPE(
+        QHttp::HEADERS_t,
+        [](const QHttp::HEADERS_t& _value) -> QVariant {
+            return _value.toVariant();
+        },
+        [](const QVariant& _value) -> QHttp::HEADERS_t {
+            QHttp::HEADERS_t  TempValue;
+            return TempValue.fromVariant(_value);
+        }
+    );
+    QHTTP_REGISTER_METATYPE(
+        QHttp::JWT_t,
+        [](const QHttp::JWT_t& _value) -> QVariant {
+            return _value.toVariantMap();
+        },
+        [](const QVariant& _value) -> QHttp::JWT_t {
+            QHttp::JWT_t  TempValue;
+            if(_value.canConvert<QVariantMap>())
+                return TempValue.fromVariantMap(_value.value<QVariantMap>());
+            if(_value.canConvert<QVariantHash>())
+                return TempValue.fromVariantHash(_value.value<QVariantHash>());
+
+            throw exHTTPBadRequest("Unable to convert JWT");
+        }
     );
 }
 
@@ -201,9 +229,9 @@ void intfRESTAPIHolder::registerMyRESTAPIs(){
 
 }
 
-QByteArray intfRESTAPIHolder::createSignedJWT(QJsonObject _payload, const qint32 _expiry, const QString &_sessionID)
+QByteArray intfRESTAPIHolder::createSignedJWT(QJsonObject _payload, QJsonObject _privatePayload, const qint32 _expiry, const QString &_sessionID)
 {
-    return Private::QJWT::createSigned(_payload, _expiry, _sessionID);
+    return Private::QJWT::createSigned(_payload, _privatePayload, _expiry, _sessionID);
 }
 
 QStringList intfRESTAPIHolder::apiGETListOfAPIs(bool _showParams, bool _showTypes, bool _prettifyTypes){
@@ -225,6 +253,7 @@ RESTServer::stuConfig::stuConfig(const QString &_basePath,
                                  const QHostAddress &_listenAddress,
                                  const QString& _jwtSecret,
                                  enuJWTHashAlgs::Type _jwtHashAlgorithm,
+                                 quint64 _simpleCryptKey,
 
                         #ifdef QHTTP_ENABLE_WEBSOCKET
                                  const QString& _websocketServerName,
@@ -247,6 +276,7 @@ RESTServer::stuConfig::stuConfig(const QString &_basePath,
     ListenAddress(_listenAddress),
     JWTSecret(_jwtSecret),
     JWTHashAlgorithm(_jwtHashAlgorithm),
+    SimpleCryptKey(_simpleCryptKey),
     IndentedJson(_indentedJson),
     MaxUploadSize(_maxUploadSize),
     MaxUploadedFileSize(_maxUploadedFileSize),
@@ -270,6 +300,7 @@ RESTServer::stuConfig::stuConfig(const RESTServer::stuConfig &_other) :
     ListenAddress(_other.ListenAddress),
     JWTSecret(_other.JWTSecret),
     JWTHashAlgorithm(_other.JWTHashAlgorithm),
+    SimpleCryptKey(_other.SimpleCryptKey),
     IndentedJson(_other.IndentedJson),
     MaxUploadSize(_other.MaxUploadSize),
     MaxUploadedFileSize(_other.MaxUploadedFileSize),

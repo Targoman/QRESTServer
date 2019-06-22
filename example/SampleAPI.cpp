@@ -43,6 +43,24 @@ CACHEABLE_3H int SampleAPI::apiGETSampleData()
     return 5;
 }
 
+COOKIES_t SampleAPI::apiGETSampleDataWithCookie(COOKIES_t _COOKIES)
+{
+    TargomanDebug(1, "Called: " <<__FUNCTION__<<" Params: ("<<_COOKIES.toVariant().toString()<<")");
+    return _COOKIES;
+}
+
+HEADERS_t SampleAPI::apiGETSampleDataWithHeaders(HEADERS_t _HEADERS)
+{
+    TargomanDebug(1, "Called: " <<__FUNCTION__<<" Params: ("<<_HEADERS.toVariant().toString()<<")");
+    return _HEADERS;
+}
+
+JWT_t SampleAPI::apiGETSampleDataWithJWT(JWT_t _JWT)
+{
+    TargomanDebug(1, "Called: " <<__FUNCTION__<<" Params: ("<<QJsonDocument(_JWT).toJson()<<")");
+    return _JWT;
+}
+
 int SampleAPI::apiPUTSampleData(quint64 _id, const QString &_info)
 {
     TargomanDebug(1, "Called: " <<__FUNCTION__<<" Params: (\""<<_id<<"\",\""<<_info<<"\")");

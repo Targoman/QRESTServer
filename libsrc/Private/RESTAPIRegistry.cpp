@@ -193,9 +193,15 @@ QString RESTAPIRegistry::isValidType(int _typeID, bool _validate4Input){
 
     if(_typeID >= QHTTP_BASE_USER_DEFINED_TYPEID){
         if((_typeID - QHTTP_BASE_USER_DEFINED_TYPEID >= gUserDefinedTypesInfo.size() ||
-            gUserDefinedTypesInfo.at(_typeID - QHTTP_BASE_USER_DEFINED_TYPEID) == nullptr ||
-            strcmp(gUserDefinedTypesInfo.at(_typeID - QHTTP_BASE_USER_DEFINED_TYPEID)->RealTypeName, QMetaType::typeName(_typeID))))
-            return "is user defined but not registered";
+            gUserDefinedTypesInfo.at(_typeID - QHTTP_BASE_USER_DEFINED_TYPEID) == nullptr))
+           return "is user defined but not registered";
+
+        if(strcmp(gUserDefinedTypesInfo.at(_typeID - QHTTP_BASE_USER_DEFINED_TYPEID)->RealTypeName, QMetaType::typeName(_typeID)))
+            return QString("Seems that registration table is corrupted: %1:%2 <-> %3:%4").arg(
+                        _typeID).arg(
+                        gUserDefinedTypesInfo.at(_typeID - QHTTP_BASE_USER_DEFINED_TYPEID)->RealTypeName).arg(
+                        _typeID).arg(
+                        QMetaType::typeName(_typeID));
 
         if(_validate4Input){
             if(!gUserDefinedTypesInfo.at(_typeID - QHTTP_BASE_USER_DEFINED_TYPEID)->hasFromVariantMethod())

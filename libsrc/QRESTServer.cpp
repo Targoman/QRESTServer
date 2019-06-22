@@ -212,13 +212,15 @@ intfRESTAPIHolder::intfRESTAPIHolder(Targoman::Common::Configuration::intfModule
             return _value.toVariantMap();
         },
         [](const QVariant& _value) -> QHttp::JWT_t {
-            QHttp::JWT_t  TempValue;
+            QJsonObject Obj;
             if(_value.canConvert<QVariantMap>())
-                return TempValue.fromVariantMap(_value.value<QVariantMap>());
+                Obj = Obj.fromVariantMap(_value.value<QVariantMap>());
             if(_value.canConvert<QVariantHash>())
-                return TempValue.fromVariantHash(_value.value<QVariantHash>());
+                Obj = Obj.fromVariantHash(_value.value<QVariantHash>());
 
-            throw exHTTPBadRequest("Unable to convert JWT");
+            if(Obj.isEmpty())
+                throw exHTTPBadRequest("Unable to convert JWT");
+            return  *reinterpret_cast<QHttp::JWT_t*>(&Obj);
         }
     );
 }

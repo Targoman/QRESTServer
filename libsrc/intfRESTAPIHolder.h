@@ -65,7 +65,8 @@ public:
     }
 };
 
-using JWT_t = QJsonObject;
+class JWT_t : public QJsonObject{
+};
 /**********************************************************************/
 /**
  * @brief The stuTable struct
@@ -183,5 +184,6 @@ protected:
 Q_DECLARE_METATYPE(QHttp::stuTable)
 Q_DECLARE_METATYPE(QHttp::COOKIES_t)
 Q_DECLARE_METATYPE(QHttp::HEADERS_t)
+Q_DECLARE_METATYPE(QHttp::JWT_t)
 
 #endif // QHTTP_INTFRESTAPIHOLDER_H

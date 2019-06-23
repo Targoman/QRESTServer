@@ -36,7 +36,8 @@ public:
 private slots:
     int apiGETSampleData();
     QHttp::COOKIES_t apiGETSampleDataWithCookie(QHttp::COOKIES_t _COOKIES);
-    QHttp::HEADERS_t apiGETSampleDataWithHeaders(QHttp::HEADERS_t _COOKIES);
+    QHttp::HEADERS_t apiGETSampleDataWithHeaders(QHttp::HEADERS_t _HEADERS);
+    QString apiGETSampleDataReturningJWT();
     QHttp::JWT_t apiGETSampleDataWithJWT(QHttp::JWT_t _JWT);
     int apiPUTSampleData(quint64 _id, const QString& _info = "defaultValue");
     int apiDELETESampleData(quint64 _id = 5);

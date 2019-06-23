@@ -134,7 +134,7 @@ void RESTServer::start() {
     });
 
     if(gHTTPServer.isListening()){
-        TargomanLogInfo(1, "Server is listening on "<<gConfigs.Public.ListenAddress.toString()<<":"<<gConfigs.Public.ListenPort);
+        TargomanLogInfo(1, "REST Server is listening on "<<gConfigs.Public.ListenAddress.toString()<<":"<<gConfigs.Public.ListenPort);
     }else{
         TargomanLogError("Unable to start server to listen on "<<gConfigs.Public.ListenAddress.toString()<<":"<<gConfigs.Public.ListenPort);
         exit (1);
@@ -231,7 +231,7 @@ void intfRESTAPIHolder::registerMyRESTAPIs(){
 
 }
 
-QByteArray intfRESTAPIHolder::createSignedJWT(QJsonObject _payload, QJsonObject _privatePayload, const qint32 _expiry, const QString &_sessionID)
+QString intfRESTAPIHolder::createSignedJWT(QJsonObject _payload, QJsonObject _privatePayload, const qint32 _expiry, const QString &_sessionID)
 {
     return Private::QJWT::createSigned(_payload, _privatePayload, _expiry, _sessionID);
 }

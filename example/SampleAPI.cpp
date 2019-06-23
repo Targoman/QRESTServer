@@ -55,6 +55,12 @@ HEADERS_t SampleAPI::apiGETSampleDataWithHeaders(HEADERS_t _HEADERS)
     return _HEADERS;
 }
 
+QString SampleAPI::apiGETSampleDataReturningJWT()
+{
+    TargomanDebug(1, "Called: " <<__FUNCTION__<<" Params: ()");
+    return this->createSignedJWT(QJsonObject({{"a",1},{"b","fdsdfdf"}}), QJsonObject({{"priv1",4}}), 120, "fdffsdf");
+}
+
 JWT_t SampleAPI::apiGETSampleDataWithJWT(JWT_t _JWT)
 {
     TargomanDebug(1, "Called: " <<__FUNCTION__<<" Params: ("<<QJsonDocument(_JWT).toJson()<<")");

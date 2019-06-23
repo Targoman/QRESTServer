@@ -34,7 +34,7 @@ namespace Private{
 class QJWT
 {
 public:
-    static QByteArray createSigned(QJsonObject _payload, QJsonObject _privatePayload = QJsonObject(), const qint32 _expiry = -1, const QString &_sessionID = QString());
+    static QString createSigned(QJsonObject _payload, QJsonObject _privatePayload = QJsonObject(), const qint32 _expiry = -1, const QString &_sessionID = QString());
     static QJsonObject verifyReturnPayload(const QString& _jwt);
 
 private:

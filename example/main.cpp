@@ -46,7 +46,7 @@ int main(int _argc, char *_argv[])
         Sample1::SampleAPI::instance().init();
 
         std::cout<<qPrintable(RESTServer::registeredAPIs(true, true).join("\n"))<<std::endl;
-        RESTServer::configure (RESTServer::stuConfig("/a", "v2", 9009, true,QHostAddress::Any,"ws"));
+        RESTServer::configure (RESTServer::stuConfig("/a", "v2", 9009, true,QHostAddress::Any,"secret",enuJWTHashAlgs::HS256,0x25443770f10af379, "ws"));
         RESTServer::start();
 
        App.exec();

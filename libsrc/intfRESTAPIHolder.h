@@ -175,7 +175,7 @@ protected:
      * @param _sessionID
      * @return
      */
-    QByteArray createSignedJWT(QJsonObject _payload, QJsonObject _privatePayload = QJsonObject(), const qint32 _expiry = -1, const QString &_sessionID = QString());
+    QString createSignedJWT(QJsonObject _payload, QJsonObject _privatePayload = QJsonObject(), const qint32 _expiry = -1, const QString &_sessionID = QString());
 };
 
 }

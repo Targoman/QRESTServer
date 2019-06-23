@@ -28,7 +28,7 @@ mkdir -p $BASE_PATH/out
 if [ -f .gitmodules ]; then
   Deps=$(grep "\[submodule " .gitmodules | cut -d ' ' -f 2 | tr -d '\"\]')
   for Dep in $Deps; do
-    echo -e "\n\n\n=====================> Building $Dep <========================\n\n"
+    echo -e "\n\n=====================> Building $Dep <========================\n"
     if fgrep "$Dep" "$DEPS_BUILT" >/dev/null 2>&1; then
         echo "Target has already been built."
         continue
@@ -53,7 +53,7 @@ if [ -f .gitmodules ]; then
             fi
           popd
       else
-        echo -e "\n\n\n\n[WARNING] Project: $Dep type could not be determined so will not be compiled"
+        echo -e "\n\n[WARNING] Project: $Dep type could not be determined so will not be compiled\n\n"
       fi
       echo "echo $Dep >> $DEPS_BUILT"
       echo $Dep >> $DEPS_BUILT

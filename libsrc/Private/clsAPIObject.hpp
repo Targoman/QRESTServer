@@ -56,11 +56,11 @@ public:
     }
 
     inline bool requiresJWT(){
-        return ParamNames.contains("_JWT");
+        return ParamNames.contains("JWT");
     }
 
     inline bool requiresCookies(){
-        return this->ParamNames.contains("_COOKIES");
+        return this->ParamNames.contains("COOKIES");
     }
 
     inline QVariant invoke(const QStringList& _args,
@@ -71,7 +71,15 @@ public:
                            ) const{
         Q_ASSERT_X(this->parent(), "parent module", "Parent module not found to invoke method");
 
-        if(_args.size() + _bodyArgs.size() < this->RequiredParamsCount)
+        int ExtraArgCount = 0;
+        if(this->ParamNames.contains("COOKIES"))
+            ExtraArgCount++;
+        if(this->ParamNames.contains("HEADERS"))
+            ExtraArgCount++;
+        if(this->ParamNames.contains("JWT"))
+            ExtraArgCount++;
+
+        if(_args.size() + _bodyArgs.size() + ExtraArgCount < this->RequiredParamsCount)
             throw exHTTPBadRequest("Not enough arguments");
 
         QVariantList Arguments;
@@ -96,17 +104,17 @@ public:
                 }
             };
 
-            if(this->ParamNames.at(i) == "_COOKIES"){
+            if(this->ParamNames.at(i) == "COOKIES"){
                 ParamNotFound = false;
                 ArgumentValue = _cookies.toVariant();
             }
 
-            if(ParamNotFound && this->ParamNames.at(i) == "_HEADERS"){
+            if(ParamNotFound && this->ParamNames.at(i) == "HEADERS"){
                 ParamNotFound = false;
                 ArgumentValue = _headers.toVariant();
             }
 
-            if(ParamNotFound && this->ParamNames.at(i) == "_JWT"){
+            if(ParamNotFound && this->ParamNames.at(i) == "JWT"){
                 ParamNotFound = false;
                 ArgumentValue = _jwt;
             }

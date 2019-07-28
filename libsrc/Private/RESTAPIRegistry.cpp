@@ -239,18 +239,26 @@ QJsonObject RESTAPIRegistry::retriveOpenAPIJson(){
                         APIObject->BaseMethod.parameterNames().at(i).mid(1) :
                         APIObject->BaseMethod.parameterNames().at(i);
 
+            if(ParamName == "COOKIES" ||
+               ParamName == "JWT" ||
+               ParamName == "HEADERS")
+                continue;
             Parameters.append(
                         QJsonObject({
                                         {"in", "path"},
                                         {"name", ParamName},
-                                        {"required",true},
-                                        {"schema",Schema}
+                                        {"required", APIObject->isRequiredParam(i)},
+                                        {"description", ""},
+                                        {"type", QMetaType::typeName(APIObject->BaseMethod.parameterType(i))},
+                                        {"schema", Schema}
                                     })
                         );
         }
 
         QJsonObject CurrPathMethodInfo = QJsonObject({{"parameters", Parameters}});
-        CurrPathMethodInfo["tags"] = QJsonArray({PathString});
+        QStringList PathStringParts = PathString.split("/", QString::SkipEmptyParts);
+        PathStringParts.pop_back();
+        CurrPathMethodInfo["tags"] = QJsonArray({PathStringParts.join("_")});
         CurrPathMethodInfo["produces"] = QJsonArray({"application/json"});
         CurrPathMethodInfo["consumes"] = QJsonArray({"application/json"});
         CurrPathMethodInfo["responses"] = DefaultResponses;

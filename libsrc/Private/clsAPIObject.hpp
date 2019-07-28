@@ -63,6 +63,15 @@ public:
         return this->ParamNames.contains("COOKIES");
     }
 
+    inline QString paramType(quint8 _paramIndex){
+        Q_ASSERT(_paramIndex < this->BaseMethod.parameterTypes().size());
+        return this->BaseMethod.parameterTypes().at(_paramIndex).constData();
+    }
+
+    inline bool isRequiredParam(quint8 _paramIndex){
+        return _paramIndex < this->RequiredParamsCount;
+    }
+
     inline QVariant invoke(const QStringList& _args,
                            QList<QPair<QString, QString>> _bodyArgs = QList<QPair<QString, QString>>(),
                            qhttp::THeaderHash _headers = qhttp::THeaderHash(),

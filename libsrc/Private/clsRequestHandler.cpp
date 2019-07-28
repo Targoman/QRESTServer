@@ -194,6 +194,14 @@ const qhttp::TStatusCode StatusCodeOnMethod[] = {
 
 void clsRequestHandler::findAndCallAPI(const QString &_api)
 {
+    if(_api == "/openAPI.json"){
+        gServerStats.Success.inc();
+        return this->sendResponseBase(qhttp::ESTATUS_OK, RESTAPIRegistry::retriveOpenAPIJson());
+    }
+
+    if(_api == "/openAPI.yaml")
+        throw exHTTPMethodNotAllowed("Yaml openAPI is not implemented yet");
+
     clsAPIObject* APIObject = RESTAPIRegistry::getAPIObject(this->Request->methodString(), _api);
 
     if(!APIObject)
@@ -226,38 +234,44 @@ void clsRequestHandler::findAndCallAPI(const QString &_api)
 
     this->sendResponse(
                 StatusCodeOnMethod[this->Request->method()],
-                APIObject->invoke(Queries,
-                                  this->Request->userDefinedValues(),
-                                  Headers,
-                                  Cookies,
-                                  JWT));
+            APIObject->invoke(Queries,
+                              this->Request->userDefinedValues(),
+                              Headers,
+                              Cookies,
+                              JWT));
 }
 
 void clsRequestHandler::sendError(qhttp::TStatusCode _code, const QString &_message, bool _closeConnection)
 {
-    QJsonObject ErrorInfo = QJsonObject({
-                                            {"code", _code},
-                                            {"message", _message}
-                                        });
-    QByteArray ErrorJson = QJsonDocument(QJsonObject({ {"error", ErrorInfo }})).toJson(gConfigs.Public.IndentedJson ? QJsonDocument::Indented : QJsonDocument::Compact);
     gServerStats.Errors.inc();
-
-    this->Response->setStatusCode(_code);
-    if(_closeConnection) this->Response->addHeader("connection", "close");
-    this->Response->addHeaderValue("content-type", QString("application/json; charset=utf-8"));
-    this->Response->addHeaderValue("content-length", ErrorJson.length());
-    this->Response->end(ErrorJson.constData());
-    this->deleteLater();
+    this->sendResponseBase(_code,
+                           QJsonObject({
+                                           {"error",
+                                            QJsonObject({
+                                                {"code", _code},
+                                                {"message", _message}
+                                            })
+                                           }
+                                       }),
+                           _closeConnection);
 }
+
 
 void clsRequestHandler::sendResponse(qhttp::TStatusCode _code, QVariant _response)
 {
-    QByteArray Data = QJsonDocument(QJsonObject({{"result", QJsonValue::fromVariant(_response) }})).toJson(gConfigs.Public.IndentedJson ? QJsonDocument::Indented : QJsonDocument::Compact);
-
     gServerStats.Success.inc();
+    this->sendResponseBase(_code, QJsonObject({{"result", QJsonValue::fromVariant(_response) }}));
+}
+
+void clsRequestHandler::sendResponseBase(qhttp::TStatusCode _code, QJsonObject _dataObject, bool _closeConnection){
+
+    QByteArray Data = QJsonDocument(_dataObject).toJson(gConfigs.Public.IndentedJson ? QJsonDocument::Indented : QJsonDocument::Compact);
+
     this->Response->setStatusCode(_code);
+    if(_closeConnection) this->Response->addHeader("connection", "close");
     this->Response->addHeaderValue("content-length", Data.length());
     this->Response->addHeaderValue("content-type", QString("application/json; charset=utf-8"));
+    this->Response->addHeaderValue("Access-Control-Allow-Origin", QString("*"));
     this->Response->end(Data.constData());
     this->deleteLater();
 }

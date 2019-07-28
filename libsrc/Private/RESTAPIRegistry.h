@@ -54,6 +54,7 @@ public:
 
     static void registerRESTAPI(intfRESTAPIHolder* _module, const QMetaMethod& _method);
     static QStringList registeredAPIs(const QString &_module, bool _showParams = false, bool _showTypes = false, bool _prettifyTypes = true);
+    static QJsonObject retriveOpenAPIJson();
 
 private:
     static inline QString isValidType(int _typeID, bool _validate4Input);

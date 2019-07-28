@@ -83,6 +83,7 @@ public:
         qint64       MaxUploadedFileSize;
         quint32      MaxCachedItems;
         QString      CacheConnector;
+        QJsonObject BaseOpenAPIObject;
 
 #ifdef QHTTP_ENABLE_WEBSOCKET
         QString WebSocketServerName;
@@ -90,31 +91,6 @@ public:
         QString WebSocketServerAdderss;
         bool    WebSocketSecure;
 #endif
-
-        stuConfig(const QString& _basePath = "/",
-                  const QString& _version = "v0",
-                  quint16 _listenPort = 9000,
-                  bool _indentedJson = false,
-                  const QHostAddress& _listenAddress = QHostAddress::Any,
-                  const QString& _jwtSecret = "sampleSecret",
-                  enuJWTHashAlgs::Type _jwtHashAlgorithm = enuJWTHashAlgs::HS256,
-                  quint64 _simpleCryptKey = 0x25443770f10af379,
-#ifdef QHTTP_ENABLE_WEBSOCKET
-                          const QString& _websocketServerName = "",
-                          quint16        _websocketServerPort = 9001,
-                          const QHostAddress& _websocketListenAddress = QHostAddress::Any,
-                          bool    _webSocketSecure = false,
-#endif
-
-                  const fnIsInBlackList_t& _ipBlackListChecker = {},
-                  const QString& _cacheConnector = "redis://127.0.0.1",
-                  quint8 _statisticsInterval = 3,
-                  qint64 _maxUploadSize = 100 * 1024 * 1024,
-                  qint64 _maxUploadedFileSize = 100 * 1024 * 1024,
-                  quint32 _maxCachedItems = 10000
-                  );
-
-        stuConfig(const stuConfig& _other);
     };
 
 public:

@@ -169,11 +169,16 @@ protected:
     void registerMyRESTAPIs();
 
     /**
-     * @brief createSignedJWT
-     * @param _payload
-     * @param _expiry
-     * @param _sessionID
-     * @return
+     * @brief createSignedJWT creates an string containing HEADER.PAYLOAD.SIGNATURE as described by JWT standard.
+     * @param _payload The payload to include in JWT. The payload object must not include enteries with following keys:
+     *        - iat: reserved for initial time
+     *        - exp: reserved for expiration time
+     *        - jti: reserved for JWT session
+     *        - prv: reserved for private payload
+     * @param _privatePayload Optinally private object that will be included in JWT encrypted. There will be no restriction on key values
+     * @param _expiry optinally a time in seconds for max life time
+     * @param _sessionID optinally a session key for each user to be stored in `jti`
+     * @return a base64 encoded string in form of HEADER.PAYLOAD.SIGNATURE
      */
     QString createSignedJWT(QJsonObject _payload, QJsonObject _privatePayload = QJsonObject(), const qint32 _expiry = -1, const QString &_sessionID = QString());
 };

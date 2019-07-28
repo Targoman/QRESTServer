@@ -227,7 +227,8 @@ intfRESTAPIHolder::intfRESTAPIHolder(Targoman::Common::Configuration::intfModule
 
 void intfRESTAPIHolder::registerMyRESTAPIs(){
     for (int i=0; i<this->metaObject()->methodCount(); ++i)
-        RESTAPIRegistry::registerRESTAPI(this, this->metaObject()->method(i));
+        //if(this->metaObject()->method(i).methodType() == QMetaMethod::Slot)
+            RESTAPIRegistry::registerRESTAPI(this, this->metaObject()->method(i));
 
 }
 
@@ -246,75 +247,6 @@ intfAPIArgManipulator::intfAPIArgManipulator(const QString &_realTypeName)
     this->RealTypeName = new char[_realTypeName.toStdString().size()];
     strcpy(this->RealTypeName, _realTypeName.toStdString().c_str());
 }
-
-/***********************************************************************************************/
-RESTServer::stuConfig::stuConfig(const QString &_basePath,
-                                 const QString &_version,
-                                 quint16 _listenPort,
-                                 bool _indentedJson,
-                                 const QHostAddress &_listenAddress,
-                                 const QString& _jwtSecret,
-                                 enuJWTHashAlgs::Type _jwtHashAlgorithm,
-                                 quint64 _simpleCryptKey,
-
-                        #ifdef QHTTP_ENABLE_WEBSOCKET
-                                 const QString& _websocketServerName,
-                                 quint16        _websocketServerPort,
-                                 const QHostAddress& _websocketListenAddress,
-                                 bool    _webSocketSecure,
-                         #endif
-
-                                 const fnIsInBlackList_t &_ipBlackListChecker,
-                                 const QString &_cacheConnector,
-                                 quint8 _statisticsInterval,
-                                 qint64 _maxUploadSize,
-                                 qint64 _maxUploadedFileSize,
-                                 quint32 _maxCachedItems):
-    BasePath(_basePath),
-    Version(_version),
-    fnIPInBlackList(_ipBlackListChecker),
-    StatisticsInterval(_statisticsInterval),
-    ListenPort(_listenPort),
-    ListenAddress(_listenAddress),
-    JWTSecret(_jwtSecret),
-    JWTHashAlgorithm(_jwtHashAlgorithm),
-    SimpleCryptKey(_simpleCryptKey),
-    IndentedJson(_indentedJson),
-    MaxUploadSize(_maxUploadSize),
-    MaxUploadedFileSize(_maxUploadedFileSize),
-    MaxCachedItems(_maxCachedItems),
-    CacheConnector(_cacheConnector)
-#ifdef QHTTP_ENABLE_WEBSOCKET
-    ,WebSocketServerName(_websocketServerName),
-    WebSocketServerPort(_websocketServerPort),
-    WebSocketServerAdderss(_websocketListenAddress.toString()),
-    WebSocketSecure(_webSocketSecure)
-#endif
-{
-}
-
-RESTServer::stuConfig::stuConfig(const RESTServer::stuConfig &_other) :
-    BasePath(_other.BasePath),
-    Version(_other.Version),
-    fnIPInBlackList(_other.fnIPInBlackList),
-    StatisticsInterval(_other.StatisticsInterval),
-    ListenPort(_other.ListenPort),
-    ListenAddress(_other.ListenAddress),
-    JWTSecret(_other.JWTSecret),
-    JWTHashAlgorithm(_other.JWTHashAlgorithm),
-    SimpleCryptKey(_other.SimpleCryptKey),
-    IndentedJson(_other.IndentedJson),
-    MaxUploadSize(_other.MaxUploadSize),
-    MaxUploadedFileSize(_other.MaxUploadedFileSize),
-    MaxCachedItems(_other.MaxCachedItems),
-    CacheConnector(_other.CacheConnector)
-  #ifdef QHTTP_ENABLE_WEBSOCKET
-      ,WebSocketServerName(_other.WebSocketServerName),
-      WebSocketServerPort(_other.WebSocketServerPort),
-      WebSocketServerAdderss(_other.WebSocketServerAdderss),
-      WebSocketSecure(_other.WebSocketSecure)
-  #endif
-{}
 
 }
 

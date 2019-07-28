@@ -126,6 +126,8 @@ public:
                    const QString& _message,
                    bool _closeConnection = false);
     void sendResponse(qhttp::TStatusCode _code, QVariant _response);
+private:
+    void sendResponseBase(qhttp::TStatusCode _code, QJsonObject _dataObject, bool _closeConnection = false);
 
 private:
     QByteArray                                          RemainingData;

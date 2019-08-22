@@ -250,7 +250,6 @@ QJsonObject RESTAPIRegistry::retriveOpenAPIJson(){
                                         {"required", APIObject->isRequiredParam(i)},
                                         {"description", ""},
                                         {"type", QMetaType::typeName(APIObject->BaseMethod.parameterType(i))},
-                                        {"schema", Schema}
                                     })
                         );
         }

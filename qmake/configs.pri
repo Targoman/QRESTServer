@@ -65,6 +65,7 @@ INCLUDEPATH += $$PRJDIR \
                $$PRJDIR/libsrc \
                $$BaseLibraryIncludeFolder \
                $$PREFIX/include \
+               $(HOME)/local/include \
                $$DependencyIncludePaths/
 
 #+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-++-+-

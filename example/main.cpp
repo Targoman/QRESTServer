@@ -58,7 +58,7 @@ int main(int _argc, char *_argv[])
         RESTServer::configure (Configs);
         RESTServer::start();
 
-       App.exec();
+        App.exec();
     }catch(Targoman::Common::exTargomanBase &e){
         qDebug()<<e.what();
         return 1;

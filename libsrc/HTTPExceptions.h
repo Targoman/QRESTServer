@@ -61,6 +61,8 @@ protected:
     }
 
 /*******************************************************************************/
+#pragma GCC diagnostic push
+//#pragma GCC diagnostic ignored "-Wweak-vtables"
 QRESTSERVER_ADD_HTTP_EXCEPTION(400, exHTTPBadRequest);
 QRESTSERVER_ADD_HTTP_EXCEPTION(401, exHTTPUnauthorized);
 QRESTSERVER_ADD_HTTP_EXCEPTION(402, exHTTPPaymentRequired);
@@ -104,6 +106,7 @@ QRESTSERVER_ADD_HTTP_EXCEPTION(508, exHTTPLoopDetected);
 QRESTSERVER_ADD_HTTP_EXCEPTION(510, exHTTPNotExtended);
 QRESTSERVER_ADD_HTTP_EXCEPTION(511, exHTTPNetworkAuthenticationRequired);
 QRESTSERVER_ADD_HTTP_EXCEPTION(520, exHTTPUnknownError);
+#pragma GCC diagnostic pop
 /*******************************************************************************/
 
 }

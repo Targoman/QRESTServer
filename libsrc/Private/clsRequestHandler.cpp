@@ -238,7 +238,8 @@ void clsRequestHandler::findAndCallAPI(const QString &_api)
                               this->Request->userDefinedValues(),
                               Headers,
                               Cookies,
-                              JWT));
+                              JWT,
+                              this->Request->remoteAddress()));
 }
 
 void clsRequestHandler::sendError(qhttp::TStatusCode _code, const QString &_message, bool _closeConnection)

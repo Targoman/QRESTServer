@@ -230,7 +230,7 @@ QJsonObject RESTAPIRegistry::retriveOpenAPIJson(){
 
         clsAPIObject* APIObject = RESTAPIRegistry::Registry.value(Key);
         QJsonArray Parameters;
-        for(int i=0; i< APIObject->BaseMethod.parameterCount(); ++i){
+        for(quint8 i=0; i< APIObject->BaseMethod.parameterCount(); ++i){
             QJsonObject Schema({
                                    {"type",QMetaType::typeName(APIObject->BaseMethod.parameterType(i))}
                                });
@@ -239,9 +239,10 @@ QJsonObject RESTAPIRegistry::retriveOpenAPIJson(){
                         APIObject->BaseMethod.parameterNames().at(i).mid(1) :
                         APIObject->BaseMethod.parameterNames().at(i);
 
-            if(ParamName == "COOKIES" ||
-               ParamName == "JWT" ||
-               ParamName == "HEADERS")
+            if(ParamName == PARAM_COOKIES ||
+               ParamName == PARAM_JWT ||
+               ParamName == PARAM_HEADERS ||
+               ParamName == PARAM_REMOTE_IP )
                 continue;
             Parameters.append(
                         QJsonObject({

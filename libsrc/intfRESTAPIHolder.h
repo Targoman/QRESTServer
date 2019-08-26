@@ -67,6 +67,13 @@ public:
 
 class JWT_t : public QJsonObject{
 };
+
+class RemoteIP_t : public QString{
+public:
+    RemoteIP_t(){;}
+    RemoteIP_t(const QString& _other) : QString(_other){;}
+};
+
 /**********************************************************************/
 /**
  * @brief The stuTable struct
@@ -190,5 +197,6 @@ Q_DECLARE_METATYPE(QHttp::stuTable)
 Q_DECLARE_METATYPE(QHttp::COOKIES_t)
 Q_DECLARE_METATYPE(QHttp::HEADERS_t)
 Q_DECLARE_METATYPE(QHttp::JWT_t)
+Q_DECLARE_METATYPE(QHttp::RemoteIP_t)
 
 #endif // QHTTP_INTFRESTAPIHOLDER_H

@@ -223,6 +223,17 @@ intfRESTAPIHolder::intfRESTAPIHolder(Targoman::Common::Configuration::intfModule
             return  *reinterpret_cast<QHttp::JWT_t*>(&Obj);
         }
     );
+    QHTTP_REGISTER_METATYPE(
+        QHttp::RemoteIP_t,
+        [](const QHttp::RemoteIP_t& _value) -> QVariant {
+            return _value;
+        },
+        [](const QVariant& _value) -> QHttp::RemoteIP_t {
+            QHttp::RemoteIP_t IP;
+            IP=_value.toString();
+            return  IP;
+        }
+    );
 }
 
 void intfRESTAPIHolder::registerMyRESTAPIs(){

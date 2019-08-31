@@ -74,6 +74,9 @@ void RESTServer::start() {
     if(gConfigs.Public.BasePath.endsWith('/') == false)
         gConfigs.Public.BasePath+='/';
 
+    if(gConfigs.Public.BasePath.startsWith('/') == false)
+        gConfigs.Public.BasePath='/'+gConfigs.Public.BasePath;
+
     if(gConfigs.Public.CacheConnector.size() && QUrl::fromUserInput(gConfigs.Public.CacheConnector).isValid() == false)
         throw exRESTRegistry("Invalid connector url specified for central cache");
 

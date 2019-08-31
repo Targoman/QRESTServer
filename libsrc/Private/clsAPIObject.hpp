@@ -38,7 +38,7 @@ namespace Private {
 
 #define PARAM_JWT       "JWT"
 #define PARAM_COOKIES   "COOKIES"
-#define PARAM_REMOTE_IP "CLIENT_IP"
+#define PARAM_REMOTE_IP "REMOTE_IP"
 #define PARAM_HEADERS   "HEADERS"
 
 class clsAPIObject : public intfAPIObject, public QObject

@@ -232,6 +232,7 @@ void clsRequestHandler::findAndCallAPI(const QString &_api)
 
     Headers.remove("cookie");
 
+
     this->sendResponse(
                 StatusCodeOnMethod[this->Request->method()],
             APIObject->invoke(Queries,
@@ -239,7 +240,7 @@ void clsRequestHandler::findAndCallAPI(const QString &_api)
                               Headers,
                               Cookies,
                               JWT,
-                              this->Request->remoteAddress()));
+                              this->toIPv4(this->Request->remoteAddress())));
 }
 
 void clsRequestHandler::sendError(qhttp::TStatusCode _code, const QString &_message, bool _closeConnection)
@@ -408,6 +409,13 @@ void clsMultipartFormDataRequestHandler::storeDataInRequest()
         this->pRequestHandler->Request->addUserDefinedData(this->ToBeStoredItemName.c_str(), QString("[%1]").arg(this->SameNameItems.join(',')));
     else
         this->pRequestHandler->Request->addUserDefinedData(this->ToBeStoredItemName.c_str(), this->SameNameItems.at(0));
+}
+
+QString  clsRequestHandler::toIPv4(const QString _ip)
+{
+    if(_ip.startsWith("::"))
+        return _ip.mid(_ip.lastIndexOf(':') + 1);
+    return _ip;
 }
 
 }

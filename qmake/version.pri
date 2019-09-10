@@ -28,5 +28,7 @@ CONFIGS += c++11 c++14
 QT += core network
 QT -= gui
 
+EXTERNAL_DEPS=1
+
 LIBS += -lTargomanCommon \
         -lqhttp

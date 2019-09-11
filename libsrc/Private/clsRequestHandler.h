@@ -85,7 +85,7 @@ public:
         this->onPartData = clsMultipartFormDataRequestHandler::onMultiPartData;
         this->onPartEnd = clsMultipartFormDataRequestHandler::onMultiPartEnd;
         this->onEnd = clsMultipartFormDataRequestHandler::onDataEnd;
-        this->userData = (void*)this;
+        this->userData = reinterpret_cast<void*>(this);
     }
 
     size_t feed(const char *_buffer, size_t _len){
@@ -128,6 +128,7 @@ public:
     void sendResponse(qhttp::TStatusCode _code, QVariant _response);
 private:
     void sendResponseBase(qhttp::TStatusCode _code, QJsonObject _dataObject, bool _closeConnection = false);
+    QString toIPv4(const QString _ip);
 
 private:
     QByteArray                                          RemainingData;

@@ -30,8 +30,6 @@ namespace Sample1 {
 class SampleAPI : public QHttp::intfRESTAPIHolder
 {
     Q_OBJECT
-
-
 public:
     void init();
 

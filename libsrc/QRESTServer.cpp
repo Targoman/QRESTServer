@@ -74,6 +74,9 @@ void RESTServer::start() {
     if(gConfigs.Public.BasePath.endsWith('/') == false)
         gConfigs.Public.BasePath+='/';
 
+    if(gConfigs.Public.BasePath.startsWith('/') == false)
+        gConfigs.Public.BasePath='/'+gConfigs.Public.BasePath;
+
     if(gConfigs.Public.CacheConnector.size() && QUrl::fromUserInput(gConfigs.Public.CacheConnector).isValid() == false)
         throw exRESTRegistry("Invalid connector url specified for central cache");
 
@@ -221,6 +224,17 @@ intfRESTAPIHolder::intfRESTAPIHolder(Targoman::Common::Configuration::intfModule
             if(Obj.isEmpty())
                 throw exHTTPBadRequest("Unable to convert JWT");
             return  *reinterpret_cast<QHttp::JWT_t*>(&Obj);
+        }
+    );
+    QHTTP_REGISTER_METATYPE(
+        QHttp::RemoteIP_t,
+        [](const QHttp::RemoteIP_t& _value) -> QVariant {
+            return _value;
+        },
+        [](const QVariant& _value) -> QHttp::RemoteIP_t {
+            QHttp::RemoteIP_t IP;
+            IP=_value.toString();
+            return  IP;
         }
     );
 }

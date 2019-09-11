@@ -36,6 +36,11 @@
 namespace QHttp {
 namespace Private {
 
+#define PARAM_JWT       "JWT"
+#define PARAM_COOKIES   "COOKIES"
+#define PARAM_REMOTE_IP "REMOTE_IP"
+#define PARAM_HEADERS   "HEADERS"
+
 class clsAPIObject : public intfAPIObject, public QObject
 {
 public:
@@ -56,11 +61,19 @@ public:
     }
 
     inline bool requiresJWT(){
-        return ParamNames.contains("JWT");
+        return ParamNames.contains(PARAM_JWT);
     }
 
     inline bool requiresCookies(){
-        return this->ParamNames.contains("COOKIES");
+        return this->ParamNames.contains(PARAM_COOKIES);
+    }
+
+    inline bool requiresremoteIP(){
+        return this->ParamNames.contains(PARAM_REMOTE_IP);
+    }
+
+    inline bool requiresHeaders(){
+        return this->ParamNames.contains(PARAM_HEADERS);
     }
 
     inline QString paramType(quint8 _paramIndex){
@@ -76,16 +89,19 @@ public:
                            QList<QPair<QString, QString>> _bodyArgs = QList<QPair<QString, QString>>(),
                            qhttp::THeaderHash _headers = qhttp::THeaderHash(),
                            qhttp::THeaderHash _cookies = qhttp::THeaderHash(),
-                           QJsonObject _jwt = QJsonObject()
+                           QJsonObject _jwt = QJsonObject(),
+                           QString _remoteIP = QString()
                            ) const{
         Q_ASSERT_X(this->parent(), "parent module", "Parent module not found to invoke method");
 
         int ExtraArgCount = 0;
-        if(this->ParamNames.contains("COOKIES"))
+        if(this->ParamNames.contains(PARAM_COOKIES))
             ExtraArgCount++;
-        if(this->ParamNames.contains("HEADERS"))
+        if(this->ParamNames.contains(PARAM_HEADERS))
             ExtraArgCount++;
-        if(this->ParamNames.contains("JWT"))
+        if(this->ParamNames.contains(PARAM_JWT))
+            ExtraArgCount++;
+        if(this->ParamNames.contains(PARAM_REMOTE_IP))
             ExtraArgCount++;
 
         if(_args.size() + _bodyArgs.size() + ExtraArgCount < this->RequiredParamsCount)
@@ -113,19 +129,24 @@ public:
                 }
             };
 
-            if(this->ParamNames.at(i) == "COOKIES"){
+            if(this->ParamNames.at(i) == PARAM_COOKIES){
                 ParamNotFound = false;
                 ArgumentValue = _cookies.toVariant();
             }
 
-            if(ParamNotFound && this->ParamNames.at(i) == "HEADERS"){
+            if(ParamNotFound && this->ParamNames.at(i) == PARAM_HEADERS){
                 ParamNotFound = false;
                 ArgumentValue = _headers.toVariant();
             }
 
-            if(ParamNotFound && this->ParamNames.at(i) == "JWT"){
+            if(ParamNotFound && this->ParamNames.at(i) == PARAM_JWT){
                 ParamNotFound = false;
                 ArgumentValue = _jwt;
+            }
+
+            if(ParamNotFound && this->ParamNames.at(i) == PARAM_REMOTE_IP){
+                ParamNotFound = false;
+                ArgumentValue = _remoteIP;
             }
 
             if(ParamNotFound)

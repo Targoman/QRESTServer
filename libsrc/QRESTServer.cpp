@@ -40,7 +40,7 @@ using namespace Private;
 
 bool validateConnection(const QHostAddress& _peerAddress, quint16 _peerPort){
 
-    enuIPBlackListStatus::Type IPBlackListStatus;
+    enuIPBlackListStatus::Type IPBlackListStatus = enuIPBlackListStatus::Unknown;
 
     if(gConfigs.Public.fnIPInBlackList &&
             (IPBlackListStatus = gConfigs.Public.fnIPInBlackList(_peerAddress)) != enuIPBlackListStatus::Ok){
@@ -129,10 +129,8 @@ void RESTServer::start() {
                             Path<<
                             _req->url().query());
             RequestHandler->process(Path.mid(gConfigs.Private.BasePathWithVersion.size() - 1));
-        }catch(exHTTPError &ex){
-            RequestHandler->sendError((qhttp::TStatusCode)ex.code(), ex.what(), ex.code() >= 500);
         }catch(exTargomanBase &ex){
-            RequestHandler->sendError(qhttp::ESTATUS_INTERNAL_SERVER_ERROR, ex.what(), true);
+            RequestHandler->sendError(static_cast<qhttp::TStatusCode>(ex.httpCode()), ex.what(), ex.httpCode() >= 500);
         }
     });
 

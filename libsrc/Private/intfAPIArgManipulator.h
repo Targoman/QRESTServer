@@ -74,7 +74,7 @@ public:
     }
     inline QVariant invokeMethod(const intfAPIObject *_apiObject, const QVariantList& _arguments) final {
            _itmplType Result;
-           _apiObject->invokeMethod(_arguments,QReturnArgument<_itmplType >(this->RealTypeName, Result));
+           _apiObject->invokeMethod(_arguments, QReturnArgument<_itmplType >(this->RealTypeName, Result));
            return this->toVariant == nullptr ? QVariant::fromValue(Result) : this->toVariant(Result);
     }
     inline void cleanup (void* _argStorage) final {if(_argStorage) delete ((_itmplType*)_argStorage);}

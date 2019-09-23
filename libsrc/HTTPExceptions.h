@@ -30,15 +30,13 @@ namespace QHttp {
 /*******************************************************************************/
 class exHTTPError : public Targoman::Common::exTargomanBase {
 public:
-    exHTTPError(const QString& _definition, quint16 _errorCode, const QString& _message, int _line):
-        Targoman::Common::exTargomanBase(_message, _line),
-        Definition(_definition),
-        Code(_errorCode)
+    exHTTPError(const QString& _definition, quint16 _errorCode, const QString& _message):
+        Targoman::Common::exTargomanBase(_message, _errorCode),
+        Definition(_definition)
     {}
 
     virtual void toEnsureAvoidanceOfUsingBaseClass()=0;
 
-    inline quint16 code() const{return this->Code;}
     inline const QString definition() const{return this->Definition;}
     inline const QString fullError(){
         return QString("%1(%2): %3").arg(
@@ -48,14 +46,13 @@ public:
 
 protected:
   QString    Definition;
-  quint16     Code;
 };
 
 /*******************************************************************************/
 #define QRESTSERVER_ADD_HTTP_EXCEPTION(_code,_name) \
     class _name : public exHTTPError{\
-    public: _name (const QString& _message = "", int _line = 0) : \
-            exHTTPError (QString(TARGOMAN_M2STR(_name)).mid(2), _code, _message, _line) \
+    public: _name (const QString& _message = "") : \
+            exHTTPError (QString(TARGOMAN_M2STR(_name)).mid(2), _code, _message) \
             {} \
             void toEnsureAvoidanceOfUsingBaseClass(){} \
     }

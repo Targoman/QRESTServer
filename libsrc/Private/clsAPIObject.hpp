@@ -259,7 +259,7 @@ public:
         else
             InvokableMethod = this->LessArgumentMethods.at(this->ParamNames.size() - _arguments.size() - 1);
 
-        void* ArgStorage[_arguments.size()];
+        void* ArgStorage[_arguments.size()] = {};
 
         try{
             switch(_arguments.size()){

@@ -18,7 +18,7 @@
  *                                                                             *
  *******************************************************************************/
 /**
- * @author S. Mohammad M. Ziabary <ziabary@targoman.com>
+ * @author S. Mehran M. Ziabary <ziabary@targoman.com>
  */
 
 #include <QStringList>
@@ -63,7 +63,7 @@ QString QJWT::createSigned(QJsonObject _payload, QJsonObject _privatePayload, co
     return Data + "." + QJWT::hash(Data).toBase64();
 }
 
-QJsonObject QJWT::verifyReturnPayload(const QString &_jwt)
+QJsonObject QJWT::verifyReturnPayload(const QString& _jwt)
 {
     QStringList JWTParts = _jwt.split('.');
     if(JWTParts.length() != 3)
@@ -79,7 +79,7 @@ QJsonObject QJWT::verifyReturnPayload(const QString &_jwt)
     if(JWTPayload.empty())
         throw exHTTPForbidden("Invalid JWT payload: empty object");
     if(JWTPayload.contains("exp") &&
-       (quint64)JWTPayload.value("exp").toInt() <= QDateTime::currentDateTime().toTime_t())
+            static_cast<quint64>(JWTPayload.value("exp").toInt()) <= QDateTime::currentDateTime().toTime_t())
             throw exHTTPUnauthorized("JWT expired");
 
     if(JWTPayload.contains("prv")){
@@ -97,7 +97,7 @@ QJsonObject QJWT::verifyReturnPayload(const QString &_jwt)
     return JWTPayload;
 }
 
-const QByteArray QJWT::hash(const QByteArray &_data)
+const QByteArray QJWT::hash(const QByteArray& _data)
 {
     switch(gConfigs.Public.JWTHashAlgorithm){
     case enuJWTHashAlgs::HS256:

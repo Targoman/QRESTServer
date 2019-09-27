@@ -18,7 +18,7 @@
  *                                                                             *
  *******************************************************************************/
 /**
- * @author S. Mohammad M. Ziabary <ziabary@targoman.com>
+ * @author S. Mehran M. Ziabary <ziabary@targoman.com>
  */
 
 #ifndef QHTTP_WEBSOCKETSERVER_HPP
@@ -111,9 +111,9 @@ private slots:
                                                               QJsonValue::fromVariant(APIObject->invoke(Queries))
                                                              }})).toJson(gConfigs.Public.IndentedJson ? QJsonDocument::Indented : QJsonDocument::Compact);
                 pSocket->sendTextMessage(Data.data());
-            }catch(exHTTPError &ex){
-                sendError((qhttp::TStatusCode)ex.code(), ex.what());
-            }catch(Targoman::Common::exTargomanBase &ex){
+            }catch(exHTTPError& ex){
+                sendError(static_cast<qhttp::TStatusCode>(ex.code()), ex.what());
+            }catch(Targoman::Common::exTargomanBase& ex){
                 sendError(qhttp::ESTATUS_INTERNAL_SERVER_ERROR, ex.what());
             }
         }

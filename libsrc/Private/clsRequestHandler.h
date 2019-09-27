@@ -93,7 +93,7 @@ public:
     }
 
 private:
-    static void onMultiPartBegin(const MultipartHeaders &_headers, void *_userData);
+    static void onMultiPartBegin(const MultipartHeaders& _headers, void *_userData);
     static void onMultiPartData(const char *_buffer, long long _size, void *_userData);
     static void onMultiPartEnd(void *_userData);
     static void onDataEnd(void *_userData);
@@ -120,8 +120,8 @@ public:
     clsRequestHandler(qhttp::server::QHttpRequest* _req,
                       qhttp::server::QHttpResponse* _res,
                       QObject *_parent = nullptr);
-    void process(const QString &_api);
-    void findAndCallAPI(const QString &_api);
+    void process(const QString& _api);
+    void findAndCallAPI(const QString& _api);
     void sendError(qhttp::TStatusCode _code,
                    const QString& _message,
                    bool _closeConnection = false);

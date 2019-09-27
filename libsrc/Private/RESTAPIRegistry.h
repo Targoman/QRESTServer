@@ -18,7 +18,7 @@
  *                                                                             *
  *******************************************************************************/
 /**
- * @author S. Mohammad M. Ziabary <ziabary@targoman.com>
+ * @author S. Mehran M. Ziabary <ziabary@targoman.com>
  */
 
 #ifndef QHTTP_PRIVATE_RESTAPIREGISTRY_H
@@ -53,7 +53,7 @@ public:
 #endif
 
     static void registerRESTAPI(intfRESTAPIHolder* _module, const QMetaMethod& _method);
-    static QStringList registeredAPIs(const QString &_module, bool _showParams = false, bool _showTypes = false, bool _prettifyTypes = true);
+    static QStringList registeredAPIs(const QString& _module, bool _showParams = false, bool _showTypes = false, bool _prettifyTypes = true);
     static QJsonObject retriveOpenAPIJson();
 
 private:
@@ -61,7 +61,7 @@ private:
     static void validateMethodInputAndOutput(const QMetaMethod& _method);
     static void addRegistryEntry(QHash<QString, clsAPIObject*>& _registry, intfRESTAPIHolder* _module, const QMetaMethod& _method, const QString& _httpMethod, const QString& _methodName);
     static int  getCacheSeconds(const QMetaMethod& _method, const char* _type);
-    static QMap<QString, QString> extractMethods(QHash<QString, clsAPIObject*>& _registry, const QString &_module, bool _showTypes, bool _prettifyTypes);
+    static QMap<QString, QString> extractMethods(QHash<QString, clsAPIObject*>& _registry, const QString& _module, bool _showTypes, bool _prettifyTypes);
 
 private:
     static QHash<QString, clsAPIObject*>  Registry;

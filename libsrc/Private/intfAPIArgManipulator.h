@@ -18,7 +18,7 @@
  *                                                                             *
  *******************************************************************************/
 /**
- * @author S. Mohammad M. Ziabary <ziabary@targoman.com>
+ * @author S. Mehran M. Ziabary <ziabary@targoman.com>
  */
 
 #ifndef QHTTP_INTFAPIARGMANIPULATOR_H
@@ -33,6 +33,7 @@ class intfCacheConnector;
 /**********************************************************************/
 class intfAPIObject{
 public:
+    virtual ~intfAPIObject();
     virtual void invokeMethod(const QVariantList& _arguments, QGenericReturnArgument _returnArg) const = 0;
 };
 
@@ -40,6 +41,7 @@ public:
 class intfAPIArgManipulator{
 public:
     intfAPIArgManipulator(const QString& _realTypeName);
+    virtual ~intfAPIArgManipulator();
 
     virtual QGenericArgument makeGenericArgument(const QVariant& _val, const QByteArray& _paramName, void** _argStorage) = 0;
     virtual QVariant invokeMethod(const intfAPIObject* _apiObject, const QVariantList& _arguments) = 0;
@@ -58,18 +60,20 @@ class tmplAPIArg : public intfAPIArgManipulator{
 public:
     tmplAPIArg(const QString& _typeName,
                std::function<QVariant(const _itmplType& _value)> _toVariant = {},
-               std::function<_itmplType(const QVariant& _value)> _fromVariant = {}) :
+               std::function<_itmplType(const QVariant& _value, const QByteArray& _paramName)> _fromVariant = {}) :
         intfAPIArgManipulator(_typeName),
         toVariant(_toVariant),
         fromVariant(_fromVariant)
     {}
+    virtual ~tmplAPIArg(){;}
+
     virtual QGenericArgument makeGenericArgument(const QVariant& _val, const QByteArray& _paramName, void** _argStorage) final{
         *_argStorage = nullptr;
         if(this->fromVariant == nullptr && !_val.canConvert<_itmplType>())
                 throw exHTTPBadRequest("Invalid value specified for parameter: " + _paramName);
         *_argStorage = new _itmplType;
-        *((_itmplType*)*_argStorage) =
-                this->fromVariant == nullptr ? _val.value<_itmplType>() : this->fromVariant(_val);
+        *(reinterpret_cast<_itmplType*>(*_argStorage)) =
+                this->fromVariant == nullptr ? _val.value<_itmplType>() : this->fromVariant(_val, _paramName);
         return QGenericArgument(this->RealTypeName, *_argStorage);
     }
     inline QVariant invokeMethod(const intfAPIObject *_apiObject, const QVariantList& _arguments) final {
@@ -77,17 +81,17 @@ public:
            _apiObject->invokeMethod(_arguments, QReturnArgument<_itmplType >(this->RealTypeName, Result));
            return this->toVariant == nullptr ? QVariant::fromValue(Result) : this->toVariant(Result);
     }
-    inline void cleanup (void* _argStorage) final {if(_argStorage) delete ((_itmplType*)_argStorage);}
+    inline void cleanup (void* _argStorage) final {if(_argStorage) delete (reinterpret_cast<_itmplType*>(_argStorage));}
     inline bool hasFromVariantMethod() final {return this->fromVariant != nullptr;}
     inline bool hasToVariantMethod() final {return this->toVariant != nullptr;}
     inline QString toString(const QVariant _val) {
         if(this->hasFromVariantMethod() && this->hasToVariantMethod())
-            return this->toVariant(this->fromVariant(_val)).toString();
+            return this->toVariant(this->fromVariant(_val, QByteArray())).toString();
         return QString();
     }
 private:
     std::function<QVariant(_itmplType _value)> toVariant;
-    std::function<_itmplType(QVariant _value)> fromVariant;
+    std::function<_itmplType(QVariant _value, const QByteArray& _paramName)> fromVariant;
 
     friend class intfCacheConnector;
 };
@@ -105,7 +109,7 @@ private:
 
 #define QHTTP_SPECIAL_MAKE_GENERIC_ON_NUMERIC_TYPE(_numericType, _convertor) \
 template<> inline QGenericArgument tmplAPIArg<_numericType>::makeGenericArgument(const QVariant& _val, const QByteArray& _paramName, void** _argStorage){ \
-    bool Result; *_argStorage = new _numericType; *((_numericType*)*_argStorage) = _val._convertor(&Result); \
+    bool Result; *_argStorage = new _numericType; *(reinterpret_cast<_numericType*>(*_argStorage)) = static_cast<_numericType>(_val._convertor(&Result)); \
     if(!Result) throw exHTTPBadRequest("Invalid value specified for parameter: " + _paramName); \
     return QGenericArgument(this->RealTypeName, *_argStorage); \
 }

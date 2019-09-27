@@ -18,7 +18,7 @@
  *                                                                             *
  *******************************************************************************/
 /**
- * @author S. Mohammad M. Ziabary <ziabary@targoman.com>
+ * @author S. Mehran M. Ziabary <ziabary@targoman.com>
  */
 
 #ifndef QHTTP_INTFCACHECONNECTOR_HPP
@@ -36,9 +36,10 @@ TARGOMAN_ADD_EXCEPTION_HANDLER(exCacheConnector, Targoman::Common::exTargomanBas
 
 class intfCacheConnector{
 public:
-    intfCacheConnector(const QUrl &_connector) :
+    intfCacheConnector(const QUrl& _connector) :
         ConnectorURL(_connector)
     {}
+    virtual ~intfCacheConnector();
 
     virtual void connect() = 0;
     void setKeyVal(const QString& _key, const QVariant& _value, qint32 _ttl){
@@ -61,6 +62,7 @@ private:
 protected:
     QUrl ConnectorURL;
 };
+
 
 }
 }

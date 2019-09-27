@@ -67,7 +67,7 @@ JWT_t SampleAPI::apiGETSampleDataWithJWT(JWT_t _JWT)
     return _JWT;
 }
 
-int SampleAPI::apiPUTSampleData(quint64 _id, const QString &_info)
+int SampleAPI::apiPUTSampleData(quint64 _id, const QString& _info)
 {
     TargomanDebug(1, "Called: " <<__FUNCTION__<<" Params: (\""<<_id<<"\",\""<<_info<<"\")");
     return _id;
@@ -85,14 +85,14 @@ QVariantList SampleAPI::apiUPDATESampleData(quint64 _id, const QString& _info)
     return QVariantList({{1},{"sdjkfh"}});
 }
 
-stuTable SampleAPI::apiTranslate(const QString &_text, bool _detailed)
+stuTable SampleAPI::apiTranslate(const QString& _text, QString _detailed)
 {
     TargomanDebug(1, "Called: " <<__FUNCTION__<<" Params: ("<<_text<<","<<_detailed<<")");
     return stuTable();
 }
 
 
-stuTable SampleAPI::apiSampleList(const QVariantList &_list)
+stuTable SampleAPI::apiSampleList(const QVariantList& _list)
 {
     TargomanDebug(1, "Called: " <<__FUNCTION__<<" Params: (_list)");
     return stuTable(_list.size(), {{"data", _list}});

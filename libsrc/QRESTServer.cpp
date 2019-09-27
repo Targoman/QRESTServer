@@ -39,7 +39,6 @@ using namespace qhttp::server;
 using namespace Private;
 
 bool validateConnection(const QHostAddress& _peerAddress, quint16 _peerPort){
-
     enuIPBlackListStatus::Type IPBlackListStatus = enuIPBlackListStatus::Unknown;
 
     if(gConfigs.Public.fnIPInBlackList &&
@@ -54,7 +53,7 @@ bool validateConnection(const QHostAddress& _peerAddress, quint16 _peerPort){
     return true;
 }
 
-void RESTServer::configure(const RESTServer::stuConfig &_configs) {
+void RESTServer::configure(const RESTServer::stuConfig& _configs) {
     if(gConfigs.Private.IsStarted)
         throw exTargomanInitialization("QRESTServer can not be reconfigured while listening");
 
@@ -129,7 +128,7 @@ void RESTServer::start() {
                             Path<<
                             _req->url().query());
             RequestHandler->process(Path.mid(gConfigs.Private.BasePathWithVersion.size() - 1));
-        }catch(exTargomanBase &ex){
+        }catch(exTargomanBase& ex){
             RequestHandler->sendError(static_cast<qhttp::TStatusCode>(ex.httpCode()), ex.what(), ex.httpCode() >= 500);
         }
     });
@@ -179,62 +178,7 @@ QStringList RESTServer::registeredAPIs(bool _showParams, bool _showTypes, bool _
 intfRESTAPIHolder::intfRESTAPIHolder(Targoman::Common::Configuration::intfModule *_parent) :
     Targoman::Common::Configuration::intfModule(_parent)
 {
-    QHTTP_REGISTER_METATYPE(
-        QHttp::stuTable,
-                [](const QHttp::stuTable& _value) -> QVariant{
-                    return QVariantMap({{"totalRows", _value.TotalRows}, {"Rows", _value.Rows}});
-                },
-                nullptr
-    );
-
-    QHTTP_REGISTER_METATYPE(
-        QHttp::COOKIES_t,
-        [](const QHttp::COOKIES_t& _value) -> QVariant {
-            return _value.toVariant();
-        },
-        [](const QVariant& _value) -> QHttp::COOKIES_t {
-            QHttp::COOKIES_t  TempValue;
-            return TempValue.fromVariant(_value);
-        }
-    );
-    QHTTP_REGISTER_METATYPE(
-        QHttp::HEADERS_t,
-        [](const QHttp::HEADERS_t& _value) -> QVariant {
-            return _value.toVariant();
-        },
-        [](const QVariant& _value) -> QHttp::HEADERS_t {
-            QHttp::HEADERS_t  TempValue;
-            return TempValue.fromVariant(_value);
-        }
-    );
-    QHTTP_REGISTER_METATYPE(
-        QHttp::JWT_t,
-        [](const QHttp::JWT_t& _value) -> QVariant {
-            return _value.toVariantMap();
-        },
-        [](const QVariant& _value) -> QHttp::JWT_t {
-            QJsonObject Obj;
-            if(_value.canConvert<QVariantMap>())
-                Obj = Obj.fromVariantMap(_value.value<QVariantMap>());
-            if(_value.canConvert<QVariantHash>())
-                Obj = Obj.fromVariantHash(_value.value<QVariantHash>());
-
-            if(Obj.isEmpty())
-                throw exHTTPBadRequest("Unable to convert JWT");
-            return  *reinterpret_cast<QHttp::JWT_t*>(&Obj);
-        }
-    );
-    QHTTP_REGISTER_METATYPE(
-        QHttp::RemoteIP_t,
-        [](const QHttp::RemoteIP_t& _value) -> QVariant {
-            return _value;
-        },
-        [](const QVariant& _value) -> QHttp::RemoteIP_t {
-            QHttp::RemoteIP_t IP;
-            IP=_value.toString();
-            return  IP;
-        }
-    );
+    registerGenericTypes();
 }
 
 void intfRESTAPIHolder::registerMyRESTAPIs(){
@@ -244,7 +188,7 @@ void intfRESTAPIHolder::registerMyRESTAPIs(){
 
 }
 
-QString intfRESTAPIHolder::createSignedJWT(QJsonObject _payload, QJsonObject _privatePayload, const qint32 _expiry, const QString &_sessionID)
+QString intfRESTAPIHolder::createSignedJWT(QJsonObject _payload, QJsonObject _privatePayload, const qint32 _expiry, const QString& _sessionID)
 {
     return Private::QJWT::createSigned(_payload, _privatePayload, _expiry, _sessionID);
 }
@@ -253,12 +197,19 @@ QStringList intfRESTAPIHolder::apiGETListOfAPIs(bool _showParams, bool _showType
     return RESTAPIRegistry::registeredAPIs("", _showParams, _showTypes, _prettifyTypes);
 }
 
-intfAPIArgManipulator::intfAPIArgManipulator(const QString &_realTypeName)
+intfAPIArgManipulator::intfAPIArgManipulator(const QString& _realTypeName)
 {
     this->PrettyTypeName = (_realTypeName.startsWith('Q') ? _realTypeName.mid(1) : _realTypeName).toLower();
     this->RealTypeName = new char[_realTypeName.toStdString().size()];
     strcpy(this->RealTypeName, _realTypeName.toStdString().c_str());
 }
+
+intfAPIArgManipulator::~intfAPIArgManipulator()
+{;}
+
+intfAPIObject::~intfAPIObject()
+{;}
+
 
 }
 

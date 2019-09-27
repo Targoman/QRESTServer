@@ -128,7 +128,7 @@ void RESTAPIRegistry::registerRESTAPI(intfRESTAPIHolder* _module, const QMetaMet
     }
 }
 
-QMap<QString, QString> RESTAPIRegistry::extractMethods(QHash<QString, clsAPIObject*>& _registry, const QString &_module, bool _showTypes, bool _prettifyTypes)
+QMap<QString, QString> RESTAPIRegistry::extractMethods(QHash<QString, clsAPIObject*>& _registry, const QString& _module, bool _showTypes, bool _prettifyTypes)
 {
     static auto type2Str = [_prettifyTypes](int _typeID) {
         if(_prettifyTypes == false || _typeID > 1023)
@@ -279,7 +279,7 @@ QJsonObject RESTAPIRegistry::retriveOpenAPIJson(){
     return OpenAPI;
 }
 
-QStringList RESTAPIRegistry::registeredAPIs(const QString &_module, bool _showParams, bool _showTypes, bool _prettifyTypes){
+QStringList RESTAPIRegistry::registeredAPIs(const QString& _module, bool _showParams, bool _showTypes, bool _prettifyTypes){
     if(_showParams == false){
 #ifdef QHTTP_ENABLE_WEBSOCKET
         QStringList Methods = RESTAPIRegistry::Registry.keys();
@@ -326,7 +326,7 @@ QString RESTAPIRegistry::isValidType(int _typeID, bool _validate4Input){
     return "";
 }
 
-void RESTAPIRegistry::validateMethodInputAndOutput(const QMetaMethod &_method){
+void RESTAPIRegistry::validateMethodInputAndOutput(const QMetaMethod& _method){
     if(_method.parameterCount() > 9)
         throw exRESTRegistry("Unable to register methods with more than 9 input args");
 
@@ -354,14 +354,14 @@ void RESTAPIRegistry::validateMethodInputAndOutput(const QMetaMethod &_method){
     }
 }
 
-const char* CACHE_INTERNAL = "CACHEABLE_";
-const char* CACHE_CENTRAL  = "CENTRALCACHE_";
+constexpr char CACHE_INTERNAL[] = "CACHEABLE_";
+constexpr char CACHE_CENTRAL[]  = "CENTRALCACHE_";
 
-void RESTAPIRegistry::addRegistryEntry(QHash<QString, QHttp::Private::clsAPIObject *> &_registry,
-                                       intfRESTAPIHolder *_module,
-                                       const QMetaMethod &_method,
-                                       const QString &_httpMethod,
-                                       const QString &_methodName){
+void RESTAPIRegistry::addRegistryEntry(QHash<QString, QHttp::Private::clsAPIObject *>& _registry,
+                                       intfRESTAPIHolder* _module,
+                                       const QMetaMethod& _method,
+                                       const QString& _httpMethod,
+                                       const QString& _methodName){
     QString MethodKey = RESTAPIRegistry::makeRESTAPIKey(_httpMethod, "/" + _module->moduleFullName().replace("::", "/")+ '/' + _methodName);
 
     if(_registry.contains(MethodKey)){
@@ -383,7 +383,7 @@ void RESTAPIRegistry::addRegistryEntry(QHash<QString, QHttp::Private::clsAPIObje
 }
 
 int RESTAPIRegistry::getCacheSeconds(const QMetaMethod& _method, const char* _type){
-    if(_method.tag() == NULL || _method.tag()[0] == '\0')
+    if(_method.tag() == nullptr || _method.tag()[0] == '\0')
         return 0;
     QString Tag = _method.tag();
     if(Tag.startsWith(_type) && Tag.size () > 12){
@@ -412,6 +412,11 @@ QHash<QString, clsAPIObject*>  RESTAPIRegistry::Registry;
 #ifdef QHTTP_ENABLE_WEBSOCKET
 QHash<QString, clsAPIObject*>  RESTAPIRegistry::WSRegistry;
 #endif
+
+/****************************************************/
+intfCacheConnector::~intfCacheConnector()
+{;}
+
 
 }
 }

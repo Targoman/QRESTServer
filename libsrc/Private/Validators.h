@@ -21,49 +21,30 @@
  * @author S.Mehran M.Ziabary <ziabary@targoman.com>
  */
 
-#include <iostream>
-#include <QDebug>
-#include <QCoreApplication>
-#include "libTargomanCommon/exTargomanBase.h"
-#include "QHttp/QRESTServer.h"
-#include "libTargomanCommon/Logger.h"
-#include "SampleAPI.h"
+#ifndef QHTTP_PRIVATE_VALIDATORS_H
+#define QHTTP_PRIVATE_VALIDATORS_H
 
-using namespace QHttp;
+#include <QString>
 
-int main(int _argc, char *_argv[])
+namespace QHttp {
+namespace Private{
+
+class Validator
 {
-    Q_UNUSED(_argc)
-    Q_UNUSED(_argv)
+public:
+    Validator();
+    //bool email(const QString& _value, bool _required = false);
+    //bool md5(const QString& _value, bool _required = false);
 
-    try{
-        QCoreApplication App(_argc, _argv);
+protected:
+    bool CanThrow;
+};
 
-        Targoman::Common::TARGOMAN_IO_SETTINGS.setFull();
-        Targoman::Common::Logger::instance().setActive();
-        Targoman::Common::Logger::instance().setVisible();
+class ThrowableValidator : public Validator{
+public:
+    ThrowableValidator();
+};
 
-        Sample1::SampleAPI::instance().init();
-
-        std::cout<<qPrintable(RESTServer::registeredAPIs(true, true).join("\n"))<<std::endl;
-
-        RESTServer::stuConfig Configs;
-
-        Configs.BasePath = "/a";
-        Configs.Version = "v2";
-        Configs.ListenPort = 9009;
-        Configs.IndentedJson = true;
-        Configs.WebSocketServerName = "ws";
-
-        RESTServer::configure (Configs);
-        RESTServer::start();
-
-        App.exec();
-    }catch(Targoman::Common::exTargomanBase& ex){
-        qDebug()<<ex.what();
-        return 1;
-    }
-    return 0;
 }
-
-
+}
+#endif // QHTTP_PRIVATE_VALIDATORS_H

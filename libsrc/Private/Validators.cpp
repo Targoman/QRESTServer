@@ -21,49 +21,48 @@
  * @author S.Mehran M.Ziabary <ziabary@targoman.com>
  */
 
-#include <iostream>
-#include <QDebug>
-#include <QCoreApplication>
-#include "libTargomanCommon/exTargomanBase.h"
-#include "QHttp/QRESTServer.h"
-#include "libTargomanCommon/Logger.h"
-#include "SampleAPI.h"
+#include <QRegularExpression>
 
-using namespace QHttp;
+#include "Validators.h"
+#include "HTTPExceptions.h"
 
-int main(int _argc, char *_argv[])
+namespace QHttp {
+namespace Private {
+
+#define createErrorString(_message) {if(this->CanThrow) throw exHTTPBadRequest(_message);  else return false;}
+
+#define VALIDATOR_BY_REGEX(_name, _regex, _messageOnRequired, _messageOnError)
+
+/*
+bool Validator::email(const QString& _value, bool _required)
 {
-    Q_UNUSED(_argc)
-    Q_UNUSED(_argv)
-
-    try{
-        QCoreApplication App(_argc, _argv);
-
-        Targoman::Common::TARGOMAN_IO_SETTINGS.setFull();
-        Targoman::Common::Logger::instance().setActive();
-        Targoman::Common::Logger::instance().setVisible();
-
-        Sample1::SampleAPI::instance().init();
-
-        std::cout<<qPrintable(RESTServer::registeredAPIs(true, true).join("\n"))<<std::endl;
-
-        RESTServer::stuConfig Configs;
-
-        Configs.BasePath = "/a";
-        Configs.Version = "v2";
-        Configs.ListenPort = 9009;
-        Configs.IndentedJson = true;
-        Configs.WebSocketServerName = "ws";
-
-        RESTServer::configure (Configs);
-        RESTServer::start();
-
-        App.exec();
-    }catch(Targoman::Common::exTargomanBase& ex){
-        qDebug()<<ex.what();
-        return 1;
-    }
-    return 0;
+    static QRegularExpression rxEmail("^[a-zA-Z0-9.!#$%&’*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\\.[a-zA-Z0-9-]+)*$", QRegularExpression::CaseInsensitiveOption);
+    if(_required && _value.isEmpty())
+       createErrorString("email is required");
+    if(rxEmail.match(_value).hasMatch())
+        return true;
+    createErrorString("Invalid Email Address");
 }
 
+bool Validator::md5(const QString& _value, bool _required)
+{
+    static QRegularExpression rxMd5("^[a-f0-9]{32}$", QRegularExpression::CaseInsensitiveOption);
+    if(_required && _value.isEmpty())
+       createErrorString("email is required");
+    if(rxMd5.match(_value).hasMatch())
+        return true;
+    createErrorString("Invalid Email Address");
+}
+*/
 
+Validator::Validator() :
+    CanThrow(false)
+{;}
+
+ThrowableValidator::ThrowableValidator()
+{
+    this->CanThrow = true;
+}
+
+}
+}

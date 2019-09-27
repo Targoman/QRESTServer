@@ -41,7 +41,9 @@ SOURCES += \
     QRESTServer.cpp \
     Private/clsRedisConnector.cpp \
     Private/QJWT.cpp \
-    Private/clsSimpleCrypt.cpp
+    Private/clsSimpleCrypt.cpp \
+    Private/GenericTypes.cpp \
+    Private/Validators.cpp
 
 # +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-#
 OTHER_FILES += \
@@ -83,6 +85,8 @@ HEADERS += $$DIST_HEADERS \
     Private/clsRedisConnector.h \
     Private/WebSocketServer.hpp \
     Private/QJWT.h \
-    Private/clsSimpleCrypt.h
+    Private/clsSimpleCrypt.h \
+    GenericTypes.h \
+    Private/Validators.h
 
 include($$PRJDIR/qmake/install.pri)

@@ -42,10 +42,10 @@ private slots:
     QHttp::JWT_t apiGETSampleDataWithJWT(QHttp::JWT_t _JWT);
     int apiPUTSampleData(quint64 _id, const QString& _info = "defaultValue");
     int apiDELETESampleData(quint64 _id = 5);
-    QVariantList apiUPDATESampleData(quint64 _id, const QString &_info = "dfdsf");
+    QVariantList apiUPDATESampleData(quint64 _id, const QString& _info = "dfdsf");
 
 
-    QHttp::stuTable apiTranslate(const QString& _text, bool _info = ",");
+    QHttp::stuTable apiTranslate(const QString& _text, QString _info = ",");
     QHttp::stuTable apiSampleList(const QVariantList& _list);
     QString apiWSSample(const QString _value);
 

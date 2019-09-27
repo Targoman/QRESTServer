@@ -144,14 +144,14 @@ void clsRequestHandler::process(const QString& _api) {
             default:
                 throw exHTTPBadRequest(("unsupported Content-Type: " + ContentType).constData());
             }
-        }catch(exTargomanBase &ex){
+        }catch(exTargomanBase& ex){
             this->sendError(static_cast<qhttp::TStatusCode>(ex.httpCode()), ex.what(), ex.httpCode() >= 500);
         }
     });
     this->Request->onEnd([this, _api](){
         try{
             this->findAndCallAPI (_api);
-        }catch(exTargomanBase &ex){
+        }catch(exTargomanBase& ex){
             this->sendError(static_cast<qhttp::TStatusCode>(ex.httpCode()), ex.what(), ex.httpCode() >= 500);
         }
     });
@@ -200,7 +200,7 @@ const qhttp::TStatusCode StatusCodeOnMethod[] = {
     qhttp::ESTATUS_EXPECTATION_FAILED, ///< EHTTP_UNLINK         = 32,
 };
 
-void clsRequestHandler::findAndCallAPI(const QString &_api)
+void clsRequestHandler::findAndCallAPI(const QString& _api)
 {
     if(_api == "/openAPI.json"){
         gServerStats.Success.inc();
@@ -254,7 +254,7 @@ void clsRequestHandler::findAndCallAPI(const QString &_api)
                               this->toIPv4(this->Request->remoteAddress())));
 }
 
-void clsRequestHandler::sendError(qhttp::TStatusCode _code, const QString &_message, bool _closeConnection)
+void clsRequestHandler::sendError(qhttp::TStatusCode _code, const QString& _message, bool _closeConnection)
 {
     gServerStats.Errors.inc();
     this->sendResponseBase(_code,
@@ -295,7 +295,7 @@ void clsRequestHandler::sendResponseBase(qhttp::TStatusCode _code, QJsonObject _
 }
 
 /**************************************************************************/
-void clsMultipartFormDataRequestHandler::onMultiPartBegin(const MultipartHeaders &_headers, void *_userData) {
+void clsMultipartFormDataRequestHandler::onMultiPartBegin(const MultipartHeaders& _headers, void *_userData) {
     clsMultipartFormDataRequestHandler *Self = static_cast<clsMultipartFormDataRequestHandler*>(_userData);
     try{
         std::string ContentDisposition = _headers["Content-Disposition"];
@@ -370,9 +370,9 @@ void clsMultipartFormDataRequestHandler::onMultiPartBegin(const MultipartHeaders
             }
         }else
             throw exHTTPBadRequest("No Content-Disposition header provided");
-    }catch(exHTTPError &ex){
+    }catch(exHTTPError& ex){
         Self->pRequestHandler->sendError(static_cast<qhttp::TStatusCode>(ex.code()), ex.what(), ex.code() >= 500);
-    }catch(exTargomanBase &ex){
+    }catch(exTargomanBase& ex){
         Self->pRequestHandler->sendError(qhttp::ESTATUS_INTERNAL_SERVER_ERROR, ex.what(), true);
     }
 

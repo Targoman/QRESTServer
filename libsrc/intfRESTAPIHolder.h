@@ -18,7 +18,7 @@
  *                                                                             *
  *******************************************************************************/
 /**
- * @author S. Mohammad M. Ziabary <ziabary@targoman.com>
+ * @author S. Mehran M. Ziabary <ziabary@targoman.com>
  */
 
 #ifndef QHTTP_INTFRESTAPIHOLDER_H
@@ -28,65 +28,10 @@
 #include "libTargomanCommon/clsCountAndSpeed.h"
 #include "libTargomanCommon/Configuration/intfConfigurableModule.hpp"
 #include "QHttp/HTTPExceptions.h"
-#include <QHttp/qhttpfwd.hpp>
+#include "QHttp/qhttpfwd.hpp"
+#include "GenericTypes.h"
 
 namespace QHttp {
-/**********************************************************************/
-/**
- * @brief The stuStatistics struct holds server statistics about APIs
- */
-struct stuStatistics {
-    Targoman::Common::clsCountAndSpeed Connections;
-    Targoman::Common::clsCountAndSpeed WSConnections;
-    Targoman::Common::clsCountAndSpeed Errors;
-    Targoman::Common::clsCountAndSpeed Blocked;
-    Targoman::Common::clsCountAndSpeed Success;
-
-    QHash<QByteArray, Targoman::Common::clsCountAndSpeed> APICallsStats;
-    QHash<QByteArray, Targoman::Common::clsCountAndSpeed> APIInternalCacheStats;
-    QHash<QByteArray, Targoman::Common::clsCountAndSpeed> APICentralCacheStats;
-};
-
-/*using COOKIES_t = qhttp::THeaderHash;
-using HEADERS_t = qhttp::THeaderHash ;*/
-class COOKIES_t : public qhttp::THeaderHash{
-public:
-    COOKIES_t fromVariant (const QVariant &_value){
-        THeaderHash Value = THeaderHash::fromVariant (_value);
-        return *reinterpret_cast<COOKIES_t*>(&Value);
-    }
-};
-
-class HEADERS_t : public qhttp::THeaderHash{
-public:
-    HEADERS_t fromVariant (const QVariant &_value){
-        THeaderHash Value = THeaderHash::fromVariant (_value);
-        return *reinterpret_cast<HEADERS_t*>(&Value);
-    }
-};
-
-class JWT_t : public QJsonObject{
-};
-
-class RemoteIP_t : public QString{
-public:
-    RemoteIP_t(){;}
-    RemoteIP_t(const QString& _other) : QString(_other){;}
-};
-
-/**********************************************************************/
-/**
- * @brief The stuTable struct
- */
-struct stuTable{
-    qint64 TotalRows;
-    QVariantList Rows;
-    stuTable(qint64 _totalRows = -1, const QVariantList& _rows = QVariantList()):
-        TotalRows(_totalRows),
-        Rows(_rows)
-    {}
-};
-
 /**********************************************************************/
 /** @TODO document QT_NO_CAST_FROM_ASCII */
 /**********************************************************************/
@@ -142,7 +87,7 @@ struct stuTable{
 class intfRESTAPIHolder : public Targoman::Common::Configuration::intfModule{
     Q_OBJECT
 public:
-    intfRESTAPIHolder(Targoman::Common::Configuration::intfModule *_parent = NULL);
+    intfRESTAPIHolder(Targoman::Common::Configuration::intfModule *_parent = nullptr);
     virtual ~intfRESTAPIHolder(){}
 
 private slots:
@@ -187,16 +132,10 @@ protected:
      * @param _sessionID optinally a session key for each user to be stored in `jti`
      * @return a base64 encoded string in form of HEADER.PAYLOAD.SIGNATURE
      */
-    QString createSignedJWT(QJsonObject _payload, QJsonObject _privatePayload = QJsonObject(), const qint32 _expiry = -1, const QString &_sessionID = QString());
+    QString createSignedJWT(QJsonObject _payload, QJsonObject _privatePayload = QJsonObject(), const qint32 _expiry = -1, const QString& _sessionID = QString());
 };
 
 }
 
-/**********************************************************************/
-Q_DECLARE_METATYPE(QHttp::stuTable)
-Q_DECLARE_METATYPE(QHttp::COOKIES_t)
-Q_DECLARE_METATYPE(QHttp::HEADERS_t)
-Q_DECLARE_METATYPE(QHttp::JWT_t)
-Q_DECLARE_METATYPE(QHttp::RemoteIP_t)
 
 #endif // QHTTP_INTFRESTAPIHOLDER_H

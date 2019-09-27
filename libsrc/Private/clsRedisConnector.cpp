@@ -18,7 +18,7 @@
  *                                                                             *
  *******************************************************************************/
 /**
- * @author S. Mohammad M. Ziabary <ziabary@targoman.com>
+ * @author S. Mehran M. Ziabary <ziabary@targoman.com>
  */
 
 #ifdef QHTTP_REDIS_PROTOCOL
@@ -30,7 +30,7 @@ namespace QHttp {
 namespace Private{
 
 
-clsRedisConnector::clsRedisConnector(const QUrl &_connector) :
+clsRedisConnector::clsRedisConnector(const QUrl& _connector) :
     intfCacheConnector(_connector)
 {
 }
@@ -56,14 +56,14 @@ bool clsRedisConnector::reconnect()
             this->connect();
         }else
             return redisReconnect(this->Connection.data());
-    }catch(exCacheConnector &ex){
+    }catch(exCacheConnector& ex){
         TargomanLogWarn(1, ex.what());
         return false;
     }
     return true;
 }
 
-void clsRedisConnector::setKeyValImpl(const QString &_key, const QString &_value, qint32 _ttl)
+void clsRedisConnector::setKeyValImpl(const QString& _key, const QString& _value, qint32 _ttl)
 {
     if(this->Connection.isNull() || this->Connection->err)
         this->reconnect();
@@ -72,9 +72,9 @@ void clsRedisConnector::setKeyValImpl(const QString &_key, const QString &_value
         TargomanWarn(1, this->Connection->errstr);
 }
 
-QString clsRedisConnector::getValueImpl(const QString &_key)
+QString clsRedisConnector::getValueImpl(const QString& _key)
 {
-    void *Reply = NULL;
+    void *Reply = nullptr;
 
     Reply = redisCommand(this->Connection.data(), "GET %s", qPrintable(_key)); // You must define "context" previously
     if(!Reply){
@@ -82,7 +82,7 @@ QString clsRedisConnector::getValueImpl(const QString &_key)
         return "";
     }
 
-    QString Result = QString(((redisReply*)Reply)->str);
+    QString Result = QString((static_cast<redisReply*>(Reply))->str);
     freeReplyObject(Reply);
     return Result;
 }

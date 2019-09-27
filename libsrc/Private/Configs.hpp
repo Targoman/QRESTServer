@@ -54,7 +54,7 @@ class clsAPIObject;
 
 extern QList<intfAPIArgManipulator*> gOrderedMetaTypeInfo;
 extern QList<intfAPIArgManipulator*> gUserDefinedTypesInfo;
-const quint16 QHTTP_BASE_USER_DEFINED_TYPEID = 1026;
+const  qint16 QHTTP_BASE_USER_DEFINED_TYPEID = 1026;
 }
 }
 

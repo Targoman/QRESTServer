@@ -29,4 +29,5 @@ QT += core network
 QT -= gui
 
 LIBS += -lTargomanCommon \
+        -lQFieldValidator \
         -lqhttp

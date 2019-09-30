@@ -29,7 +29,7 @@
 namespace QHttp {
 namespace Private{
 
-thread_local static clsSimpleCrypt* SimpleCryptInstance = NULL;
+thread_local static clsSimpleCrypt* SimpleCryptInstance = nullptr;
 static clsSimpleCrypt* simpleCryptInstance(){
     if(Q_UNLIKELY(!SimpleCryptInstance)){
         SimpleCryptInstance = new clsSimpleCrypt(gConfigs.Public.SimpleCryptKey);
@@ -42,7 +42,7 @@ QString QJWT::createSigned(QJsonObject _payload, QJsonObject _privatePayload, co
 {
     const QString Header = QString("{\"typ\":\"JWT\",\"alg\":\"%1\"}").arg(enuJWTHashAlgs::toStr(gConfigs.Public.JWTHashAlgorithm));
 
-    _payload["iat"] = (qint64)QDateTime::currentDateTime().toTime_t();
+    _payload["iat"] = static_cast<qint64>(QDateTime::currentDateTime().toTime_t());
     if(_expiry >= 0)
         _payload["exp"] = _payload["iat"].toInt() + _expiry;
     else

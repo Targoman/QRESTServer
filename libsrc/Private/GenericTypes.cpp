@@ -26,6 +26,7 @@
 #include "HTTPExceptions.h"
 #include <QRegularExpression>
 #include "Private/Configs.hpp"
+#include "QFieldValidator.h"
 
 namespace QHttp {
 
@@ -33,8 +34,6 @@ using namespace Private;
 
 void registerGenericTypes()
 {
-    static QRegularExpression rxMd5("", QRegularExpression::CaseInsensitiveOption);
-
     QHTTP_REGISTER_METATYPE(
         QHttp::stuTable,
         [](const QHttp::stuTable& _value) -> QVariant{return QVariantMap({{"totalRows", _value.TotalRows}, {"Rows", _value.Rows}});},
@@ -59,42 +58,33 @@ void registerGenericTypes()
         [](const QVariant& _value, const QByteArray&) -> QHttp::RemoteIP_t {QHttp::RemoteIP_t Value;Value=_value.toString();return  Value;}
     );
 
-    QHTTP_REGISTER_METATYPE(
-        QHttp::MD5_t,
-        [](const QHttp::MD5_t& _value) -> QVariant {return _value;},
-        [](const QVariant& _value, const QByteArray& _paramName) -> QHttp::MD5_t {
-            QHttp::MD5_t Value;
-            if(rxMd5.match(_value.toString()).hasMatch() == false)
-                throw exHTTPBadRequest("Invalid MD5");
-            Value=_value.toString();  return  Value;
-        }
-    );
+#define VALIDATION_REQUIRED_TYPE_IMPL(_type, _validationRule, _toVariant) \
+    QHTTP_REGISTER_METATYPE( \
+        _type, \
+        [](const _type& _value) -> QVariant {return _toVariant;}, \
+        [](const QVariant& _value, const QByteArray& _paramName) -> _type { \
+            static QFieldValidator Validator = QFieldValidator()._validationRule; \
+            if(Validator.isValid(_value, _paramName) == false) throw exHTTPBadRequest(Validator.errorMessage()); \
+            _type Value; Value=_value.toString();  return  Value; \
+        } \
+    )
 
-    QHTTP_REGISTER_METATYPE(
-        QHttp::Email_t,
-        [](const QHttp::Email_t& _value) -> QVariant {return _value;},
-        [](const QVariant& _value, const QByteArray& _paramName) -> QHttp::Email_t {
-            QHttp::Email_t Value;
-            if(rxEmail.match(_value.toString()).hasMatch() == false)
-                throw exHTTPBadRequest("Invalid Email");
-            Value=_value.toString();  return  Value;
-        }
-    );
+    VALIDATION_REQUIRED_TYPE_IMPL(QHttp::MD5_t, md5(), _value);
+    VALIDATION_REQUIRED_TYPE_IMPL(QHttp::Email_t, email(), _value);
+    VALIDATION_REQUIRED_TYPE_IMPL(QHttp::Mobile_t, mobile(), _value);
 
     QHTTP_REGISTER_METATYPE(
         QHttp::JWT_t,
-        [](const QHttp::JWT_t& _value) -> QVariant {
-            return _value.toVariantMap();
-        },
+        [](const QHttp::JWT_t& _value) -> QVariant {return _value.toVariantMap();},
         [](const QVariant& _value, const QByteArray& _paramName) -> QHttp::JWT_t {
+            static QFieldValidator Validator = QFieldValidator().hasKey("typ",QFieldValidator().equals("JWT")).hasKey("iat");
+            if(Validator.isValid(_value, _paramName) == false) throw exHTTPBadRequest(Validator.errorMessage());
             QJsonObject Obj;
             if(_value.canConvert<QVariantMap>())
                 Obj = Obj.fromVariantMap(_value.value<QVariantMap>());
-            if(_value.canConvert<QVariantHash>())
-                Obj = Obj.fromVariantHash(_value.value<QVariantHash>());
 
             if(Obj.isEmpty())
-                throw exHTTPBadRequest("Unable to convert JWT");
+                throw exHTTPBadRequest(_paramName + " is not a valid JWT object");
             return  *reinterpret_cast<QHttp::JWT_t*>(&Obj);
         }
     );

@@ -25,12 +25,20 @@ DIST_HEADERS += \
     intfRESTAPIHolder.h \
     QRESTServer.h \
     HTTPExceptions.h \
+    GenericTypes.h
 
 PRIVATE_HEADERS += \
     Private/clsRequestHandler.h \
     Private/Configs.hpp \
     Private/RESTAPIRegistry.h \
-    Private/clsAPIObject.hpp
+    Private/clsAPIObject.hpp \
+    Private/intfAPIArgManipulator.h \
+    Private/APICache.hpp \
+    Private/intfCacheConnector.hpp \
+    Private/clsRedisConnector.h \
+    Private/WebSocketServer.hpp \
+    Private/QJWT.h \
+    Private/clsSimpleCrypt.h \
 
 
 # +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-#
@@ -78,13 +86,5 @@ build_static {
 HEADERS += $$DIST_HEADERS \
            $$PRIVATE_HEADERS \
            $$SUBMODULE_HEADERS \
-    Private/intfAPIArgManipulator.h \
-    Private/APICache.hpp \
-    Private/intfCacheConnector.hpp \
-    Private/clsRedisConnector.h \
-    Private/WebSocketServer.hpp \
-    Private/QJWT.h \
-    Private/clsSimpleCrypt.h \
-    GenericTypes.h
 
 include($$PRJDIR/qmake/install.pri)

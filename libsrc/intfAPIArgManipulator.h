@@ -86,7 +86,9 @@ public:
         [](_enum::Type _value) -> QVariant{return _enum::toStr(_value);}, \
         [](const QVariant& _value, const QByteArray& _paramName) -> _enum::Type { \
             _enum::Type Value = _enum::toEnum(_value.toString().toLatin1().constData()); \
-            if(Value == _enum::Unknown) throw exHTTPBadRequest(_paramName + " is not a valid "##_enum); \
+            if(Value == _enum::Unknown) throw exHTTPBadRequest(QString("%1 is not a valid %2").arg( \
+                        _paramName.constData()).arg( \
+                        QString(TARGOMAN_M2STR(_enum)).startsWith("enu") ? QString(TARGOMAN_M2STR(_enum)).mid(3) : QString(TARGOMAN_M2STR(_enum)))); \
             return Value; \
         } \
     )

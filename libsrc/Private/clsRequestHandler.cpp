@@ -241,7 +241,7 @@ void clsRequestHandler::findAndCallAPI(const QString& _api)
     if(APIObject->requiresJWT()){
         QString Auth = Headers.value("authorization");
         if(Auth.startsWith("Bearer ")){
-            JWT = QJWT::verifyReturnPayload(Auth.mid(sizeof("Bearer ")));
+            JWT = QJWT::verifyReturnPayload(Auth.mid(sizeof("Bearer")));
             Headers.remove("authorization");
         } else
             throw exHTTPForbidden("No valid authentication header is present");

@@ -71,7 +71,7 @@ QJsonObject QJWT::verifyReturnPayload(const QString& _jwt)
     if(QJWT::hash((JWTParts.at(0) + "." + JWTParts.at(1)).toUtf8()).toBase64() != JWTParts[2])
         throw exHTTPForbidden("JWT signature verification failed");
     QJsonParseError Error;
-    QJsonDocument Payload = QJsonDocument::fromJson(JWTParts.at(1).toUtf8(), &Error);
+    QJsonDocument Payload = QJsonDocument::fromJson(QByteArray::fromBase64(JWTParts.at(1).toLatin1()), &Error);
     if(Payload.isNull())
         throw exHTTPForbidden("Invalid JWT payload: " + Error.errorString());
 

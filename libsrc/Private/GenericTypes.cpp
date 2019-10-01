@@ -58,8 +58,14 @@ void registerGenericTypes()
     );
 
 
+    QHTTP_REGISTER_METATYPE(
+        QHttp::EncodedJWT_t,
+        [](const QHttp::EncodedJWT_t& _value) -> QVariant {return _value;},
+        nullptr
+    );
 
-    QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(QHttp::EncodedJWT_t, hasKey("typ",QFieldValidator().equals("JWT")).hasKey("iat"), _value);
+
+    //QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(QHttp::EncodedJWT_t, allwaysInvalid(), _value);
     QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(QHttp::JSON_t, optional(QFieldValidator().json()), _value);
     QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(QHttp::MD5_t, optional(QFieldValidator().md5()), _value);
     QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(QHttp::Email_t, optional(QFieldValidator().email()), _value);
@@ -67,10 +73,8 @@ void registerGenericTypes()
 
     QHTTP_REGISTER_METATYPE(
         QHttp::JWT_t,
-        [](const QHttp::JWT_t& _value) -> QVariant {return _value.toVariantMap();},
+        nullptr,
         [](const QVariant& _value, const QByteArray& _paramName) -> QHttp::JWT_t {
-            static QFieldValidator Validator = QFieldValidator().hasKey("typ",QFieldValidator().equals("JWT")).hasKey("iat");
-            if(Validator.isValid(_value, _paramName) == false) throw exHTTPBadRequest(Validator.errorMessage());
             QJsonObject Obj;
             if(_value.canConvert<QVariantMap>())
                 Obj = Obj.fromVariantMap(_value.value<QVariantMap>());

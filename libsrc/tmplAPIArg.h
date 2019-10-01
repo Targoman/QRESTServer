@@ -21,40 +21,17 @@
  * @author S. Mehran M. Ziabary <ziabary@targoman.com>
  */
 
-#ifndef QHTTP_INTFAPIARGMANIPULATOR_H
-#define QHTTP_INTFAPIARGMANIPULATOR_H
+#ifndef QHTTP_TMPLAPIARG_HPP
+#define QHTTP_TMPLAPIARG_HPP
 
-#include "QHttp/HTTPExceptions.h"
+#include "HTTPExceptions.h"
+#include "intfAPIArgManipulator.h"
 
 namespace QHttp {
-namespace Private{
-
+namespace Private {
 class intfCacheConnector;
-/**********************************************************************/
-class intfAPIObject{
-public:
-    virtual ~intfAPIObject();
-    virtual void invokeMethod(const QVariantList& _arguments, QGenericReturnArgument _returnArg) const = 0;
-};
+}
 
-/**********************************************************************/
-class intfAPIArgManipulator{
-public:
-    intfAPIArgManipulator(const QString& _realTypeName);
-    virtual ~intfAPIArgManipulator();
-
-    virtual QGenericArgument makeGenericArgument(const QVariant& _val, const QByteArray& _paramName, void** _argStorage) = 0;
-    virtual QVariant invokeMethod(const intfAPIObject* _apiObject, const QVariantList& _arguments) = 0;
-    virtual void cleanup (void* _argStorage) = 0;
-    virtual bool hasFromVariantMethod() = 0;
-    virtual bool hasToVariantMethod() = 0;
-    virtual QString toString(const QVariant _val) = 0;
-
-    QString     PrettyTypeName;
-    char*       RealTypeName;
-};
-
-/**********************************************************************/
 template<typename _itmplType>
 class tmplAPIArg : public intfAPIArgManipulator{
 public:
@@ -93,38 +70,8 @@ private:
     std::function<QVariant(_itmplType _value)> toVariant;
     std::function<_itmplType(QVariant _value, const QByteArray& _paramName)> fromVariant;
 
-    friend class intfCacheConnector;
+    friend class Private::intfCacheConnector;
 };
 
-/**********************************************************************/
-#define QHTTP_REGISTER_METATYPE(_type, _lambdaToVariant, _lambdaFromVariant) \
-    qRegisterMetaType<_type>(); \
-    gUserDefinedTypesInfo.insert( \
-        QMetaType::type(TARGOMAN_M2STR(_type)) - 1025, \
-                        new tmplAPIArg<_type>(TARGOMAN_M2STR(_type), \
-                                              _lambdaToVariant, \
-                                              _lambdaFromVariant))
-
-/** @TODO document QT_NO_CAST_FROM_ASCII */
-
-#define QHTTP_SPECIAL_MAKE_GENERIC_ON_NUMERIC_TYPE(_numericType, _convertor) \
-template<> inline QGenericArgument tmplAPIArg<_numericType>::makeGenericArgument(const QVariant& _val, const QByteArray& _paramName, void** _argStorage){ \
-    bool Result; *_argStorage = new _numericType; *(reinterpret_cast<_numericType*>(*_argStorage)) = static_cast<_numericType>(_val._convertor(&Result)); \
-    if(!Result) throw exHTTPBadRequest("Invalid value specified for parameter: " + _paramName); \
-    return QGenericArgument(this->RealTypeName, *_argStorage); \
 }
-
-QHTTP_SPECIAL_MAKE_GENERIC_ON_NUMERIC_TYPE(quint8, toUInt)
-QHTTP_SPECIAL_MAKE_GENERIC_ON_NUMERIC_TYPE(quint16, toUInt)
-QHTTP_SPECIAL_MAKE_GENERIC_ON_NUMERIC_TYPE(quint32, toUInt)
-QHTTP_SPECIAL_MAKE_GENERIC_ON_NUMERIC_TYPE(quint64, toULongLong)
-QHTTP_SPECIAL_MAKE_GENERIC_ON_NUMERIC_TYPE(qint8, toInt)
-QHTTP_SPECIAL_MAKE_GENERIC_ON_NUMERIC_TYPE(qint16, toInt)
-QHTTP_SPECIAL_MAKE_GENERIC_ON_NUMERIC_TYPE(qint32, toInt)
-QHTTP_SPECIAL_MAKE_GENERIC_ON_NUMERIC_TYPE(qint64, toLongLong)
-QHTTP_SPECIAL_MAKE_GENERIC_ON_NUMERIC_TYPE(qreal, toDouble)
-QHTTP_SPECIAL_MAKE_GENERIC_ON_NUMERIC_TYPE(float, toFloat)
-
-}
-}
-#endif // QHTTP_INTFAPIARGMANIPULATOR_H
+#endif // QHTTP_PRIVATE_TMPLAPIARG_HPP

@@ -21,50 +21,31 @@
  * @author S. Mehran M. Ziabary <ziabary@targoman.com>
  */
 
-#ifndef QHTTP_INTFCACHECONNECTOR_HPP
-#define QHTTP_INTFCACHECONNECTOR_HPP
+#ifndef QHTTP_PRIVATE_NUMERICTYPES_HPP
+#define QHTTP_PRIVATE_NUMERICTYPES_HPP
 
-#include <QUrl>
-#include <QVariant>
-#include "libTargomanCommon/exTargomanBase.h"
-#include "intfAPIArgManipulator.h"
-#include "Private/Configs.hpp"
+#include "HTTPExceptions.h"
+#include "tmplAPIArg.h"
 
 namespace QHttp {
-namespace Private {
-TARGOMAN_ADD_EXCEPTION_HANDLER(exCacheConnector, Targoman::Common::exTargomanBase);
 
-class intfCacheConnector{
-public:
-    intfCacheConnector(const QUrl& _connector) :
-        ConnectorURL(_connector)
-    {}
-    virtual ~intfCacheConnector();
-
-    virtual void connect() = 0;
-    void setKeyVal(const QString& _key, const QVariant& _value, qint32 _ttl){
-        if(_value.type() >= QHTTP_BASE_USER_DEFINED_TYPEID)
-            this->setKeyValImpl(_key,
-                                gUserDefinedTypesInfo.at(static_cast<int>(_value.type() - QHTTP_BASE_USER_DEFINED_TYPEID))->toString(_value),
-                                _ttl);
-        else
-            this->setKeyValImpl(_key, _value.toString(), _ttl);
-    }
-
-    QVariant getValue(const QString& _key){
-        return this->getValueImpl (_key);
-    }
-
-private:
-    virtual void setKeyValImpl(const QString& _key, const QString& _value, qint32 _ttl) = 0;
-    virtual QString getValueImpl(const QString& _key) = 0;
-
-protected:
-    QUrl ConnectorURL;
-};
-
-
-}
+#define QHTTP_SPECIAL_MAKE_GENERIC_ON_NUMERIC_TYPE(_numericType, _convertor) \
+template<> inline QGenericArgument tmplAPIArg<_numericType>::makeGenericArgument(const QVariant& _val, const QByteArray& _paramName, void** _argStorage){ \
+    bool Result; *_argStorage = new _numericType; *(reinterpret_cast<_numericType*>(*_argStorage)) = static_cast<_numericType>(_val._convertor(&Result)); \
+    if(!Result) throw exHTTPBadRequest("Invalid value specified for parameter: " + _paramName); \
+    return QGenericArgument(this->RealTypeName, *_argStorage); \
 }
 
-#endif // QHTTP_INTFCACHECONNECTOR_HPP
+QHTTP_SPECIAL_MAKE_GENERIC_ON_NUMERIC_TYPE(quint8, toUInt)
+QHTTP_SPECIAL_MAKE_GENERIC_ON_NUMERIC_TYPE(quint16, toUInt)
+QHTTP_SPECIAL_MAKE_GENERIC_ON_NUMERIC_TYPE(quint32, toUInt)
+QHTTP_SPECIAL_MAKE_GENERIC_ON_NUMERIC_TYPE(quint64, toULongLong)
+QHTTP_SPECIAL_MAKE_GENERIC_ON_NUMERIC_TYPE(qint8, toInt)
+QHTTP_SPECIAL_MAKE_GENERIC_ON_NUMERIC_TYPE(qint16, toInt)
+QHTTP_SPECIAL_MAKE_GENERIC_ON_NUMERIC_TYPE(qint32, toInt)
+QHTTP_SPECIAL_MAKE_GENERIC_ON_NUMERIC_TYPE(qint64, toLongLong)
+QHTTP_SPECIAL_MAKE_GENERIC_ON_NUMERIC_TYPE(qreal, toDouble)
+QHTTP_SPECIAL_MAKE_GENERIC_ON_NUMERIC_TYPE(float, toFloat)
+
+}
+#endif // QHTTP_PRIVATE_NUMERICTYPES_HPP

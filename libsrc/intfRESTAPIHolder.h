@@ -132,8 +132,11 @@ protected:
      * @param _sessionID optinally a session key for each user to be stored in `jti`
      * @return a base64 encoded string in form of HEADER.PAYLOAD.SIGNATURE
      */
-    QString createSignedJWT(QJsonObject _payload, QJsonObject _privatePayload = QJsonObject(), const qint32 _expiry = -1, const QString& _sessionID = QString());
+    QHttp::EncodedJWT_t createSignedJWT(QJsonObject _payload, QJsonObject _privatePayload = QJsonObject(), const qint32 _expiry = -1, const QString& _sessionID = QString());
+
 };
+
+void registerMetaType();
 
 }
 

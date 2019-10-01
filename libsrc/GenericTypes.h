@@ -24,9 +24,11 @@
 #ifndef QHTTP_GENERICTYPES_H
 #define QHTTP_GENERICTYPES_H
 
-#include "libTargomanCommon/clsCountAndSpeed.h"
-#include <QHttp/qhttpfwd.hpp>
 #include <QJsonObject>
+#include "libTargomanCommon/clsCountAndSpeed.h"
+#include "QHttp/qhttpfwd.hpp"
+#include "QHttp/tmplAPIArg.h"
+
 namespace QHttp {
 /**
  * @brief The stuStatistics struct holds server statistics about APIs
@@ -57,33 +59,31 @@ struct stuTable{
 };
 
 /**********************************************************************/
-#define QHTTP_ADD_SIMPLE_TYPE(_type, _name) \
-    class _name:public _type{public:_name(){;}_name(const _type& _other):_type(_other){;}}
 
-#define QHTTP_ADD_COMPLEX_TYPE(_type, _name) \
-    class _name:public _type{ \
-        public:_name(){;}_name(const _type& _other):_type(_other){;} \
-        _name fromVariant (const QVariant& _value){_type Value = _type::fromVariant (_value); return *reinterpret_cast<_name*>(&Value);}}
+QHTTP_ADD_COMPLEX_TYPE(qhttp::THeaderHash, HEADERS_t);
+QHTTP_ADD_COMPLEX_TYPE(qhttp::THeaderHash, COOKIES_t);
 
-QHTTP_ADD_COMPLEX_TYPE (qhttp::THeaderHash, HEADERS_t);
-QHTTP_ADD_COMPLEX_TYPE (qhttp::THeaderHash, COOKIES_t);
-
-QHTTP_ADD_SIMPLE_TYPE (QJsonObject, JWT_t);
-QHTTP_ADD_SIMPLE_TYPE (QString, RemoteIP_t);
-QHTTP_ADD_SIMPLE_TYPE (QString, MD5_t);
-QHTTP_ADD_SIMPLE_TYPE (QString, Email_t);
-QHTTP_ADD_SIMPLE_TYPE (QString, Mobile_t);
-QHTTP_ADD_SIMPLE_TYPE (QString, Sheba_t);
+QHTTP_ADD_SIMPLE_TYPE(QJsonObject, JWT_t);
+QHTTP_ADD_SIMPLE_TYPE(QString, EncodedJWT_t);
+QHTTP_ADD_SIMPLE_TYPE(QString, JSON_t);
+QHTTP_ADD_SIMPLE_TYPE(QString, RemoteIP_t);
+QHTTP_ADD_SIMPLE_TYPE(QString, MD5_t);
+QHTTP_ADD_SIMPLE_TYPE(QString, Email_t);
+QHTTP_ADD_SIMPLE_TYPE(QString, Mobile_t);
+QHTTP_ADD_SIMPLE_TYPE(QString, Sheba_t);
 
 /**********************************************************************/
 extern void registerGenericTypes();
 }
+
 /**********************************************************************/
 Q_DECLARE_METATYPE(QHttp::stuTable)
 Q_DECLARE_METATYPE(QHttp::RemoteIP_t)
 Q_DECLARE_METATYPE(QHttp::COOKIES_t)
 Q_DECLARE_METATYPE(QHttp::HEADERS_t)
 Q_DECLARE_METATYPE(QHttp::JWT_t)
+Q_DECLARE_METATYPE(QHttp::JSON_t)
+Q_DECLARE_METATYPE(QHttp::EncodedJWT_t)
 Q_DECLARE_METATYPE(QHttp::MD5_t)
 Q_DECLARE_METATYPE(QHttp::Email_t)
 Q_DECLARE_METATYPE(QHttp::Mobile_t)

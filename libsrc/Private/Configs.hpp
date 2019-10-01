@@ -31,9 +31,9 @@
 #include "libTargomanCommon/exTargomanBase.h"
 #include "QHttp/QHttpServer"
 
-#include "Private/intfAPIArgManipulator.h"
-#include "intfRESTAPIHolder.h"
 #include "QRESTServer.h"
+#include "intfAPIArgManipulator.h"
+#include "intfRESTAPIHolder.h"
 
 namespace QHttp {
 namespace Private {
@@ -54,7 +54,7 @@ class clsAPIObject;
 
 extern QList<intfAPIArgManipulator*> gOrderedMetaTypeInfo;
 extern QList<intfAPIArgManipulator*> gUserDefinedTypesInfo;
-const  qint16 QHTTP_BASE_USER_DEFINED_TYPEID = 1026;
+const  quint16 QHTTP_BASE_USER_DEFINED_TYPEID = 1026;
 }
 }
 

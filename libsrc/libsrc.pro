@@ -25,14 +25,17 @@ DIST_HEADERS += \
     intfRESTAPIHolder.h \
     QRESTServer.h \
     HTTPExceptions.h \
-    GenericTypes.h
+    GenericTypes.h \
+    intfAPIArgManipulator.h \
+    tmplAPIArg.h \
 
 PRIVATE_HEADERS += \
+    Private/intfCacheConnector.hpp \
+    Private/NumericTypes.hpp \
     Private/clsRequestHandler.h \
     Private/Configs.hpp \
     Private/RESTAPIRegistry.h \
     Private/clsAPIObject.hpp \
-    Private/intfAPIArgManipulator.h \
     Private/APICache.hpp \
     Private/intfCacheConnector.hpp \
     Private/clsRedisConnector.h \

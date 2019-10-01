@@ -30,6 +30,7 @@
 
 #include "Private/Configs.hpp"
 #include "Private/clsAPIObject.hpp"
+#include "Private/NumericTypes.hpp"
 
 namespace QHttp {
 namespace Private {

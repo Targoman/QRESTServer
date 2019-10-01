@@ -29,6 +29,7 @@
 #include "Private/clsRequestHandler.h"
 #include "Private/clsRedisConnector.h"
 #include "Private/WebSocketServer.hpp"
+#include "Private/RESTAPIRegistry.h"
 #include "Private/QJWT.h"
 #include "QHttp/qhttpfwd.hpp"
 
@@ -126,6 +127,7 @@ void RESTServer::start() {
                             _req->connection()->tcpSocket()->peerPort()<<
                             "]: "<<
                             Path<<
+                            "?"<<
                             _req->url().query());
             RequestHandler->process(Path.mid(gConfigs.Private.BasePathWithVersion.size() - 1));
         }catch(exTargomanBase& ex){
@@ -174,6 +176,11 @@ QStringList RESTServer::registeredAPIs(bool _showParams, bool _showTypes, bool _
     return RESTAPIRegistry::registeredAPIs("", _showParams, _showTypes, _prettifyTypes);
 }
 
+void RESTServer::registerUserDefinedType(const char* _typeName, intfAPIArgManipulator* _argManipulator)
+{
+    Private::gUserDefinedTypesInfo.insert(QMetaType::type(_typeName) - 1025, _argManipulator);
+}
+
 /***********************************************************************************************/
 intfRESTAPIHolder::intfRESTAPIHolder(Targoman::Common::Configuration::intfModule *_parent) :
     Targoman::Common::Configuration::intfModule(_parent)
@@ -185,10 +192,10 @@ void intfRESTAPIHolder::registerMyRESTAPIs(){
     for (int i=0; i<this->metaObject()->methodCount(); ++i)
         //if(this->metaObject()->method(i).methodType() == QMetaMethod::Slot)
             RESTAPIRegistry::registerRESTAPI(this, this->metaObject()->method(i));
-
 }
 
-QString intfRESTAPIHolder::createSignedJWT(QJsonObject _payload, QJsonObject _privatePayload, const qint32 _expiry, const QString& _sessionID)
+
+QHttp::EncodedJWT_t intfRESTAPIHolder::createSignedJWT(QJsonObject _payload, QJsonObject _privatePayload, const qint32 _expiry, const QString& _sessionID)
 {
     return Private::QJWT::createSigned(_payload, _privatePayload, _expiry, _sessionID);
 }
@@ -209,7 +216,6 @@ intfAPIArgManipulator::~intfAPIArgManipulator()
 
 intfAPIObject::~intfAPIObject()
 {;}
-
 
 }
 

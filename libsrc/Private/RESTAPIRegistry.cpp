@@ -92,7 +92,7 @@ void RESTAPIRegistry::registerRESTAPI(intfRESTAPIHolder* _module, const QMetaMet
     }
     if ((_method.name().startsWith("api") == false &&
          _method.name().startsWith("asyncApi") == false)||
-        _method.typeName() == NULL)
+        _method.typeName() == nullptr)
         return;
 
     try{

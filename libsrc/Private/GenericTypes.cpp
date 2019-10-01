@@ -20,11 +20,10 @@
 /**
  * @author S. Mehran M. Ziabary <ziabary@targoman.com>
  */
-#include <Private/intfAPIArgManipulator.h>
-
+#include <QRegularExpression>
+#include "intfAPIArgManipulator.h"
 #include "GenericTypes.h"
 #include "HTTPExceptions.h"
-#include <QRegularExpression>
 #include "Private/Configs.hpp"
 #include "QFieldValidator.h"
 
@@ -58,20 +57,13 @@ void registerGenericTypes()
         [](const QVariant& _value, const QByteArray&) -> QHttp::RemoteIP_t {QHttp::RemoteIP_t Value;Value=_value.toString();return  Value;}
     );
 
-#define VALIDATION_REQUIRED_TYPE_IMPL(_type, _validationRule, _toVariant) \
-    QHTTP_REGISTER_METATYPE( \
-        _type, \
-        [](const _type& _value) -> QVariant {return _toVariant;}, \
-        [](const QVariant& _value, const QByteArray& _paramName) -> _type { \
-            static QFieldValidator Validator = QFieldValidator()._validationRule; \
-            if(Validator.isValid(_value, _paramName) == false) throw exHTTPBadRequest(Validator.errorMessage()); \
-            _type Value; Value=_value.toString();  return  Value; \
-        } \
-    )
 
-    VALIDATION_REQUIRED_TYPE_IMPL(QHttp::MD5_t, md5(), _value);
-    VALIDATION_REQUIRED_TYPE_IMPL(QHttp::Email_t, email(), _value);
-    VALIDATION_REQUIRED_TYPE_IMPL(QHttp::Mobile_t, mobile(), _value);
+
+    QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(QHttp::EncodedJWT_t, hasKey("typ",QFieldValidator().equals("JWT")).hasKey("iat"), _value);
+    QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(QHttp::JSON_t, optional(QFieldValidator().json()), _value);
+    QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(QHttp::MD5_t, optional(QFieldValidator().md5()), _value);
+    QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(QHttp::Email_t, optional(QFieldValidator().email()), _value);
+    QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(QHttp::Mobile_t, optional(QFieldValidator().mobile()), _value);
 
     QHTTP_REGISTER_METATYPE(
         QHttp::JWT_t,

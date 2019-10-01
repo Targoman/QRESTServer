@@ -27,6 +27,7 @@
 #include <map>
 #include <utility>
 #include <QTcpSocket>
+#include "QFieldValidator.h"
 #include "clsRequestHandler.h"
 #include "libTargomanCommon/CmdIO.h"
 #include "intfRESTAPIHolder.h"
@@ -146,6 +147,12 @@ void clsRequestHandler::process(const QString& _api) {
             }
         }catch(exTargomanBase& ex){
             this->sendError(static_cast<qhttp::TStatusCode>(ex.httpCode()), ex.what(), ex.httpCode() >= 500);
+        }catch(QFieldValidator::exRequiredParam &ex){
+            this->sendError(qhttp::ESTATUS_BAD_REQUEST, ex.what(), false);
+        }catch(QFieldValidator::exInvalidValue &ex){
+            this->sendError(qhttp::ESTATUS_BAD_REQUEST, ex.what(), false);
+        }catch(std::exception &ex){
+            this->sendError(qhttp::ESTATUS_INTERNAL_SERVER_ERROR, ex.what(), true);
         }
     });
     this->Request->onEnd([this, _api](){
@@ -153,6 +160,12 @@ void clsRequestHandler::process(const QString& _api) {
             this->findAndCallAPI (_api);
         }catch(exTargomanBase& ex){
             this->sendError(static_cast<qhttp::TStatusCode>(ex.httpCode()), ex.what(), ex.httpCode() >= 500);
+        }catch(QFieldValidator::exRequiredParam &ex){
+            this->sendError(qhttp::ESTATUS_BAD_REQUEST, ex.what(), false);
+        }catch(QFieldValidator::exInvalidValue &ex){
+            this->sendError(qhttp::ESTATUS_BAD_REQUEST, ex.what(), false);
+        }catch(std::exception &ex){
+            this->sendError(qhttp::ESTATUS_INTERNAL_SERVER_ERROR, ex.what(), true);
         }
     });
 }

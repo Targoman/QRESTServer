@@ -80,5 +80,16 @@ public:
                                                                      _lambdaToVariant, \
                                                                      _lambdaFromVariant))
 
+#define QHTTP_REGISTER_ENHANCED_ENUM(_enum) \
+    QHTTP_REGISTER_METATYPE( \
+        _enum::Type, \
+        [](_enum::Type _value) -> QVariant{return _enum::toStr(_value);}, \
+        [](const QVariant& _value, const QByteArray& _paramName) -> _enum::Type { \
+            _enum::Type Value = _enum::toEnum(_value.toString().toLatin1().constData()); \
+            if(Value == _enum::Unknown) throw exHTTPBadRequest(_paramName + " is not a valid "##_enum); \
+            return Value; \
+        } \
+    )
+
 
 #endif // QHTTP_INTFAPIARGMANIPULATOR_H

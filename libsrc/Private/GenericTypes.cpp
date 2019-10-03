@@ -31,8 +31,15 @@ namespace QHttp {
 
 using namespace Private;
 
+static bool Registered = false;
+
 void registerGenericTypes()
 {
+    if(Registered)
+        return;
+
+    Registered = true;
+
     QHTTP_REGISTER_METATYPE(
         QHttp::stuTable,
         [](const QHttp::stuTable& _value) -> QVariant{return QVariantMap({{"totalRows", _value.TotalRows}, {"Rows", _value.Rows}});},
@@ -52,26 +59,6 @@ void registerGenericTypes()
     );
 
     QHTTP_REGISTER_METATYPE(
-        QHttp::RemoteIP_t,
-        [](const QHttp::RemoteIP_t& _value) -> QVariant {return _value;},
-        [](const QVariant& _value, const QByteArray&) -> QHttp::RemoteIP_t {QHttp::RemoteIP_t Value;Value=_value.toString();return  Value;}
-    );
-
-
-    QHTTP_REGISTER_METATYPE(
-        QHttp::EncodedJWT_t,
-        [](const QHttp::EncodedJWT_t& _value) -> QVariant {return _value;},
-        nullptr
-    );
-
-
-    //QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(QHttp::EncodedJWT_t, allwaysInvalid(), _value);
-    QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(QHttp::JSON_t, optional(QFieldValidator().json()), _value);
-    QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(QHttp::MD5_t, optional(QFieldValidator().md5()), _value);
-    QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(QHttp::Email_t, optional(QFieldValidator().email()), _value);
-    QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(QHttp::Mobile_t, optional(QFieldValidator().mobile()), _value);
-
-    QHTTP_REGISTER_METATYPE(
         QHttp::JWT_t,
         nullptr,
         [](const QVariant& _value, const QByteArray& _paramName) -> QHttp::JWT_t {
@@ -84,6 +71,28 @@ void registerGenericTypes()
             return  *reinterpret_cast<QHttp::JWT_t*>(&Obj);
         }
     );
+
+    QHTTP_REGISTER_METATYPE(
+        QHttp::EncodedJWT_t,
+        [](const QHttp::EncodedJWT_t& _value) -> QVariant {return _value;},
+        nullptr
+    );
+
+    QHTTP_REGISTER_METATYPE(
+        QHttp::RemoteIP_t,
+        [](const QHttp::RemoteIP_t& _value) -> QVariant {return _value;},
+        [](const QVariant& _value, const QByteArray&) -> QHttp::RemoteIP_t {QHttp::RemoteIP_t Value;Value=_value.toString();return  Value;}
+    );
+
+
+
+
+    //QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(QHttp::EncodedJWT_t, allwaysInvalid(), _value);
+    QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(QHttp::JSON_t, optional(QFieldValidator().json()), _value);
+    QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(QHttp::MD5_t, optional(QFieldValidator().md5()), _value);
+    QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(QHttp::Email_t, optional(QFieldValidator().email()), _value);
+    QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(QHttp::Mobile_t, optional(QFieldValidator().mobile()), _value);
+
 
 }
 

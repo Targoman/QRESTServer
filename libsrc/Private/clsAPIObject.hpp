@@ -40,6 +40,7 @@ namespace Private {
 #define PARAM_COOKIES   "COOKIES"
 #define PARAM_REMOTE_IP "REMOTE_IP"
 #define PARAM_HEADERS   "HEADERS"
+#define PARAM_EXTRAPATH "EXTRAPATH"
 
 class clsAPIObject : public intfAPIObject, public QObject
 {
@@ -68,8 +69,12 @@ public:
         return this->ParamNames.contains(PARAM_COOKIES);
     }
 
-    inline bool requiresremoteIP(){
+    inline bool requiresRemoteIP(){
         return this->ParamNames.contains(PARAM_REMOTE_IP);
+    }
+
+    inline bool requiresExtraPath(){
+        return this->ParamNames.contains(PARAM_EXTRAPATH);
     }
 
     inline bool requiresHeaders(){
@@ -86,11 +91,12 @@ public:
     }
 
     inline QVariant invoke(const QStringList& _args,
-                           QList<QPair<QString, QString>> _bodyArgs = QList<QPair<QString, QString>>(),
-                           qhttp::THeaderHash _headers = qhttp::THeaderHash(),
-                           qhttp::THeaderHash _cookies = qhttp::THeaderHash(),
-                           QJsonObject _jwt = QJsonObject(),
-                           QString _remoteIP = QString()
+                           QList<QPair<QString, QString>> _bodyArgs = {},
+                           qhttp::THeaderHash _headers = {},
+                           qhttp::THeaderHash _cookies = {},
+                           QJsonObject _jwt = {},
+                           QString _remoteIP = {},
+                           QString _extraAPIPath = {}
                            ) const{
         Q_ASSERT_X(this->parent(), "parent module", "Parent module not found to invoke method");
 
@@ -102,6 +108,8 @@ public:
         if(this->ParamNames.contains(PARAM_JWT))
             ExtraArgCount++;
         if(this->ParamNames.contains(PARAM_REMOTE_IP))
+            ExtraArgCount++;
+        if(this->ParamNames.contains(PARAM_EXTRAPATH))
             ExtraArgCount++;
 
         if(_args.size() + _bodyArgs.size() + ExtraArgCount < this->RequiredParamsCount)
@@ -147,6 +155,11 @@ public:
             if(ParamNotFound && this->ParamNames.at(i) == PARAM_REMOTE_IP){
                 ParamNotFound = false;
                 ArgumentValue = _remoteIP;
+            }
+
+            if(ParamNotFound && this->ParamNames.at(i) == PARAM_EXTRAPATH){
+                ParamNotFound = false;
+                ArgumentValue = _extraAPIPath;
             }
 
             if(ParamNotFound)

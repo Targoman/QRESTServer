@@ -41,10 +41,11 @@ class RESTAPIRegistry
 {
 public:
     static inline QString makeRESTAPIKey(const QString& _httpMethod, const QString& _path){
-        return  _httpMethod.toUpper() + " " +_path;
+        return  _httpMethod.toUpper() + " " + (_path.endsWith('/') ? _path.mid(0, _path.size() - 1) : _path);
     }
 
-    static inline clsAPIObject* getAPIObject(const QString _httpMethod, const QString& _path){
+    static inline clsAPIObject*
+    getAPIObject(const QString _httpMethod, const QString& _path){
         return RESTAPIRegistry::Registry.value(RESTAPIRegistry::makeRESTAPIKey(_httpMethod, _path));
     }
 #ifdef QHTTP_ENABLE_WEBSOCKET

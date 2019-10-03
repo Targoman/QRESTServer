@@ -43,7 +43,7 @@ int main(int _argc, char *_argv[])
         Targoman::Common::Logger::instance().setActive();
         Targoman::Common::Logger::instance().setVisible();
 
-        Sample1::SampleAPI::instance().init();
+        ns::SampleAPI::instance().init();
 
         std::cout<<qPrintable(RESTServer::registeredAPIs(true, true).join("\n"))<<std::endl;
 

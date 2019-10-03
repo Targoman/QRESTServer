@@ -24,13 +24,17 @@
 #include "SampleAPI.h"
 #include "libTargomanCommon/CmdIO.h"
 
-namespace Sample1 {
+namespace ns {
 
 using namespace QHttp;
 SampleAPI::SampleAPI()
 {
     TargomanDebug(1, "initialization");
+
     this->registerMyRESTAPIs();
+
+    SampleSubModule::instance().init();
+
 }
 
 void SampleAPI::init()
@@ -61,10 +65,10 @@ QString SampleAPI::apiGETSampleDataReturningJWT()
     return this->createSignedJWT(QJsonObject({{"a",1},{"b","fdsdfdf"}}), QJsonObject({{"priv1",4}}), 120, "fdffsdf");
 }
 
-JWT_t SampleAPI::apiGETSampleDataWithJWT(JWT_t _JWT)
+EncodedJWT_t SampleAPI::apiGETSampleDataWithJWT(JWT_t _JWT)
 {
     TargomanDebug(1, "Called: " <<__FUNCTION__<<" Params: ("<<QJsonDocument(_JWT).toJson()<<")");
-    return _JWT;
+    return createSignedJWT(_JWT);
 }
 
 int SampleAPI::apiPUTSampleData(quint64 _id, const QString& _info)
@@ -102,6 +106,21 @@ QString SampleAPI::apiWSSample(const QString _value)
 {
     TargomanDebug(1, "Called: " <<__FUNCTION__<<" Params: ("<<_value<<")");
     return _value;
+}
+
+void SampleSubModule::init()
+{
+
+}
+
+int SampleSubModule::apiGET()
+{
+    return 1;
+}
+
+SampleSubModule::SampleSubModule()
+{
+    this->registerMyRESTAPIs();
 }
 
 

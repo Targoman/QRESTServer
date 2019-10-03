@@ -223,7 +223,17 @@ void clsRequestHandler::findAndCallAPI(const QString& _api)
     if(_api == "/openAPI.yaml")
         throw exHTTPMethodNotAllowed("Yaml openAPI is not implemented yet");
 
+    QString ExtraAPIPath;
+
     clsAPIObject* APIObject = RESTAPIRegistry::getAPIObject(this->Request->methodString(), _api);
+    if(!APIObject) {
+        QString Path = _api;
+        if(Path.endsWith('/'))
+            Path.truncate(Path.size() - 1);
+        ExtraAPIPath = Path.mid(Path.lastIndexOf('/') + 1);
+        Path = Path.mid(0, Path.lastIndexOf('/'));
+        APIObject = RESTAPIRegistry::getAPIObject(this->Request->methodString(), Path);
+    }
 
     if(!APIObject)
         return this->sendError(qhttp::ESTATUS_NOT_FOUND,
@@ -264,7 +274,10 @@ void clsRequestHandler::findAndCallAPI(const QString& _api)
                               Headers,
                               Cookies,
                               JWT,
-                              this->toIPv4(this->Request->remoteAddress())));
+                              this->toIPv4(this->Request->remoteAddress()),
+                              ExtraAPIPath
+                              )
+            );
 }
 
 void clsRequestHandler::sendError(qhttp::TStatusCode _code, const QString& _message, bool _closeConnection)
@@ -294,11 +307,11 @@ void clsRequestHandler::sendResponseBase(qhttp::TStatusCode _code, QJsonObject _
     QByteArray Data = QJsonDocument(_dataObject).toJson(gConfigs.Public.IndentedJson ? QJsonDocument::Indented : QJsonDocument::Compact);
 
     TargomanLogInfo(7, "Response ["<<
-                     this->Request->connection()->tcpSocket()->peerAddress().toString()<<
-                     ":"<<
-                     this->Request->connection()->tcpSocket()->peerPort()<<
-                     "]: (code:"<<_code<<"):"<<Data)
-    this->Response->setStatusCode(_code);
+                    this->Request->connection()->tcpSocket()->peerAddress().toString()<<
+                    ":"<<
+                    this->Request->connection()->tcpSocket()->peerPort()<<
+                    "]: (code:"<<_code<<"):"<<Data)
+            this->Response->setStatusCode(_code);
     if(_closeConnection) this->Response->addHeader("connection", "close");
     this->Response->addHeaderValue("content-length", Data.length());
     this->Response->addHeaderValue("content-type", QString("application/json; charset=utf-8"));

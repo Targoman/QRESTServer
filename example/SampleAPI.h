@@ -26,7 +26,7 @@
 
 #include "QHttp/intfRESTAPIHolder.h"
 
-namespace Sample1 {
+namespace ns {
 class SampleAPI : public QHttp::intfRESTAPIHolder
 {
     Q_OBJECT
@@ -34,12 +34,11 @@ public:
     void init();
 
 private slots:
-
     int apiGETSampleData();
     CACHEABLE_1H QHttp::COOKIES_t apiGETSampleDataWithCookie(QHttp::COOKIES_t _COOKIES);
     QHttp::HEADERS_t apiGETSampleDataWithHeaders(QHttp::HEADERS_t _HEADERS);
     QString apiGETSampleDataReturningJWT();
-    QHttp::JWT_t apiGETSampleDataWithJWT(QHttp::JWT_t _JWT);
+    QHttp::EncodedJWT_t apiGETSampleDataWithJWT(QHttp::JWT_t _JWT);
     int apiPUTSampleData(quint64 _id, const QString& _info = "defaultValue");
     int apiDELETESampleData(quint64 _id = 5);
     QVariantList apiUPDATESampleData(quint64 _id, const QString& _info = "dfdsf");
@@ -54,6 +53,19 @@ private:
     TARGOMAN_DEFINE_SINGLETON_MODULE(SampleAPI);
 };
 
+
+class SampleSubModule : public QHttp::intfRESTAPIHolder{
+    Q_OBJECT
+public:
+    void init();
+
+private slots:
+    int apiGET();
+
+private:
+    SampleSubModule();
+    TARGOMAN_DEFINE_SINGLETON_SUBMODULE(SampleAPI, SampleSubModule);
+};
 }
 
 #endif // SAMPLEAPI_H

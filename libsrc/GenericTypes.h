@@ -56,6 +56,12 @@ struct stuTable{
         TotalRows(_totalRows),
         Rows(_rows)
     {}
+    QVariant toVariant(){
+      return QVariantMap({
+                           {"rows", this->Rows},
+                           {"totalRows", this->TotalRows}
+                         });
+    }
 };
 
 /**********************************************************************/
@@ -78,15 +84,16 @@ extern void registerGenericTypes();
 
 /**********************************************************************/
 Q_DECLARE_METATYPE(QHttp::stuTable)
-Q_DECLARE_METATYPE(QHttp::RemoteIP_t)
-Q_DECLARE_METATYPE(QHttp::COOKIES_t)
 Q_DECLARE_METATYPE(QHttp::HEADERS_t)
+Q_DECLARE_METATYPE(QHttp::COOKIES_t)
 Q_DECLARE_METATYPE(QHttp::JWT_t)
-Q_DECLARE_METATYPE(QHttp::JSON_t)
 Q_DECLARE_METATYPE(QHttp::EncodedJWT_t)
+Q_DECLARE_METATYPE(QHttp::JSON_t)
+Q_DECLARE_METATYPE(QHttp::RemoteIP_t)
 Q_DECLARE_METATYPE(QHttp::MD5_t)
 Q_DECLARE_METATYPE(QHttp::Email_t)
 Q_DECLARE_METATYPE(QHttp::Mobile_t)
+Q_DECLARE_METATYPE(QHttp::Sheba_t)
 
 
 #endif // QHTTP_GENERICTYPES_H

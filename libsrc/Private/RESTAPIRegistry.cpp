@@ -99,22 +99,27 @@ void RESTAPIRegistry::registerRESTAPI(intfRESTAPIHolder* _module, const QMetaMet
         RESTAPIRegistry::validateMethodInputAndOutput(_method);
         QString MethodName = _method.name().constData();
         MethodName = MethodName.mid(MethodName.indexOf("api",0,Qt::CaseInsensitive) + 3);
+        auto makeMethodName = [MethodName](int _start) -> QString{
+          if(MethodName.size() >= _start)
+              return MethodName.at(_start-1).toLower() + MethodName.mid(_start);
+          return "";
+        };
 
         if(MethodName.startsWith("GET"))
-            RESTAPIRegistry::addRegistryEntry(RESTAPIRegistry::Registry, _module, _method, "GET", MethodName.at(3).toLower() + MethodName.mid(4));
+            RESTAPIRegistry::addRegistryEntry(RESTAPIRegistry::Registry, _module, _method, "GET", makeMethodName(sizeof("GET")));
         else if(MethodName.startsWith("POST"))
-            RESTAPIRegistry::addRegistryEntry(RESTAPIRegistry::Registry, _module, _method, "POST", MethodName.at(4).toLower() + MethodName.mid(5));
+            RESTAPIRegistry::addRegistryEntry(RESTAPIRegistry::Registry, _module, _method, "POST", makeMethodName(sizeof("POST")));
         else if(MethodName.startsWith("PUT"))
-            RESTAPIRegistry::addRegistryEntry(RESTAPIRegistry::Registry, _module, _method, "PUT", MethodName.at(3).toLower() + MethodName.mid(4));
+            RESTAPIRegistry::addRegistryEntry(RESTAPIRegistry::Registry, _module, _method, "PUT", makeMethodName(sizeof("PUT")));
         else if(MethodName.startsWith("PATCH"))
-            RESTAPIRegistry::addRegistryEntry(RESTAPIRegistry::Registry, _module, _method, "PATCH", MethodName.at(5).toLower() + MethodName.mid(6));
+            RESTAPIRegistry::addRegistryEntry(RESTAPIRegistry::Registry, _module, _method, "PATCH", makeMethodName(sizeof("PATCH")));
         else if (MethodName.startsWith("DELETE"))
-            RESTAPIRegistry::addRegistryEntry(RESTAPIRegistry::Registry, _module, _method, "DELETE", MethodName.at(6).toLower() + MethodName.mid(7));
+            RESTAPIRegistry::addRegistryEntry(RESTAPIRegistry::Registry, _module, _method, "DELETE", makeMethodName(sizeof("DELETE")));
         else if (MethodName.startsWith("UPDATE"))
-            RESTAPIRegistry::addRegistryEntry(RESTAPIRegistry::Registry, _module, _method, "PATCH", MethodName.at(6).toLower() + MethodName.mid(7));
+            RESTAPIRegistry::addRegistryEntry(RESTAPIRegistry::Registry, _module, _method, "UPDATE", makeMethodName(sizeof("UPDATE")));
         else if (MethodName.startsWith("WS")){
 #ifdef QHTTP_ENABLE_WEBSOCKET
-            RESTAPIRegistry::addRegistryEntry(RESTAPIRegistry::WSRegistry, _module, _method, "WS", MethodName.at(2).toLower() + MethodName.mid(3));
+            RESTAPIRegistry::addRegistryEntry(RESTAPIRegistry::WSRegistry, _module, _method, "WS", makeMethodName(sizeof("WS")));
 #else
             throw exRESTRegistry("Websockets are not enabled in this QRestServer please compile with websockets support");
 #endif
@@ -242,7 +247,8 @@ QJsonObject RESTAPIRegistry::retriveOpenAPIJson(){
             if(ParamName == PARAM_COOKIES ||
                ParamName == PARAM_JWT ||
                ParamName == PARAM_HEADERS ||
-               ParamName == PARAM_REMOTE_IP )
+               ParamName == PARAM_REMOTE_IP ||
+               ParamName == PARAM_EXTRAPATH)
                 continue;
             Parameters.append(
                         QJsonObject({
@@ -362,7 +368,7 @@ void RESTAPIRegistry::addRegistryEntry(QHash<QString, QHttp::Private::clsAPIObje
                                        const QMetaMethod& _method,
                                        const QString& _httpMethod,
                                        const QString& _methodName){
-    QString MethodKey = RESTAPIRegistry::makeRESTAPIKey(_httpMethod, "/" + _module->moduleFullName().replace("::", "/")+ '/' + _methodName);
+    QString MethodKey = RESTAPIRegistry::makeRESTAPIKey(_httpMethod, "/" + _module->moduleBaseName().replace("::", "/")+ '/' + _methodName);
 
     if(_registry.contains(MethodKey)){
         if(RESTAPIRegistry::Registry.value(MethodKey)->isPolymorphic(_method))

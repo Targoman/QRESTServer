@@ -208,8 +208,12 @@ QStringList intfRESTAPIHolder::apiGETListOfAPIs(bool _showParams, bool _showType
 intfAPIArgManipulator::intfAPIArgManipulator(const QString& _realTypeName)
 {
     this->PrettyTypeName = (_realTypeName.startsWith('Q') ? _realTypeName.mid(1) : _realTypeName).toLower();
-    this->RealTypeName = new char[_realTypeName.toStdString().size()];
-    strcpy(this->RealTypeName, _realTypeName.toStdString().c_str());
+    QByteArray RealTypeByteArray = _realTypeName.toLatin1();
+    this->RealTypeName = new char[static_cast<uint>(RealTypeByteArray.size()+1)];
+    strncpy(this->RealTypeName,
+            _realTypeName.toLatin1().constData(),
+            static_cast<uint>(RealTypeByteArray.size()));
+    this->RealTypeName[RealTypeByteArray.size()] = 0;
 }
 
 intfAPIArgManipulator::~intfAPIArgManipulator()

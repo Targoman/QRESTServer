@@ -76,6 +76,10 @@ namespace QHttp {
 #  define CENTRALCACHE_24H
 #endif
 
+#define COMPLEX
+#define API(_method, _name, _sig, _doc) api##_method##_name _sig;QString signOf##_method##_name(){ return #_sig; } QString docOf##_method##_name(){ return #_doc; }
+#define ASYNC_API(_method, _name, _sig, _doc) asyncApi##_method##_name _sig;QString signOf##_method##_name(){ return #_sig; } QString docOf##_method##_name(){ return #_doc; }
+
 /**********************************************************************/
 /**
  * @brief The intfRESTAPIHolder class is an interface to defines modules which export REST APIs. Such modules must have followint characteristics:
@@ -92,30 +96,31 @@ public:
 
 private slots:
     /**
-     * @brief apiListAPIs A default slot in all the modules to list APIs registered in that module. This API output will be cached forever
+     * @brief GETListAPIs A default slot in all the modules to list APIs registered in that module. This API output will be cached forever
      *        so just the first call for each module will cost some
      * @param _showParams if set to `true` will list API parameters else just API name will be output
      * @param _showTypes if set to `true` will show input types of API parameters and return type else just names will be shown
      * @param _prettifyTypes if set to true a pretty and general form of Qt Types will be printed else will print original QMetaType names
      * @return a list of APIs registered in the module
      */
-    CACHEABLE_INF QStringList apiGETListOfAPIs(bool _showParams = true, bool _showTypes = true, bool _prettifyTypes = true);
+    CACHEABLE_INF QStringList API(GET, ListOfAPIs, (bool _showParams = true, bool _showTypes = true, bool _prettifyTypes = true),
+                                  "Default API in all modules and submodules to list all registered APIs in that module/submodule")
 
 protected:
     /**
      * @brief exportAPIs will detect and export acceptable functions to API registry.
      * Acceptable functions must have following conditions:
-     *  1- must be defined as slots
-     *  2- Must use one of the following naming conventions
-     *      - Functions working on data: these functions must start with 'api' keyword followed by the HTTP method that can be used:
+     *  1- Must be defined as slot
+     *  2- Must use API Macro to be defined
+     *  3- Must use one of the following naming conventions
+     *      - Functions working on data: these functions must start with HTTP method that can be used:
      *        + GET: to get info about a single entry or list of some entries also is usefull for downloading files. These functions
      *               can be accessed by both GET/POST method
      *        + PUT: to create new entry
      *        + DEL: to delete entry
      *        + UPDATE: to update entry
-     *      - complex functions which does not work on single data (e.g. translate, detectLangugae, etc.)  must start with 'api' keyword and continue with their purpose name. These
-     *        functions can be accessed by GET/POST method
-     *  3- On any error they must throw one of HTTP execptions ()
+     *      - complex functions which does not work on single data (e.g. translate, detectLangugae, etc.)  These functions can be accessed by GET/POST method
+     *  4- On any error they must throw one of HTTP execptions ()
      * This method must be called in subclasses constructor
      */
     void registerMyRESTAPIs();

@@ -65,7 +65,7 @@ QString SampleAPI::apiGETSampleDataReturningJWT()
     return this->createSignedJWT(QJsonObject({{"a",1},{"b","fdsdfdf"}}), QJsonObject({{"priv1",4}}), 120, "fdffsdf");
 }
 
-EncodedJWT_t SampleAPI::apiGETSampleDataWithJWT(JWT_t _JWT)
+EncodedJWT_t SampleAPI::asyncApiGETSampleDataWithJWT(JWT_t _JWT)
 {
     TargomanDebug(1, "Called: " <<__FUNCTION__<<" Params: ("<<QJsonDocument(_JWT).toJson()<<")");
     return createSignedJWT(_JWT);

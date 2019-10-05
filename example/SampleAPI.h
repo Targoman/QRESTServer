@@ -26,6 +26,7 @@
 
 #include "QHttp/intfRESTAPIHolder.h"
 
+
 namespace ns {
 class SampleAPI : public QHttp::intfRESTAPIHolder
 {
@@ -34,19 +35,30 @@ public:
     void init();
 
 private slots:
-    int apiGETSampleData();
-    CACHEABLE_1H QHttp::COOKIES_t apiGETSampleDataWithCookie(QHttp::COOKIES_t _COOKIES);
-    QHttp::HEADERS_t apiGETSampleDataWithHeaders(QHttp::HEADERS_t _HEADERS);
-    QString apiGETSampleDataReturningJWT();
-    QHttp::EncodedJWT_t apiGETSampleDataWithJWT(QHttp::JWT_t _JWT);
-    int apiPUTSampleData(quint64 _id, const QString& _info = "defaultValue");
-    int apiDELETESampleData(quint64 _id = 5);
-    QVariantList apiUPDATESampleData(quint64 _id, const QString& _info = "dfdsf");
+    int API(GET, SampleData,(),
+            "Sample API")
+    CACHEABLE_1H QHttp::COOKIES_t API(GET, SampleDataWithCookie, (QHttp::COOKIES_t _COOKIES),
+                                      "Sample cacheable API for 1 hour")
+    QHttp::HEADERS_t API(GET, SampleDataWithHeaders, (QHttp::HEADERS_t _HEADERS),
+                         "Sample API with header")
+    QString API(GET, SampleDataReturningJWT, (),
+                "Sample API with returning string")
+    QHttp::EncodedJWT_t ASYNC_API(GET, SampleDataWithJWT, (QHttp::JWT_t _JWT),
+                                  "Sample AsyncAPI returning JWT as encoded")
+    int API(PUT,SampleData, (quint64 _id, const QString& _info = "defaultValue"),
+            "Sample API with data")
+    int API(DELETE, SampleData, (quint64 _id = 5),
+            "Sample API for delete")
+    QVariantList API(UPDATE,SampleData, (quint64 _id = ',', const QString& _info = "df\",dsf"),
+                     "Sample API for Update")
 
 
-    QHttp::stuTable apiTranslate(const QString& _text, QString _info = ",");
-    QHttp::stuTable apiSampleList(const QVariantList& _list);
-    QString apiWSSample(const QString _value);
+    QHttp::stuTable API(, Translate, (const QString& _text="dfdfjk,", QString _info = ","),
+                        "Sample complex API")
+    QHttp::stuTable API(, SampleList, (const QVariantList& _list),
+                        "Sample list returning API")
+    QString API(WS,Sample, (const QString _value),
+                "Sample web socket API")
 
 private:
     SampleAPI();
@@ -60,7 +72,8 @@ public:
     void init();
 
 private slots:
-    int apiGET();
+    int API(GET, ,(),
+            "Sample API without name")
 
 private:
     SampleSubModule();

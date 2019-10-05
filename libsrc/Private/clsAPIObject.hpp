@@ -42,20 +42,33 @@ namespace Private {
 #define PARAM_HEADERS   "HEADERS"
 #define PARAM_EXTRAPATH "EXTRAPATH"
 
+class QMetaMethodExtended : public QMetaMethod {
+public:
+    QMetaMethodExtended(QMetaMethod _metaMethod, QVariantList _defaultValues, QString _doc):
+        QMetaMethod(_metaMethod),
+        Doc(_doc),
+        DefaultValues(_defaultValues)
+    {}
+
+    QString Doc;
+    QVariantList DefaultValues;
+};
+
 class clsAPIObject : public intfAPIObject, public QObject
 {
 public:
-    clsAPIObject(intfRESTAPIHolder* _module, QMetaMethod _method, bool _async, qint32 _cache4Internal, qint32 _cache4Central) :
+    clsAPIObject(intfRESTAPIHolder* _module, QMetaMethodExtended _method, bool _async, qint32 _cache4Internal, qint32 _cache4Central) :
         QObject(_module),
         BaseMethod(_method),
         IsAsync(_async),
         Cache4Secs(_cache4Internal),
         Cache4SecsCentral(_cache4Central),
-        RequiredParamsCount(_method.parameterCount())
+        RequiredParamsCount(static_cast<quint8>(_method.parameterCount()))
     {
         foreach(const QByteArray& ParamName, _method.parameterNames())
             this->ParamNames.append(ParamName.startsWith('_') ? ParamName.mid(1) : ParamName);
     }
+    ~clsAPIObject();
 
     inline QString makeCacheKey(const QVariantList& _args) const{
         return (this->BaseMethod.name() + QJsonValue::fromVariant(_args).toString().toUtf8()).constData();
@@ -90,6 +103,10 @@ public:
         return _paramIndex < this->RequiredParamsCount;
     }
 
+    inline QVariant defaultValue(quint8 _paramIndex){
+        return this->BaseMethod.DefaultValues.at(_paramIndex);
+    }
+
     inline QVariant invoke(const QStringList& _args,
                            QList<QPair<QString, QString>> _bodyArgs = {},
                            qhttp::THeaderHash _headers = {},
@@ -120,11 +137,11 @@ public:
         qint8 FirstArgumentWithValue = -1;
         qint8 LastArgumentWithValue = -1;
 
-        for(int i=0; i< this->ParamNames.count(); ++i ){
+        for(qint8 i=0; i< this->ParamNames.count(); ++i ){
             bool ParamNotFound = true;
             QVariant ArgumentValue;
 
-            static auto parseArgValue = [this, ArgumentValue](const QString& _paramName, const QString& _value) -> QVariant {
+            static auto parseArgValue = [ArgumentValue](const QString& _paramName, const QString& _value) -> QVariant {
                 if((_value.startsWith('[') && _value.endsWith(']')) ||
                    (_value.startsWith('{') && _value.endsWith('}'))){
                     QJsonParseError Error;
@@ -319,7 +336,7 @@ public:
         }
     }
 
-    bool isPolymorphic(const QMetaMethod& _method){
+    bool isPolymorphic(const QMetaMethodExtended& _method){
         if(_method.parameterCount() == 0)
             return false;
         for(int i=0; i< qMin(_method.parameterCount(), this->BaseMethod.parameterCount()); ++i)
@@ -329,16 +346,16 @@ public:
     }
 
 private:
-    void updateDefaultValues(const QMetaMethod& _method){
+    void updateDefaultValues(const QMetaMethodExtended& _method){
         if(_method.parameterNames().size() < this->RequiredParamsCount){
-            this->RequiredParamsCount = _method.parameterNames().size();
+            this->RequiredParamsCount = static_cast<quint8>(_method.parameterNames().size());
             this->LessArgumentMethods.append(_method);
         }
     }
 
 private:
-    QMetaMethod   BaseMethod;
-    QList<QMetaMethod> LessArgumentMethods;
+    QMetaMethodExtended   BaseMethod;
+    QList<QMetaMethodExtended> LessArgumentMethods;
     bool          IsAsync;
     qint32        Cache4Secs;
     qint32        Cache4SecsCentral;
@@ -351,5 +368,4 @@ private:
 
 }
 }
-
 #endif // QHTTP_PRIVATE_CLSAPIOBJECT_HPP

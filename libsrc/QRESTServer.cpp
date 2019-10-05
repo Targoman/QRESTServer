@@ -191,7 +191,6 @@ intfRESTAPIHolder::intfRESTAPIHolder(Targoman::Common::Configuration::intfModule
 
 void intfRESTAPIHolder::registerMyRESTAPIs(){
     for (int i=0; i<this->metaObject()->methodCount(); ++i)
-        //if(this->metaObject()->method(i).methodType() == QMetaMethod::Slot)
             RESTAPIRegistry::registerRESTAPI(this, this->metaObject()->method(i));
 }
 

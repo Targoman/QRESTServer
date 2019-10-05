@@ -31,13 +31,19 @@ namespace QHttp {
 namespace Private {
 class intfCacheConnector;
 }
+enum enuVarType {
+    VARTYPE_Integral,
+    VARTYPE_String,
+    VARTYPE_Complex
+};
 
-template<typename _itmplType>
+template<typename _itmplType, enuVarType _itmplVarType>
 class tmplAPIArg : public intfAPIArgManipulator{
 public:
     tmplAPIArg(const QString& _typeName,
                std::function<QVariant(const _itmplType& _value)> _toVariant = {},
-               std::function<_itmplType(const QVariant& _value, const QByteArray& _paramName)> _fromVariant = {}) :
+               std::function<_itmplType(const QVariant& _value, const QByteArray& _paramName)> _fromVariant = {}
+               ) :
         intfAPIArgManipulator(_typeName),
         toVariant(_toVariant),
         fromVariant(_fromVariant)
@@ -61,11 +67,15 @@ public:
     inline void cleanup (void* _argStorage) final {if(_argStorage) delete (reinterpret_cast<_itmplType*>(_argStorage));}
     inline bool hasFromVariantMethod() final {return this->fromVariant != nullptr;}
     inline bool hasToVariantMethod() final {return this->toVariant != nullptr;}
+    inline bool isIntegralType() final { return _itmplVarType == VARTYPE_Integral;}
+    inline bool isComplexType() final { return _itmplVarType == VARTYPE_Complex;}
+    inline bool isStringType() final { return _itmplVarType == VARTYPE_Integral;}
     inline QString toString(const QVariant _val) {
         if(this->hasFromVariantMethod() && this->hasToVariantMethod())
-            return this->toVariant(this->fromVariant(_val, QByteArray())).toString();
+            return this->toVariant(this->fromVariant(_val, {})).toString();
         return QString();
     }
+
 private:
     std::function<QVariant(_itmplType _value)> toVariant;
     std::function<_itmplType(QVariant _value, const QByteArray& _paramName)> fromVariant;

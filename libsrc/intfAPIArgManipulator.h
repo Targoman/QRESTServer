@@ -48,6 +48,9 @@ public:
     virtual bool hasFromVariantMethod() = 0;
     virtual bool hasToVariantMethod() = 0;
     virtual QString toString(const QVariant _val) = 0;
+    virtual bool isIntegralType() = 0;
+    virtual bool isComplexType() = 0;
+    virtual bool isStringType() = 0;
 
     QString     PrettyTypeName;
     char*       RealTypeName;
@@ -76,7 +79,7 @@ public:
 #define QHTTP_REGISTER_METATYPE(_type, _lambdaToVariant, _lambdaFromVariant) \
     qRegisterMetaType<_type>(); \
     QHttp::RESTServer::registerUserDefinedType(TARGOMAN_M2STR(_type), \
-                                               new tmplAPIArg<_type>(TARGOMAN_M2STR(_type), \
+                                               new tmplAPIArg<_type, VARTYPE_Complex>(TARGOMAN_M2STR(_type), \
                                                                      _lambdaToVariant, \
                                                                      _lambdaFromVariant))
 

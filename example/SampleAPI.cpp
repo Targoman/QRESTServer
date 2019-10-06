@@ -23,6 +23,8 @@
 
 #include "SampleAPI.h"
 #include "libTargomanCommon/CmdIO.h"
+#include "QHttp/QRESTServer.h"
+
 
 namespace ns {
 
@@ -30,6 +32,9 @@ using namespace QHttp;
 SampleAPI::SampleAPI()
 {
     TargomanDebug(1, "initialization");
+
+    QHTTP_REGISTER_TARGOMAN_ENUM(ns::enuSample);
+    QHTTP_REGISTER_TARGOMAN_ENUM(ns::enuSample2);
 
     this->registerMyRESTAPIs();
 
@@ -47,9 +52,9 @@ CACHEABLE_3H int SampleAPI::apiGETSampleData()
     return 5;
 }
 
-COOKIES_t SampleAPI::apiGETSampleDataWithCookie(COOKIES_t _COOKIES)
+COOKIES_t SampleAPI::apiGETSampleDataWithCookie(COOKIES_t _COOKIES, QString _EXTRAPATH)
 {
-    TargomanDebug(1, "Called: " <<__FUNCTION__<<" Params: ("<<_COOKIES.toVariant().toString()<<")");
+    TargomanDebug(1, "Called: " <<__FUNCTION__<<" Params: ("<<_COOKIES.toVariant().toString()<<","<<_EXTRAPATH<<")");
     return _COOKIES;
 }
 
@@ -91,7 +96,7 @@ QVariantList SampleAPI::apiUPDATESampleData(char _id, const QString& _info)
 
 stuTable SampleAPI::apiTranslate(const QString& _text, QString _detailed)
 {
-    TargomanDebug(1, "Called: " <<__FUNCTION__<<" Params: ("<<_text<<","<<_detailed<<")");
+    TargomanDebug(1, "Called: " <<__FUNCTION__<<" Params: (\""<<_text<<"\",\""<<_detailed<<"\")");
     return stuTable();
 }
 
@@ -113,9 +118,9 @@ void SampleSubModule::init()
 
 }
 
-int SampleSubModule::apiGET()
+QString SampleSubModule::apiGET(QString _EXTRAPATH)
 {
-    return 1;
+    return _EXTRAPATH;
 }
 
 SampleSubModule::SampleSubModule()
@@ -123,5 +128,13 @@ SampleSubModule::SampleSubModule()
     this->registerMyRESTAPIs();
 }
 
+quint64 SampleSubModule::apiSampleEnahancedEnum (ns::enuSample::Type _val){
+    return _val;
+}
+
+quint64 SampleSubModule::apiSampleTargomanEnum (ns::enuSample2::Type _val, QString A){
+    return _val;
+}
 
 }
+

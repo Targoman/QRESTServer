@@ -30,7 +30,7 @@
 namespace QHttp {
 
 #define QHTTP_SPECIAL_MAKE_GENERIC_ON_NUMERIC_TYPE(_numericType, _convertor) \
-template<> inline QGenericArgument tmplAPIArg<_numericType, true>::makeGenericArgument(const QVariant& _val, const QByteArray& _paramName, void** _argStorage){ \
+template<> inline QGenericArgument tmplAPIArg<_numericType, COMPLEXITY_Integral>::makeGenericArgument(const QVariant& _val, const QByteArray& _paramName, void** _argStorage){ \
     bool Result; *_argStorage = new _numericType; *(reinterpret_cast<_numericType*>(*_argStorage)) = static_cast<_numericType>(_val._convertor(&Result)); \
     if(!Result) throw exHTTPBadRequest("Invalid value specified for parameter: " + _paramName); \
     return QGenericArgument(this->RealTypeName, *_argStorage); \

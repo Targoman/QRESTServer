@@ -25,9 +25,19 @@
 #define SAMPLEAPI_H
 
 #include "QHttp/intfRESTAPIHolder.h"
-
+#include "libTargomanCommon/Macros.h"
 
 namespace ns {
+
+TARGOMAN_DEFINE_ENHANCED_ENUM (enuSample,
+                               s1,
+                               s2);
+
+TARGOMAN_DEFINE_ENUM (enuSample2,
+                      Unknown = 'U',
+                      dd1 = 'H',
+                      dd2 = 'I');
+
 class SampleAPI : public QHttp::intfRESTAPIHolder
 {
     Q_OBJECT
@@ -37,7 +47,7 @@ public:
 private slots:
     int API(GET, SampleData,(),
             "Sample API")
-    CACHEABLE_1H QHttp::COOKIES_t API(GET, SampleDataWithCookie, (QHttp::COOKIES_t _COOKIES),
+    CACHEABLE_1H QHttp::COOKIES_t API(GET, SampleDataWithCookie, (QHttp::COOKIES_t _COOKIES, QString _EXTRAPATH),
                                       "Sample cacheable API for 1 hour")
     QHttp::HEADERS_t API(GET, SampleDataWithHeaders, (QHttp::HEADERS_t _HEADERS),
                          "Sample API with header")
@@ -57,6 +67,7 @@ private slots:
                         "Sample complex API")
     QHttp::stuTable API(, SampleList, (const QVariantList& _list),
                         "Sample list returning API")
+
     QString API(WS,Sample, (const QString _value),
                 "Sample web socket API")
 
@@ -72,8 +83,14 @@ public:
     void init();
 
 private slots:
-    int API(GET, ,(),
+    QString API(GET, ,(QString _EXTRAPATH),
             "Sample API without name")
+
+    quint64 API(, SampleEnahancedEnum, (ns::enuSample::Type _val = enuSample::s1),
+                        "Sample list returning API")
+
+    quint64 API(, SampleTargomanEnum, (ns::enuSample2::Type _val = enuSample2::dd1, QString A= "sdlkjsdkfjkdlf" ),
+                        "Sample list returning API")
 
 private:
     SampleSubModule();
@@ -81,4 +98,6 @@ private:
 };
 }
 
+Q_DECLARE_METATYPE(ns::enuSample::Type);
+Q_DECLARE_METATYPE(ns::enuSample2::Type);
 #endif // SAMPLEAPI_H

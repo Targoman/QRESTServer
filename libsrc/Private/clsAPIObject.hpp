@@ -74,36 +74,43 @@ public:
         return (this->BaseMethod.name() + QJsonValue::fromVariant(_args).toString().toUtf8()).constData();
     }
 
-    inline bool requiresJWT(){
+    inline bool requiresJWT() const {
         return ParamNames.contains(PARAM_JWT);
     }
 
-    inline bool requiresCookies(){
+    inline bool requiresCookies() const {
         return this->ParamNames.contains(PARAM_COOKIES);
     }
 
-    inline bool requiresRemoteIP(){
+    inline bool requiresRemoteIP() const {
         return this->ParamNames.contains(PARAM_REMOTE_IP);
     }
 
-    inline bool requiresExtraPath(){
+    inline bool requiresExtraPath() const {
         return this->ParamNames.contains(PARAM_EXTRAPATH);
     }
 
-    inline bool requiresHeaders(){
+    inline bool requiresHeaders() const {
         return this->ParamNames.contains(PARAM_HEADERS);
     }
 
-    inline QString paramType(quint8 _paramIndex){
+    inline QString paramType(quint8 _paramIndex) const {
         Q_ASSERT(_paramIndex < this->BaseMethod.parameterTypes().size());
         return this->BaseMethod.parameterTypes().at(_paramIndex).constData();
     }
 
-    inline bool isRequiredParam(quint8 _paramIndex){
+    inline intfAPIArgManipulator* argSpecs(quint8 _paramIndex) const {
+        if(this->BaseMethod.parameterType(_paramIndex) < QHTTP_BASE_USER_DEFINED_TYPEID)
+            return  gOrderedMetaTypeInfo.at(this->BaseMethod.parameterType(_paramIndex));
+        else
+            return  gUserDefinedTypesInfo.at(this->BaseMethod.parameterType(_paramIndex) - QHTTP_BASE_USER_DEFINED_TYPEID);
+    }
+
+    inline bool isRequiredParam(quint8 _paramIndex) const {
         return _paramIndex < this->RequiredParamsCount;
     }
 
-    inline QVariant defaultValue(quint8 _paramIndex){
+    inline QVariant defaultValue(quint8 _paramIndex) const {
         return this->BaseMethod.DefaultValues.at(_paramIndex);
     }
 
@@ -137,7 +144,7 @@ public:
         qint8 FirstArgumentWithValue = -1;
         qint8 LastArgumentWithValue = -1;
 
-        for(qint8 i=0; i< this->ParamNames.count(); ++i ){
+        for(quint8 i=0; i< this->ParamNames.count(); ++i ){
             bool ParamNotFound = true;
             QVariant ArgumentValue;
 
@@ -202,14 +209,14 @@ public:
                 if(i < this->RequiredParamsCount)
                     throw exHTTPBadRequest(QString("Required parameter <%1> not specified").arg(this->ParamNames.at(i).constData()));
                 else
-                    Arguments.append(QVariant());
+                    Arguments.append(this->defaultValue(i));
                 continue;
             }else if(ArgumentValue.isValid() == false)
                 throw exHTTPBadRequest(QString("Invalid value for %1: no conversion to QVariant defined").arg(this->ParamNames.at(i).constData()));
 
             if(FirstArgumentWithValue < 0)
-                FirstArgumentWithValue = i;
-            LastArgumentWithValue = i;
+                FirstArgumentWithValue = static_cast<qint8>(i);
+            LastArgumentWithValue = static_cast<qint8>(i);
 
             if(this->BaseMethod.parameterType(i) >= QHTTP_BASE_USER_DEFINED_TYPEID){
                 Q_ASSERT(this->BaseMethod.parameterType(i) - QHTTP_BASE_USER_DEFINED_TYPEID < gOrderedMetaTypeInfo.size());

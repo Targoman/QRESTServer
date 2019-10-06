@@ -28,6 +28,13 @@
 
 namespace QHttp {
 
+enum enuVarComplexity {
+    COMPLEXITY_Integral,
+    COMPLEXITY_String,
+    COMPLEXITY_Complex,
+    COMPLEXITY_Enum
+};
+
 class intfCacheConnector;
 /**********************************************************************/
 class intfAPIObject{
@@ -49,6 +56,8 @@ public:
     virtual bool hasToVariantMethod() = 0;
     virtual QString toString(const QVariant _val) = 0;
     virtual bool isIntegralType() = 0;
+    virtual enuVarComplexity complexity() = 0;
+    virtual QStringList options() = 0;
 
     QString     PrettyTypeName;
     char*       RealTypeName;
@@ -62,9 +71,16 @@ public:
         public:_name(){;}_name(const _type& _other):_type(_other){;} \
         _name fromVariant (const QVariant& _value){_type Value = _type::fromVariant (_value); return *reinterpret_cast<_name*>(&Value);}}
 
-#define QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(_type, _validationRule, _toVariant) \
+#define QHTTP_REGISTER_METATYPE(_complexity, _type, _lambdaToVariant, _lambdaFromVariant) \
+    qRegisterMetaType<_type>(); \
+    QHttp::RESTServer::registerUserDefinedType(TARGOMAN_M2STR(_type), \
+                                               new tmplAPIArg<_type, _complexity>(TARGOMAN_M2STR(_type), \
+                                                                     _lambdaToVariant, \
+                                                                     _lambdaFromVariant))
+
+#define QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(_complexity, _type, _validationRule, _toVariant) \
     QHTTP_REGISTER_METATYPE( \
-        _type, \
+        _complexity, _type, \
         [](const _type& _value) -> QVariant {return _toVariant;}, \
         [](const QVariant& _value, const QByteArray& _paramName) -> _type { \
             static QFieldValidator Validator = QFieldValidator()._validationRule; \
@@ -72,27 +88,31 @@ public:
             _type Value; Value=_value.toString();  return  Value; \
         } \
     )
-}
 
-#define QHTTP_REGISTER_METATYPE(_type, _lambdaToVariant, _lambdaFromVariant) \
+#define QHTTP_REGISTER_METATYPE_WITHOPTIONS(_complexity, _type, _lambdaToVariant, _lambdaFromVariant, _options) \
     qRegisterMetaType<_type>(); \
     QHttp::RESTServer::registerUserDefinedType(TARGOMAN_M2STR(_type), \
-                                               new tmplAPIArg<_type, false>(TARGOMAN_M2STR(_type), \
+                                               new tmplAPIArg<_type, _complexity>(TARGOMAN_M2STR(_type), \
                                                                      _lambdaToVariant, \
-                                                                     _lambdaFromVariant))
+                                                                     _lambdaFromVariant, \
+                                                                     _options \
+    ))
 
-#define QHTTP_REGISTER_ENHANCED_ENUM(_enum) \
-    QHTTP_REGISTER_METATYPE( \
-        _enum::Type, \
+#define QHTTP_REGISTER_TARGOMAN_ENUM(_enum) \
+    QHTTP_REGISTER_METATYPE_WITHOPTIONS( \
+        COMPLEXITY_Enum, _enum::Type, \
         [](_enum::Type _value) -> QVariant{return _enum::toStr(_value);}, \
         [](const QVariant& _value, const QByteArray& _paramName) -> _enum::Type { \
-            _enum::Type Value = _enum::toEnum(_value.toString().toLatin1().constData()); \
-            if(Value == _enum::Unknown) throw exHTTPBadRequest(QString("%1 is not a valid %2").arg( \
+            if(_enum::options().contains(_value.toString()) == false) \
+                throw exHTTPBadRequest(QString("%1 is not a valid %2").arg( \
                         _paramName.constData()).arg( \
                         QString(TARGOMAN_M2STR(_enum)).startsWith("enu") ? QString(TARGOMAN_M2STR(_enum)).mid(3) : QString(TARGOMAN_M2STR(_enum)))); \
-            return Value; \
-        } \
+            return _enum::toEnum(_value.toString()); \
+        }, \
+        []() -> QStringList { return _enum::options();} \
     )
+}
+
 
 
 #endif // QHTTP_INTFAPIARGMANIPULATOR_H

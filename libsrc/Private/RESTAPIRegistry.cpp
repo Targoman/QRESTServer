@@ -37,8 +37,8 @@ namespace Private {
 #define DO_ON_TYPE_PROXY(_isIntegral, _baseType, ...) DO_ON_TYPE_SELECTOR(__VA_ARGS__, DO_ON_TYPE_IGNORED, DO_ON_TYPE_VALID)(_isIntegral, _baseType)
 #define DO_ON_TYPE(_isIntegral, _typeName, _baseType) DO_ON_TYPE_PROXY(_isIntegral, _baseType, IGNORE_TYPE_##_typeName)
 
-#define MAKE_INFO_FOR_VALID_INTEGRAL_METATYPE(_typeName, _id, _baseType) { _id, { DO_ON_TYPE(true,  _typeName, _baseType) } },
-#define MAKE_INFO_FOR_VALID_COMPLEX_METATYPE(_typeName, _id, _baseType)  { _id, { DO_ON_TYPE(false, _typeName, _baseType) } },
+#define MAKE_INFO_FOR_VALID_INTEGRAL_METATYPE(_typeName, _id, _baseType) { _id, { DO_ON_TYPE(COMPLEXITY_Integral,  _typeName, _baseType) } },
+#define MAKE_INFO_FOR_VALID_COMPLEX_METATYPE(_typeName, _id, _baseType)  { _id, { DO_ON_TYPE(COMPLEXITY_Complex, _typeName, _baseType) } },
 #define MAKE_INVALID_METATYPE(_typeName, _id, _baseType) { _id, { nullptr } },
 
 #define IGNORE_TYPE_Void ,
@@ -177,8 +177,16 @@ void RESTAPIRegistry::registerRESTAPI(intfRESTAPIHolder* _module, const QMetaMet
                 Value.replace("\\\"", "\"");
                 Value.replace("\\'", "'");
 
+                intfAPIArgManipulator* ArgSpecs;
+                if(_method.parameterType(ParamIndex) < QHTTP_BASE_USER_DEFINED_TYPEID)
+                    ArgSpecs = gOrderedMetaTypeInfo.at(_method.parameterType(ParamIndex));
+                else
+                    ArgSpecs = gUserDefinedTypesInfo.at(_method.parameterType(ParamIndex) - QHTTP_BASE_USER_DEFINED_TYPEID);
+
                 if(Value == "{}" || Value.contains("()"))
                     DefaultValues.append(QVariant());
+                else if (ArgSpecs && ArgSpecs->complexity() == COMPLEXITY_Enum)
+                    DefaultValues.append(Value.mid(Value.indexOf("::") + 2));
                 else
                     DefaultValues.append(Value);
             }else
@@ -239,14 +247,18 @@ QMap<QString, QString> RESTAPIRegistry::extractMethods(QHash<QString, clsAPIObje
             static auto defaultValue = [](clsAPIObject* _apiObject, quint8 i) -> QString{
                 if(_apiObject->RequiredParamsCount > i)
                     return "";
-                intfAPIArgManipulator* ArgManipulator = nullptr;
-                if(_apiObject->BaseMethod.parameterType(i) < QHTTP_BASE_USER_DEFINED_TYPEID)
-                    ArgManipulator = gOrderedMetaTypeInfo.at(_apiObject->BaseMethod.parameterType(i));
-                else
-                    ArgManipulator = gUserDefinedTypesInfo.at(_apiObject->BaseMethod.parameterType(i) - QHTTP_BASE_USER_DEFINED_TYPEID);
-                if(ArgManipulator)
-                    return " = " + (ArgManipulator->isIntegralType() ? QString("%1") : QString("\"%1\"")).arg(
+                intfAPIArgManipulator* ArgManipulator = _apiObject->argSpecs(i);
+                if(ArgManipulator){
+                    switch(ArgManipulator->complexity()){
+                    case COMPLEXITY_Integral: return QString(" = %1").arg(_apiObject->defaultValue(i).toString());
+                    case COMPLEXITY_String:
+                    case COMPLEXITY_Complex:
+                    case COMPLEXITY_Enum:
+                        return QString(" = \"%1\"").arg(_apiObject->defaultValue(i).toString().replace("\"", "\\\""));
+                    }
+                    return " = " + (ArgManipulator->isIntegralType() ? QString("%1") : (QString("\"%1\""))).arg(
                                 _apiObject->defaultValue(i).toString().replace("\"", "\\\""));
+                }
                 return "";
             };
 
@@ -254,7 +266,7 @@ QMap<QString, QString> RESTAPIRegistry::extractMethods(QHash<QString, clsAPIObje
                                   APIObject->BaseMethod.parameterNames().at(i).startsWith('_') ?
                                       APIObject->BaseMethod.parameterNames().at(i).mid(1) :
                                       APIObject->BaseMethod.parameterNames().at(i)) +
-                                      defaultValue(APIObject, i)
+                              defaultValue(APIObject, i)
                               );
         }
 
@@ -280,7 +292,7 @@ QJsonObject RESTAPIRegistry::retriveOpenAPIJson(){
                                                    {"400", QJsonObject({{"description", "Bad request."}})},
                                                    {"401", QJsonObject({{"description", "Authorization information is missing or invalid"}})},
                                                    {"404", QJsonObject({{"description", "Not found"}})},
-                                                   {"5XX", QJsonObject({{"description", "Unexpected error"}})},
+                                                   //{"5XX", QJsonObject({{"description", "Unexpected error"}})},
                                                });
 
     if(OpenAPI.isEmpty())
@@ -290,7 +302,7 @@ QJsonObject RESTAPIRegistry::retriveOpenAPIJson(){
                                        {"version", gConfigs.Public.Version},
                                        {"title", "NOT_SET"},
                                        {"description", ""},
-                                       {"contact", QJsonObject({{"email", ""}})}
+                                       {"contact", QJsonObject({{"email", "sample@example.com"}})}
                                    })},
                                   {"host", QString("127.0.0.1:%1").arg(gConfigs.Public.ListenPort)},
                                   {"components", QJsonObject({
@@ -334,54 +346,126 @@ QJsonObject RESTAPIRegistry::retriveOpenAPIJson(){
         QString HTTPMethod = Key.split(" ").first().toLower();
 
         clsAPIObject* APIObject = RESTAPIRegistry::Registry.value(Key);
-        QJsonArray Parameters;
-        for(quint8 i=0; i< APIObject->BaseMethod.parameterCount(); ++i){
-            QJsonObject Schema({
-                                   {"type",QMetaType::typeName(APIObject->BaseMethod.parameterType(i))}
-                               });
 
-            QString ParamName = APIObject->BaseMethod.parameterNames().at(i).startsWith('_') ?
-                                    APIObject->BaseMethod.parameterNames().at(i).mid(1) :
-                                    APIObject->BaseMethod.parameterNames().at(i);
+        auto paramName = [APIObject](quint8 i) {
+            return APIObject->BaseMethod.parameterNames().at(i).startsWith('_') ?
+                        APIObject->BaseMethod.parameterNames().at(i).mid(1) :
+                        APIObject->BaseMethod.parameterNames().at(i);
+        };
 
-            if(ParamName == PARAM_COOKIES ||
-               ParamName == PARAM_JWT ||
-               ParamName == PARAM_HEADERS ||
-               ParamName == PARAM_REMOTE_IP ||
-               ParamName == PARAM_EXTRAPATH)
-                continue;
-            Parameters.append(
-                        QJsonObject({
-                                        {"in", "path"},
-                                        {"name", ParamName},
-                                        {"required", APIObject->isRequiredParam(i)},
-                                        {"description", ""},
-//                                        {"type", },
-                                        {"schema", QJsonObject({
-                                             {"type", QMetaType::typeName(APIObject->BaseMethod.parameterType(i))},
-                                         })}
-                                    })
-                        );
-        }
-        //TODO add default, enum, nullable, example
-
-        QJsonObject CurrPathMethodInfo = QJsonObject({{"parameters", Parameters}});
-        QStringList PathStringParts = PathString.split("/", QString::SkipEmptyParts);
-        PathStringParts.pop_back();
-        CurrPathMethodInfo["tags"] = QJsonArray({PathStringParts.join("_")});
-        CurrPathMethodInfo["produces"] = QJsonArray({"application/json"});
-        CurrPathMethodInfo["consumes"] = QJsonArray({"application/json"});
-        CurrPathMethodInfo["responses"] = DefaultResponses;
-
-
-        if(PathsObject.contains(PathString)){
-            QJsonObject CurrPathObject = PathsObject.value(PathString).toObject();
-            CurrPathObject[HTTPMethod] = CurrPathMethodInfo;
-            PathsObject[PathString] = CurrPathObject;
-        }else
-            PathsObject[PathString] = QJsonObject({
-                                                      {HTTPMethod, CurrPathMethodInfo}
+        auto fillParamTypeSpec = [APIObject](quint8 i, QJsonObject& ParamSpecs) -> void{
+            intfAPIArgManipulator* ArgManipulator = APIObject->argSpecs(i);
+            QString TypeName = QMetaType::typeName(APIObject->BaseMethod.parameterType(i));
+            switch(ArgManipulator->complexity()){
+            case COMPLEXITY_Integral:
+                if(TypeName == "bool")
+                    ParamSpecs["type"] = "boolean";
+                else if(TypeName.endsWith("int") || TypeName.endsWith("long"))
+                    ParamSpecs["type"] = "integer";
+                else if(TypeName.endsWith("char"))
+                    ParamSpecs["type"] = "string";
+                else
+                    ParamSpecs["type"] = "number";
+                break;
+            case COMPLEXITY_String: ParamSpecs["type"] = "string"; break;
+            case COMPLEXITY_Complex: ParamSpecs["type"] = "string";break;
+            case COMPLEXITY_Enum:
+                ParamSpecs["type"] = "array";
+                ParamSpecs["items"] = QJsonObject({
+                                                      {"type", "string"},
+                                                      {"enum", QJsonArray::fromStringList(ArgManipulator->options())},
+                                                      {"default", APIObject->defaultValue(i).toString()}
                                                   });
+                break;
+            }
+        };
+
+        auto addParamSpecs = [APIObject, paramName, HTTPMethod, fillParamTypeSpec](QJsonArray& Parameters, quint8 i, bool _useExtraPath) -> void {
+            QString ParamName = paramName(i);
+            if(ParamName == PARAM_EXTRAPATH ||
+               ParamName == PARAM_HEADERS ||
+               ParamName == PARAM_COOKIES ||
+               ParamName == PARAM_REMOTE_IP
+               )
+                return;
+            QJsonObject ParamSpecs;
+
+            if(ParamName == PARAM_JWT){
+                ParamSpecs["in"] = "header";
+                ParamSpecs["required"] = true;
+                ParamSpecs["type"] = "string";
+                Parameters.append(ParamSpecs);
+            }
+
+            if(_useExtraPath)
+                return;
+
+
+            if(HTTPMethod == "get" || HTTPMethod == "delete"){
+                ParamSpecs["in"] = "query";
+                ParamSpecs["name"] = ParamName;
+                ParamSpecs["description"] = QString("A value of type: %1").arg(QMetaType::typeName(APIObject->BaseMethod.parameterType(i)));
+                ParamSpecs["required"] = APIObject->isRequiredParam(i);
+                fillParamTypeSpec(i, ParamSpecs);
+            }
+            Parameters.append(ParamSpecs);
+        };
+
+        auto createPathInfo = [PathString, DefaultResponses, APIObject, HTTPMethod, addParamSpecs, paramName, fillParamTypeSpec](bool _useExtraPath)->QJsonObject{
+            QJsonObject PathInfo = QJsonObject({{"summary", APIObject->BaseMethod.Doc}});
+            QStringList PathStringParts = PathString.split("/", QString::SkipEmptyParts);
+            PathStringParts.pop_back();
+            PathInfo["tags"] = QJsonArray({PathStringParts.join("_")});
+            PathInfo["produces"] = QJsonArray({"application/json"});
+            if(HTTPMethod != "get" && HTTPMethod != "delete"){
+                PathInfo["consumes"] = QJsonArray({"application/json"});
+
+                QJsonObject Properties;
+                for(quint8 i=0; i< APIObject->BaseMethod.parameterCount(); ++i){
+                    QJsonObject ParamSpecs;
+                    fillParamTypeSpec(i, ParamSpecs);
+                    Properties[paramName(i)] = ParamSpecs;
+                }
+                QJsonArray Parameters;
+                for(quint8 i=0; i< APIObject->BaseMethod.parameterCount(); ++i)
+                    addParamSpecs(Parameters, i, _useExtraPath);
+
+                PathInfo["parameters"] = Parameters;
+
+                PathInfo["schema"] = QJsonObject({
+                                                     {"type", "object"},
+                                                     {"properties", Properties}
+                                                  });
+            }else{
+                QJsonArray Parameters;
+                for(quint8 i=0; i< APIObject->BaseMethod.parameterCount(); ++i){
+                    addParamSpecs(Parameters, i, _useExtraPath);
+                }
+
+                PathInfo["parameters"] = Parameters;
+            }
+
+            PathInfo["responses"] = DefaultResponses;
+            return PathInfo;
+        };
+
+        auto add2Paths = [PathString, HTTPMethod](QJsonObject& PathsObject, const QJsonObject& _currPathMethodInfo, bool _useExtraPath){
+            QString Path = PathString + (_useExtraPath ? "/{id}" : "");
+            if(PathsObject.contains(Path)){
+                QJsonObject CurrPathObject = PathsObject.value(Path).toObject();
+                CurrPathObject[HTTPMethod] = _currPathMethodInfo;
+                PathsObject[Path] = CurrPathObject;
+            }else
+                PathsObject[Path] = QJsonObject({
+                                                          {HTTPMethod, _currPathMethodInfo}
+                                                      });
+        };
+
+        if(APIObject->requiresExtraPath())
+            add2Paths(PathsObject, createPathInfo(true), true);
+
+
+        add2Paths(PathsObject, createPathInfo(false), false);
     }
 
     OpenAPI["paths"] = PathsObject;

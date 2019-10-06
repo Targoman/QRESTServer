@@ -83,7 +83,7 @@ int SampleAPI::apiDELETESampleData(quint64 _id)
     return 3;
 }
 
-QVariantList SampleAPI::apiUPDATESampleData(quint64 _id, const QString& _info)
+QVariantList SampleAPI::apiUPDATESampleData(char _id, const QString& _info)
 {
     TargomanDebug(1, "Called: " <<__FUNCTION__<<" Params: ("<<_id<<","<<_info<<")");
     return QVariantList({{1},{"sdjkfh"}});

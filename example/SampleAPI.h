@@ -49,7 +49,7 @@ private slots:
             "Sample API with data")
     int API(DELETE, SampleData, (quint64 _id = 5),
             "Sample API for delete")
-    QVariantList API(UPDATE,SampleData, (quint64 _id = ',', const QString& _info = "df\",dsf"),
+    QVariantList API(UPDATE,SampleData, (char _id = ',', const QString& _info = "df\",dsf"),
                      "Sample API for Update")
 
 

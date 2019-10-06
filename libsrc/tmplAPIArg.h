@@ -31,13 +31,8 @@ namespace QHttp {
 namespace Private {
 class intfCacheConnector;
 }
-enum enuVarType {
-    VARTYPE_Integral,
-    VARTYPE_String,
-    VARTYPE_Complex
-};
 
-template<typename _itmplType, enuVarType _itmplVarType>
+template<typename _itmplType, bool _itmplIsIntegral>
 class tmplAPIArg : public intfAPIArgManipulator{
 public:
     tmplAPIArg(const QString& _typeName,
@@ -67,9 +62,8 @@ public:
     inline void cleanup (void* _argStorage) final {if(_argStorage) delete (reinterpret_cast<_itmplType*>(_argStorage));}
     inline bool hasFromVariantMethod() final {return this->fromVariant != nullptr;}
     inline bool hasToVariantMethod() final {return this->toVariant != nullptr;}
-    inline bool isIntegralType() final { return _itmplVarType == VARTYPE_Integral;}
-    inline bool isComplexType() final { return _itmplVarType == VARTYPE_Complex;}
-    inline bool isStringType() final { return _itmplVarType == VARTYPE_Integral;}
+    inline bool isIntegralType() final { return _itmplIsIntegral;}
+
     inline QString toString(const QVariant _val) {
         if(this->hasFromVariantMethod() && this->hasToVariantMethod())
             return this->toVariant(this->fromVariant(_val, {})).toString();

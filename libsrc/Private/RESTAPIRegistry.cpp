@@ -31,15 +31,15 @@ namespace Private {
 
 /***********************************************************************************************/
 
-#define DO_ON_TYPE(_complexity, _typeName, _baseType) DO_ON_TYPE_PROXY(_baseType, IGNORE_TYPE_##_typeName)
-#define DO_ON_TYPE_SELECTOR(_1,_2,_3,N,...) N
-#define DO_ON_TYPE_PROXY(_complexity, _type, ...) DO_ON_TYPE_SELECTOR(__VA_ARGS__, DO_ON_TYPE_IGNORED, DO_ON_TYPE_VALID)(_complexity, _type)
-#define DO_ON_TYPE_IGNORED(_baseType) nullptr
+#define DO_ON_TYPE_VALID(_isIntegral, _baseType)  new tmplAPIArg<_baseType, _isIntegral>(TARGOMAN_M2STR(_baseType))
+#define DO_ON_TYPE_IGNORED(_isIntegral, _baseType) nullptr
+#define DO_ON_TYPE_SELECTOR(_1,_2,_N,...) _N
+#define DO_ON_TYPE_PROXY(_isIntegral, _baseType, ...) DO_ON_TYPE_SELECTOR(__VA_ARGS__, DO_ON_TYPE_IGNORED, DO_ON_TYPE_VALID)(_isIntegral, _baseType)
+#define DO_ON_TYPE(_isIntegral, _typeName, _baseType) DO_ON_TYPE_PROXY(_isIntegral, _baseType, IGNORE_TYPE_##_typeName)
 
-#define DO_ON_TYPE_VALID(_complexity, _baseType)  new tmplAPIArg<_baseType, _complexity>(TARGOMAN_M2STR(_baseType))
-#define MAKE_INFO_FOR_VALID_INTEGRAL_METATYPE(_typeName, _id, _baseType) { _id, { DO_ON_TYPE(Integral, _typeName, _baseType) }},
-#define MAKE_INFO_FOR_VALID_COMPLEX_METATYPE(_typeName, _id, _baseType) { _id, { DO_ON_TYPE(Complex, _typeName, _baseType, Complex) }},
-#define MAKE_INVALID_METATYPE(_typeName, _id, _baseType) { _id, { nullptr }},
+#define MAKE_INFO_FOR_VALID_INTEGRAL_METATYPE(_typeName, _id, _baseType) { _id, { DO_ON_TYPE(true,  _typeName, _baseType) } },
+#define MAKE_INFO_FOR_VALID_COMPLEX_METATYPE(_typeName, _id, _baseType)  { _id, { DO_ON_TYPE(false, _typeName, _baseType) } },
+#define MAKE_INVALID_METATYPE(_typeName, _id, _baseType) { _id, { nullptr } },
 
 #define IGNORE_TYPE_Void ,
 #define IGNORE_TYPE_QByteArray ,
@@ -236,22 +236,25 @@ QMap<QString, QString> RESTAPIRegistry::extractMethods(QHash<QString, clsAPIObje
         QStringList Parameters;
         for(quint8 i=0; i< APIObject->BaseMethod.parameterCount(); ++i){
 
-            static auto defaultValue = [APIObject](quint8 i) -> QString{
-                if(APIObject->RequiredParamsCount > i)
+            static auto defaultValue = [](clsAPIObject* _apiObject, quint8 i) -> QString{
+                if(_apiObject->RequiredParamsCount > i)
                     return "";
-                intfAPIArgManipulator* ArgManipulator;
-                if(APIObject->BaseMethod.parameterType(i) < QHTTP_BASE_USER_DEFINED_TYPEID)
-                    ArgManipulator = gOrderedMetaTypeInfo.at(APIObject->BaseMethod.parameterType(i));
+                intfAPIArgManipulator* ArgManipulator = nullptr;
+                if(_apiObject->BaseMethod.parameterType(i) < QHTTP_BASE_USER_DEFINED_TYPEID)
+                    ArgManipulator = gOrderedMetaTypeInfo.at(_apiObject->BaseMethod.parameterType(i));
                 else
-                    ArgManipulator = gUserDefinedTypesInfo.at(APIObject->BaseMethod.parameterType(i) - QHTTP_BASE_USER_DEFINED_TYPEID);
-                return " = " + (ArgManipulator->isIntegralType() ? QString("%1") : QString("\"%1\"")).arg(APIObject->defaultValue(i).toString());
+                    ArgManipulator = gUserDefinedTypesInfo.at(_apiObject->BaseMethod.parameterType(i) - QHTTP_BASE_USER_DEFINED_TYPEID);
+                if(ArgManipulator)
+                    return " = " + (ArgManipulator->isIntegralType() ? QString("%1") : QString("\"%1\"")).arg(
+                                _apiObject->defaultValue(i).toString().replace("\"", "\\\""));
+                return "";
             };
 
             Parameters.append((_showTypes ? type2Str(APIObject->BaseMethod.parameterType(i)) + " " : "" ) + (
                                   APIObject->BaseMethod.parameterNames().at(i).startsWith('_') ?
                                       APIObject->BaseMethod.parameterNames().at(i).mid(1) :
                                       APIObject->BaseMethod.parameterNames().at(i)) +
-                                      defaultValue(i)
+                                      defaultValue(APIObject, i)
                               );
         }
 

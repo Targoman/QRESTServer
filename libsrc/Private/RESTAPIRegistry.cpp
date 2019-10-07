@@ -207,7 +207,7 @@ void RESTAPIRegistry::registerRESTAPI(intfRESTAPIHolder* _module, const QMetaMet
         else if (MethodName.startsWith("DELETE"))
             RESTAPIRegistry::addRegistryEntry(RESTAPIRegistry::Registry, _module, Method, "DELETE", makeMethodName(sizeof("DELETE")));
         else if (MethodName.startsWith("UPDATE"))
-            RESTAPIRegistry::addRegistryEntry(RESTAPIRegistry::Registry, _module, Method, "UPDATE", makeMethodName(sizeof("UPDATE")));
+            RESTAPIRegistry::addRegistryEntry(RESTAPIRegistry::Registry, _module, Method, "PATCH", makeMethodName(sizeof("UPDATE")));
         else if (MethodName.startsWith("WS")){
 #ifdef QHTTP_ENABLE_WEBSOCKET
             RESTAPIRegistry::addRegistryEntry(RESTAPIRegistry::WSRegistry, _module, Method, "WS", makeMethodName(sizeof("WS")));
@@ -363,13 +363,14 @@ QJsonObject RESTAPIRegistry::retriveOpenAPIJson(){
         auto addParamSpecs = [APIObject, paramName, HTTPMethod, fillParamTypeSpec](QJsonArray& Parameters, quint8 i, bool _useExtraPath) -> void {
             QString ParamName = paramName(i);
             if(ParamName == PARAM_HEADERS ||
-               ParamName == PARAM_COOKIES ||
-               ParamName == PARAM_REMOTE_IP
+               ParamName == PARAM_REMOTE_IP ||
+               ParamName == PARAM_COOKIES
                )
                 return;
             QJsonObject ParamSpecs;
 
             if(ParamName == PARAM_JWT){
+                return;
                 ParamSpecs["in"] = "header";
                 ParamSpecs["name"] = "JWT";
                 ParamSpecs["description"] = "JSON Web Token as provided by login methods";
@@ -379,8 +380,8 @@ QJsonObject RESTAPIRegistry::retriveOpenAPIJson(){
                 return;
             }
 
-            if(_useExtraPath){
-                if(ParamName == PARAM_EXTRAPATH){
+            if(ParamName == PARAM_EXTRAPATH){
+                if(_useExtraPath){
                     ParamSpecs["in"] = "path";
                     ParamSpecs["name"] = "ids";
                     ParamSpecs["description"] = "List of comma separated primaryKey id/ids";
@@ -405,7 +406,8 @@ QJsonObject RESTAPIRegistry::retriveOpenAPIJson(){
         auto createPathInfo = [PathString, DefaultResponses, APIObject, HTTPMethod, addParamSpecs, paramName, fillParamTypeSpec](bool _useExtraPath)->QJsonObject{
             QJsonObject PathInfo = QJsonObject({{"summary", APIObject->BaseMethod.Doc}});
             QStringList PathStringParts = PathString.split("/", QString::SkipEmptyParts);
-            PathStringParts.pop_back();
+            if(APIObject->requiresExtraPath() == false || PathStringParts.last().at(0).toLower() == PathStringParts.last().at(0))
+                PathStringParts.pop_back();
             PathInfo["tags"] = QJsonArray({PathStringParts.join("_")});
             PathInfo["produces"] = QJsonArray({"application/json"});
             if(HTTPMethod != "get" && HTTPMethod != "delete"){
@@ -417,17 +419,23 @@ QJsonObject RESTAPIRegistry::retriveOpenAPIJson(){
                     fillParamTypeSpec(i, ParamSpecs);
                     Properties[paramName(i)] = ParamSpecs;
                 }
+
                 QJsonArray Parameters;
                 for(quint8 i=0; i< APIObject->BaseMethod.parameterCount(); ++i)
                     addParamSpecs(Parameters, i, _useExtraPath);
 
-                if(Parameters.size())
-                    PathInfo["parameters"] = Parameters;
+                Parameters.append(QJsonObject({
+                                                  {"in", "body"},
+                                                  {"name", "body"},
+                                                  {"description", "Pramaeter Object"},
+                                                  {"required", true},
+                                                  {"schema", QJsonObject({
+                                                       {"type", "object"},
+                                                       {"properties", Properties}
+                                                   })}
+                                              }));
 
-                PathInfo["schema"] = QJsonObject({
-                                                     {"type", "object"},
-                                                     {"properties", Properties}
-                                                  });
+                PathInfo["parameters"] = Parameters;
             }else{
                 QJsonArray Parameters;
                 for(quint8 i=0; i< APIObject->BaseMethod.parameterCount(); ++i){

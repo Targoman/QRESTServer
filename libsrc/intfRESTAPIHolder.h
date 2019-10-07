@@ -118,7 +118,7 @@ protected:
      *               can be accessed by both GET/POST method
      *        + PUT: to create new entry
      *        + DEL: to delete entry
-     *        + UPDATE: to update entry
+     *        + PATCH: to update entry
      *      - complex functions which does not work on single data (e.g. translate, detectLangugae, etc.)  These functions can be accessed by GET/POST method
      *  4- On any error they must throw one of HTTP execptions ()
      * This method must be called in subclasses constructor

@@ -44,7 +44,7 @@ class SampleAPI : public QHttp::intfRESTAPIHolder
 public:
     void init();
 
-//private slots:
+private slots:
     int API(GET, SampleData,(),
             "Sample API")
     CACHEABLE_1H QHttp::COOKIES_t API(GET, SampleDataWithCookie, (QHttp::COOKIES_t _COOKIES, QString _EXTRAPATH),
@@ -83,10 +83,9 @@ public:
     void init();
 
 private slots:
-    QString API(GET, ,(QString _EXTRAPATH),
+    QString API(GET, ,(QString _EXTRAPATH, int from, int to),
             "Sample API without name")
 
-private:
     quint64 API(, SampleEnahancedEnum, (ns::enuSample::Type _val = enuSample::s1),
                         "Sample list returning API")
 

@@ -118,7 +118,7 @@ void SampleSubModule::init()
 
 }
 
-QString SampleSubModule::apiGET(QString _EXTRAPATH)
+QString SampleSubModule::apiGET(QString _EXTRAPATH, int from, int to)
 {
     return _EXTRAPATH;
 }

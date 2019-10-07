@@ -26,7 +26,8 @@
 #include <QJsonDocument>
 #include <map>
 #include <utility>
-
+#include <QTcpSocket>
+#include "QFieldValidator.h"
 #include "clsRequestHandler.h"
 #include "libTargomanCommon/CmdIO.h"
 #include "intfRESTAPIHolder.h"
@@ -58,7 +59,7 @@ void clsRequestHandler::process(const QString& _api) {
             if(ContentLengthStr.isEmpty())
                 throw exHTTPBadRequest("No content-length header present");
 
-            int ContentLength = ContentLengthStr.toLongLong ();
+            qlonglong ContentLength = ContentLengthStr.toLongLong ();
             if(!ContentLength)
                 throw exHTTPLengthRequired("content-length seems to be zero");
             if(ContentLength > gConfigs.Public.MaxUploadSize)
@@ -101,8 +102,20 @@ void clsRequestHandler::process(const QString& _api) {
                 QJsonObject JSONObject = JSON.object();
                 for(auto JSONObjectIter = JSONObject.begin();
                     JSONObjectIter != JSONObject.end();
-                    ++JSONObjectIter)
-                    this->Request->addUserDefinedData(JSONObjectIter.key(), JSONObjectIter.value().toString());
+                    ++JSONObjectIter){
+                    if(JSONObjectIter.value().isBool())
+                        this->Request->addUserDefinedData(JSONObjectIter.key(), JSONObjectIter.value().toBool() ? "1" : "0");
+                    else if(JSONObjectIter.value().isNull())
+                        this->Request->addUserDefinedData(JSONObjectIter.key(), QString());
+                    else if(JSONObjectIter.value().isArray())
+                        this->Request->addUserDefinedData(JSONObjectIter.key(), QJsonDocument(JSONObjectIter.value().toArray()).toJson());
+                    else if(JSONObjectIter.value().isObject())
+                        this->Request->addUserDefinedData(JSONObjectIter.key(), QJsonDocument(JSONObjectIter.value().toObject()).toJson());
+                    else if(JSONObjectIter.value().isDouble())
+                        this->Request->addUserDefinedData(JSONObjectIter.key(), QString("%1").arg(JSONObjectIter.value().toDouble()));
+                    else
+                        this->Request->addUserDefinedData(JSONObjectIter.key(), JSONObjectIter.value().toString());
+                }
 
                 break;
             }
@@ -121,7 +134,7 @@ void clsRequestHandler::process(const QString& _api) {
                 qlonglong Fed = 0;
                 while(!this->MultipartFormDataHandler->stopped() && _data.size() > Fed){
                     do {
-                        qlonglong Ret = this->MultipartFormDataHandler->feed(_data.mid(Fed).constData(), _data.size() - Fed);
+                        qulonglong Ret = this->MultipartFormDataHandler->feed(_data.mid(Fed).constData(), _data.size() - Fed);
                         Fed += Ret;
                     } while (Fed < _data.size() && !this->MultipartFormDataHandler->stopped());
                 }
@@ -132,18 +145,26 @@ void clsRequestHandler::process(const QString& _api) {
             default:
                 throw exHTTPBadRequest(("unsupported Content-Type: " + ContentType).constData());
             }
-        }catch(exHTTPError &ex){
-            this->sendError((qhttp::TStatusCode)ex.code(), ex.what(), ex.code() >= 500);
-        }catch(exTargomanBase &ex){
+        }catch(exTargomanBase& ex){
+            this->sendError(static_cast<qhttp::TStatusCode>(ex.httpCode()), ex.what(), ex.httpCode() >= 500);
+        }catch(QFieldValidator::exRequiredParam &ex){
+            this->sendError(qhttp::ESTATUS_BAD_REQUEST, ex.what(), false);
+        }catch(QFieldValidator::exInvalidValue &ex){
+            this->sendError(qhttp::ESTATUS_BAD_REQUEST, ex.what(), false);
+        }catch(std::exception &ex){
             this->sendError(qhttp::ESTATUS_INTERNAL_SERVER_ERROR, ex.what(), true);
         }
     });
     this->Request->onEnd([this, _api](){
         try{
             this->findAndCallAPI (_api);
-        }catch(exHTTPError &ex){
-            this->sendError((qhttp::TStatusCode)ex.code(), ex.what(), ex.code() >= 500);
-        }catch(exTargomanBase &ex){
+        }catch(exTargomanBase& ex){
+            this->sendError(static_cast<qhttp::TStatusCode>(ex.httpCode()), ex.what(), ex.httpCode() >= 500);
+        }catch(QFieldValidator::exRequiredParam &ex){
+            this->sendError(qhttp::ESTATUS_BAD_REQUEST, ex.what(), false);
+        }catch(QFieldValidator::exInvalidValue &ex){
+            this->sendError(qhttp::ESTATUS_BAD_REQUEST, ex.what(), false);
+        }catch(std::exception &ex){
             this->sendError(qhttp::ESTATUS_INTERNAL_SERVER_ERROR, ex.what(), true);
         }
     });
@@ -192,7 +213,7 @@ const qhttp::TStatusCode StatusCodeOnMethod[] = {
     qhttp::ESTATUS_EXPECTATION_FAILED, ///< EHTTP_UNLINK         = 32,
 };
 
-void clsRequestHandler::findAndCallAPI(const QString &_api)
+void clsRequestHandler::findAndCallAPI(const QString& _api)
 {
     if(_api == "/openAPI.json"){
         gServerStats.Success.inc();
@@ -202,7 +223,17 @@ void clsRequestHandler::findAndCallAPI(const QString &_api)
     if(_api == "/openAPI.yaml")
         throw exHTTPMethodNotAllowed("Yaml openAPI is not implemented yet");
 
+    QString ExtraAPIPath;
+
     clsAPIObject* APIObject = RESTAPIRegistry::getAPIObject(this->Request->methodString(), _api);
+    if(!APIObject) {
+        QString Path = _api;
+        if(Path.endsWith('/'))
+            Path.truncate(Path.size() - 1);
+        ExtraAPIPath = Path.mid(Path.lastIndexOf('/') + 1);
+        Path = Path.mid(0, Path.lastIndexOf('/'));
+        APIObject = RESTAPIRegistry::getAPIObject(this->Request->methodString(), Path);
+    }
 
     if(!APIObject)
         return this->sendError(qhttp::ESTATUS_NOT_FOUND,
@@ -210,6 +241,9 @@ void clsRequestHandler::findAndCallAPI(const QString &_api)
                                true);
 
     QStringList Queries = this->Request->url().query().split('&', QString::SkipEmptyParts);
+    for(auto QueryIter = Queries.begin(); QueryIter != Queries.end(); ++QueryIter)
+        *QueryIter = QueryIter->replace('+', ' ');
+
     qhttp::THeaderHash Headers = this->Request->headers();
     qhttp::THeaderHash Cookies;
     QJsonObject JWT;
@@ -217,7 +251,7 @@ void clsRequestHandler::findAndCallAPI(const QString &_api)
     if(APIObject->requiresJWT()){
         QString Auth = Headers.value("authorization");
         if(Auth.startsWith("Bearer ")){
-            JWT = QJWT::verifyReturnPayload(Auth.mid(sizeof("Bearer ")));
+            JWT = QJWT::verifyReturnPayload(Auth.mid(sizeof("Bearer")));
             Headers.remove("authorization");
         } else
             throw exHTTPForbidden("No valid authentication header is present");
@@ -240,10 +274,13 @@ void clsRequestHandler::findAndCallAPI(const QString &_api)
                               Headers,
                               Cookies,
                               JWT,
-                              this->toIPv4(this->Request->remoteAddress())));
+                              this->toIPv4(this->Request->remoteAddress()),
+                              ExtraAPIPath
+                              )
+            );
 }
 
-void clsRequestHandler::sendError(qhttp::TStatusCode _code, const QString &_message, bool _closeConnection)
+void clsRequestHandler::sendError(qhttp::TStatusCode _code, const QString& _message, bool _closeConnection)
 {
     gServerStats.Errors.inc();
     this->sendResponseBase(_code,
@@ -269,7 +306,12 @@ void clsRequestHandler::sendResponseBase(qhttp::TStatusCode _code, QJsonObject _
 
     QByteArray Data = QJsonDocument(_dataObject).toJson(gConfigs.Public.IndentedJson ? QJsonDocument::Indented : QJsonDocument::Compact);
 
-    this->Response->setStatusCode(_code);
+    TargomanLogInfo(7, "Response ["<<
+                    this->Request->connection()->tcpSocket()->peerAddress().toString()<<
+                    ":"<<
+                    this->Request->connection()->tcpSocket()->peerPort()<<
+                    "]: (code:"<<_code<<"):"<<Data)
+            this->Response->setStatusCode(_code);
     if(_closeConnection) this->Response->addHeader("connection", "close");
     this->Response->addHeaderValue("content-length", Data.length());
     this->Response->addHeaderValue("content-type", QString("application/json; charset=utf-8"));
@@ -279,7 +321,7 @@ void clsRequestHandler::sendResponseBase(qhttp::TStatusCode _code, QJsonObject _
 }
 
 /**************************************************************************/
-void clsMultipartFormDataRequestHandler::onMultiPartBegin(const MultipartHeaders &_headers, void *_userData) {
+void clsMultipartFormDataRequestHandler::onMultiPartBegin(const MultipartHeaders& _headers, void *_userData) {
     clsMultipartFormDataRequestHandler *Self = static_cast<clsMultipartFormDataRequestHandler*>(_userData);
     try{
         std::string ContentDisposition = _headers["Content-Disposition"];
@@ -294,23 +336,23 @@ void clsMultipartFormDataRequestHandler::onMultiPartBegin(const MultipartHeaders
                 L4Value,
             } Looking4 = L4Type;
             char StopChar = ';';
-            std::string* pLastFieldValue;
+            std::string* pLastFieldValue = nullptr;
             std::string Dummy;
 
             while(pContentDisposition && *pContentDisposition != '\0'){
                 if(*pContentDisposition == StopChar)
                     switch(Looking4){
                     case L4Type:
-                        if(strncmp(pBufferStart, "form-data", pContentDisposition - pBufferStart))
+                        if(strncmp(pBufferStart, "form-data", static_cast<size_t>(pContentDisposition - pBufferStart)))
                             throw exHTTPBadRequest("Just form-data is allowed in multi-part request according to RFC7578");
                         Looking4 = L4Field;
                         pBufferStart = pContentDisposition+1;
                         StopChar = '=';
                         break;
                     case L4Field:
-                        if(strncmp(pBufferStart, " name", pContentDisposition - pBufferStart) == 0)
+                        if(strncmp(pBufferStart, " name", static_cast<size_t>(pContentDisposition - pBufferStart)) == 0)
                             pLastFieldValue = &Self->LastItemName;
-                        else if(strncmp(pBufferStart, " filename", pContentDisposition - pBufferStart) == 0)
+                        else if(strncmp(pBufferStart, " filename", static_cast<size_t>(pContentDisposition - pBufferStart)) == 0)
                             pLastFieldValue = &Self->LastFileName;
                         else
                             pLastFieldValue = &Dummy;
@@ -329,7 +371,7 @@ void clsMultipartFormDataRequestHandler::onMultiPartBegin(const MultipartHeaders
                         break;
                     case L4Value:
                         *pLastFieldValue = pBufferStart;
-                        pLastFieldValue->erase(pContentDisposition - pBufferStart, std::string::npos);
+                        pLastFieldValue->erase(static_cast<size_t>(pContentDisposition - pBufferStart), std::string::npos);
                         StopChar=';';
                         Looking4 = L4NextField;
                         pBufferStart = pContentDisposition+2;
@@ -354,9 +396,9 @@ void clsMultipartFormDataRequestHandler::onMultiPartBegin(const MultipartHeaders
             }
         }else
             throw exHTTPBadRequest("No Content-Disposition header provided");
-    }catch(exHTTPError &ex){
-        Self->pRequestHandler->sendError((qhttp::TStatusCode)ex.code(), ex.what(), ex.code() >= 500);
-    }catch(exTargomanBase &ex){
+    }catch(exHTTPError& ex){
+        Self->pRequestHandler->sendError(static_cast<qhttp::TStatusCode>(ex.code()), ex.what(), ex.code() >= 500);
+    }catch(exTargomanBase& ex){
         Self->pRequestHandler->sendError(qhttp::ESTATUS_INTERNAL_SERVER_ERROR, ex.what(), true);
     }
 
@@ -369,7 +411,7 @@ void clsMultipartFormDataRequestHandler::onMultiPartData(const char *_buffer, lo
         if(Self->LastWrittenBytes > gConfigs.Public.MaxUploadedFileSize)
             throw exHTTPPayloadTooLarge("Max file size limit reached");
     }else
-        Self->LastValue = QString::fromUtf8(_buffer, _size);
+        Self->LastValue = QString::fromUtf8(_buffer, static_cast<int>(_size));
 }
 
 void clsMultipartFormDataRequestHandler::onMultiPartEnd(void *_userData) {

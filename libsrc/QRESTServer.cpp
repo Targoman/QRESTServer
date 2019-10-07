@@ -29,6 +29,7 @@
 #include "Private/clsRequestHandler.h"
 #include "Private/clsRedisConnector.h"
 #include "Private/WebSocketServer.hpp"
+#include "Private/RESTAPIRegistry.h"
 #include "Private/QJWT.h"
 #include "QHttp/qhttpfwd.hpp"
 
@@ -39,8 +40,7 @@ using namespace qhttp::server;
 using namespace Private;
 
 bool validateConnection(const QHostAddress& _peerAddress, quint16 _peerPort){
-
-    enuIPBlackListStatus::Type IPBlackListStatus;
+    enuIPBlackListStatus::Type IPBlackListStatus = enuIPBlackListStatus::Unknown;
 
     if(gConfigs.Public.fnIPInBlackList &&
             (IPBlackListStatus = gConfigs.Public.fnIPInBlackList(_peerAddress)) != enuIPBlackListStatus::Ok){
@@ -54,7 +54,7 @@ bool validateConnection(const QHostAddress& _peerAddress, quint16 _peerPort){
     return true;
 }
 
-void RESTServer::configure(const RESTServer::stuConfig &_configs) {
+void RESTServer::configure(const RESTServer::stuConfig& _configs) {
     if(gConfigs.Private.IsStarted)
         throw exTargomanInitialization("QRESTServer can not be reconfigured while listening");
 
@@ -127,12 +127,11 @@ void RESTServer::start() {
                             _req->connection()->tcpSocket()->peerPort()<<
                             "]: "<<
                             Path<<
+                            "?"<<
                             _req->url().query());
             RequestHandler->process(Path.mid(gConfigs.Private.BasePathWithVersion.size() - 1));
-        }catch(exHTTPError &ex){
-            RequestHandler->sendError((qhttp::TStatusCode)ex.code(), ex.what(), ex.code() >= 500);
-        }catch(exTargomanBase &ex){
-            RequestHandler->sendError(qhttp::ESTATUS_INTERNAL_SERVER_ERROR, ex.what(), true);
+        }catch(exTargomanBase& ex){
+            RequestHandler->sendError(static_cast<qhttp::TStatusCode>(ex.httpCode()), ex.what(), ex.httpCode() >= 500);
         }
     });
 
@@ -177,76 +176,26 @@ QStringList RESTServer::registeredAPIs(bool _showParams, bool _showTypes, bool _
     return RESTAPIRegistry::registeredAPIs("", _showParams, _showTypes, _prettifyTypes);
 }
 
+void RESTServer::registerUserDefinedType(const char* _typeName, intfAPIArgManipulator* _argManipulator)
+{
+    Q_ASSERT_X(QMetaType::type(_typeName), "registerUserDefinedType", "Seems that registering syntax is erroneous");
+    Private::gUserDefinedTypesInfo.insert(QMetaType::type(_typeName) - 1025, _argManipulator);
+}
+
 /***********************************************************************************************/
 intfRESTAPIHolder::intfRESTAPIHolder(Targoman::Common::Configuration::intfModule *_parent) :
     Targoman::Common::Configuration::intfModule(_parent)
 {
-    QHTTP_REGISTER_METATYPE(
-        QHttp::stuTable,
-                [](const QHttp::stuTable& _value) -> QVariant{
-                    return QVariantMap({{"totalRows", _value.TotalRows}, {"Rows", _value.Rows}});
-                },
-                nullptr
-    );
-
-    QHTTP_REGISTER_METATYPE(
-        QHttp::COOKIES_t,
-        [](const QHttp::COOKIES_t& _value) -> QVariant {
-            return _value.toVariant();
-        },
-        [](const QVariant& _value) -> QHttp::COOKIES_t {
-            QHttp::COOKIES_t  TempValue;
-            return TempValue.fromVariant(_value);
-        }
-    );
-    QHTTP_REGISTER_METATYPE(
-        QHttp::HEADERS_t,
-        [](const QHttp::HEADERS_t& _value) -> QVariant {
-            return _value.toVariant();
-        },
-        [](const QVariant& _value) -> QHttp::HEADERS_t {
-            QHttp::HEADERS_t  TempValue;
-            return TempValue.fromVariant(_value);
-        }
-    );
-    QHTTP_REGISTER_METATYPE(
-        QHttp::JWT_t,
-        [](const QHttp::JWT_t& _value) -> QVariant {
-            return _value.toVariantMap();
-        },
-        [](const QVariant& _value) -> QHttp::JWT_t {
-            QJsonObject Obj;
-            if(_value.canConvert<QVariantMap>())
-                Obj = Obj.fromVariantMap(_value.value<QVariantMap>());
-            if(_value.canConvert<QVariantHash>())
-                Obj = Obj.fromVariantHash(_value.value<QVariantHash>());
-
-            if(Obj.isEmpty())
-                throw exHTTPBadRequest("Unable to convert JWT");
-            return  *reinterpret_cast<QHttp::JWT_t*>(&Obj);
-        }
-    );
-    QHTTP_REGISTER_METATYPE(
-        QHttp::RemoteIP_t,
-        [](const QHttp::RemoteIP_t& _value) -> QVariant {
-            return _value;
-        },
-        [](const QVariant& _value) -> QHttp::RemoteIP_t {
-            QHttp::RemoteIP_t IP;
-            IP=_value.toString();
-            return  IP;
-        }
-    );
+    registerGenericTypes();
 }
 
 void intfRESTAPIHolder::registerMyRESTAPIs(){
     for (int i=0; i<this->metaObject()->methodCount(); ++i)
-        //if(this->metaObject()->method(i).methodType() == QMetaMethod::Slot)
             RESTAPIRegistry::registerRESTAPI(this, this->metaObject()->method(i));
-
 }
 
-QString intfRESTAPIHolder::createSignedJWT(QJsonObject _payload, QJsonObject _privatePayload, const qint32 _expiry, const QString &_sessionID)
+
+QHttp::EncodedJWT_t intfRESTAPIHolder::createSignedJWT(QJsonObject _payload, QJsonObject _privatePayload, const qint32 _expiry, const QString& _sessionID)
 {
     return Private::QJWT::createSigned(_payload, _privatePayload, _expiry, _sessionID);
 }
@@ -255,12 +204,22 @@ QStringList intfRESTAPIHolder::apiGETListOfAPIs(bool _showParams, bool _showType
     return RESTAPIRegistry::registeredAPIs("", _showParams, _showTypes, _prettifyTypes);
 }
 
-intfAPIArgManipulator::intfAPIArgManipulator(const QString &_realTypeName)
+intfAPIArgManipulator::intfAPIArgManipulator(const QString& _realTypeName)
 {
     this->PrettyTypeName = (_realTypeName.startsWith('Q') ? _realTypeName.mid(1) : _realTypeName).toLower();
-    this->RealTypeName = new char[_realTypeName.toStdString().size()];
-    strcpy(this->RealTypeName, _realTypeName.toStdString().c_str());
+    QByteArray RealTypeByteArray = _realTypeName.toLatin1();
+    this->RealTypeName = new char[static_cast<uint>(RealTypeByteArray.size()+1)];
+    strncpy(this->RealTypeName,
+            _realTypeName.toLatin1().constData(),
+            static_cast<uint>(RealTypeByteArray.size()));
+    this->RealTypeName[RealTypeByteArray.size()] = 0;
 }
+
+intfAPIArgManipulator::~intfAPIArgManipulator()
+{;}
+
+intfAPIObject::~intfAPIObject()
+{;}
 
 }
 

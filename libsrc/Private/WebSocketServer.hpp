@@ -18,7 +18,7 @@
  *                                                                             *
  *******************************************************************************/
 /**
- * @author S. Mohammad M. Ziabary <ziabary@targoman.com>
+ * @author S. Mehran M. Ziabary <ziabary@targoman.com>
  */
 
 #ifndef QHTTP_WEBSOCKETSERVER_HPP
@@ -31,6 +31,7 @@
 #include "libTargomanCommon/Logger.h"
 #include "Private/Configs.hpp"
 #include "Private/RESTAPIRegistry.h"
+#include "QFieldValidator.h"
 
 namespace QHttp {
 namespace Private {
@@ -93,27 +94,45 @@ private slots:
                 if(JSON.isNull())
                     throw exHTTPBadRequest(QString("Invalid JSON request: %1").arg(Error.errorString()));
 
+                QString ExtraAPIPath;
                 QJsonObject JSONReqObject = JSON.object();
-                clsAPIObject* APIObject = RESTAPIRegistry::getWSAPIObject (JSONReqObject.begin().key());
                 QString API = JSONReqObject.begin().key();
                 if(API.isEmpty())
                     return sendError(qhttp::ESTATUS_BAD_REQUEST, "No API path specified");
+
+                clsAPIObject* APIObject = RESTAPIRegistry::getWSAPIObject (API);
+                if(!APIObject) {
+                    QString Path = API;
+                    if(Path.endsWith('/'))
+                        Path.truncate(Path.size() - 1);
+                    ExtraAPIPath = Path.mid(Path.lastIndexOf('/'));
+                    Path = Path.mid(0, Path.lastIndexOf('/'));
+                    APIObject = RESTAPIRegistry::getWSAPIObject(Path);
+                }
+
+                if(!APIObject)
+                    return sendError(qhttp::ESTATUS_NOT_FOUND, "WS API not found ("+API+")");
 
                 QVariantMap APIArgs = JSONReqObject.begin().value().toObject().toVariantMap();
                 QStringList Queries;
                 for(auto Map = APIArgs.begin(); Map != APIArgs.end(); ++Map)
                     Queries.append(Map.key() + '=' + Map.value().toString());
 
+                /*if(ExtraAPIPath)
+                    Queries.append(REQUES)*/
 
-                if(!APIObject)
-                    return sendError(qhttp::ESTATUS_NOT_FOUND, "WS API not found ("+API+")");
+
                 QByteArray Data = QJsonDocument(QJsonObject({{"result",
                                                               QJsonValue::fromVariant(APIObject->invoke(Queries))
                                                              }})).toJson(gConfigs.Public.IndentedJson ? QJsonDocument::Indented : QJsonDocument::Compact);
                 pSocket->sendTextMessage(Data.data());
-            }catch(exHTTPError &ex){
-                sendError((qhttp::TStatusCode)ex.code(), ex.what());
-            }catch(Targoman::Common::exTargomanBase &ex){
+            }catch(Targoman::Common::exTargomanBase& ex){
+                sendError(static_cast<qhttp::TStatusCode>(ex.code()), ex.what());
+            }catch(QFieldValidator::exRequiredParam &ex){
+                sendError(qhttp::ESTATUS_BAD_REQUEST, ex.what());
+            }catch(QFieldValidator::exInvalidValue &ex){
+                sendError(qhttp::ESTATUS_BAD_REQUEST, ex.what());
+            }catch(std::exception &ex){
                 sendError(qhttp::ESTATUS_INTERNAL_SERVER_ERROR, ex.what());
             }
         }

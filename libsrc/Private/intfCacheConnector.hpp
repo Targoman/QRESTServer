@@ -18,7 +18,7 @@
  *                                                                             *
  *******************************************************************************/
 /**
- * @author S. Mohammad M. Ziabary <ziabary@targoman.com>
+ * @author S. Mehran M. Ziabary <ziabary@targoman.com>
  */
 
 #ifndef QHTTP_INTFCACHECONNECTOR_HPP
@@ -27,7 +27,7 @@
 #include <QUrl>
 #include <QVariant>
 #include "libTargomanCommon/exTargomanBase.h"
-#include "Private/intfAPIArgManipulator.h"
+#include "intfAPIArgManipulator.h"
 #include "Private/Configs.hpp"
 
 namespace QHttp {
@@ -36,15 +36,16 @@ TARGOMAN_ADD_EXCEPTION_HANDLER(exCacheConnector, Targoman::Common::exTargomanBas
 
 class intfCacheConnector{
 public:
-    intfCacheConnector(const QUrl &_connector) :
+    intfCacheConnector(const QUrl& _connector) :
         ConnectorURL(_connector)
     {}
+    virtual ~intfCacheConnector();
 
     virtual void connect() = 0;
     void setKeyVal(const QString& _key, const QVariant& _value, qint32 _ttl){
         if(_value.type() >= QHTTP_BASE_USER_DEFINED_TYPEID)
             this->setKeyValImpl(_key,
-                                gUserDefinedTypesInfo.at(_value.type() - QHTTP_BASE_USER_DEFINED_TYPEID)->toString(_value),
+                                gUserDefinedTypesInfo.at(static_cast<int>(_value.type() - QHTTP_BASE_USER_DEFINED_TYPEID))->toString(_value),
                                 _ttl);
         else
             this->setKeyValImpl(_key, _value.toString(), _ttl);
@@ -61,6 +62,7 @@ private:
 protected:
     QUrl ConnectorURL;
 };
+
 
 }
 }

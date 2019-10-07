@@ -25,12 +25,23 @@ DIST_HEADERS += \
     intfRESTAPIHolder.h \
     QRESTServer.h \
     HTTPExceptions.h \
+    GenericTypes.h \
+    intfAPIArgManipulator.h \
+    tmplAPIArg.h \
 
 PRIVATE_HEADERS += \
+    Private/intfCacheConnector.hpp \
+    Private/NumericTypes.hpp \
     Private/clsRequestHandler.h \
     Private/Configs.hpp \
     Private/RESTAPIRegistry.h \
-    Private/clsAPIObject.hpp
+    Private/clsAPIObject.hpp \
+    Private/APICache.hpp \
+    Private/intfCacheConnector.hpp \
+    Private/clsRedisConnector.h \
+    Private/WebSocketServer.hpp \
+    Private/QJWT.h \
+    Private/clsSimpleCrypt.h \
 
 
 # +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-#
@@ -41,7 +52,8 @@ SOURCES += \
     QRESTServer.cpp \
     Private/clsRedisConnector.cpp \
     Private/QJWT.cpp \
-    Private/clsSimpleCrypt.cpp
+    Private/clsSimpleCrypt.cpp \
+    Private/GenericTypes.cpp
 
 # +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-#
 OTHER_FILES += \
@@ -61,10 +73,10 @@ win32:DEFINES *= QHTTP_EXPORT
 TARGET = $$ProjectName
 
 DESTDIR      = $$BaseLibraryFolder
-MOC_DIR      = $$BuildFolderPattern/$$TARGET/moc
-OBJECTS_DIR  = $$BuildFolderPattern/$$TARGET/obj
-RCC_DIR      = $$BuildFolderPattern/$$TARGET/rcc
-UI_DIR       = $$BuildFolderPattern/$$TARGET/ui
+MOC_DIR      = $$BaseBuildFolder/$$TARGET/moc
+OBJECTS_DIR  = $$BaseBuildFolder/$$TARGET/obj
+RCC_DIR      = $$BaseBuildFolder/$$TARGET/rcc
+UI_DIR       = $$BaseBuildFolder/$$TARGET/ui
 
 QMAKE_CXXFLAGS_RELEASE += -fPIC
 QMAKE_CXXFLAGS_DEBUG += -fPIC
@@ -77,12 +89,5 @@ build_static {
 HEADERS += $$DIST_HEADERS \
            $$PRIVATE_HEADERS \
            $$SUBMODULE_HEADERS \
-    Private/intfAPIArgManipulator.h \
-    Private/APICache.hpp \
-    Private/intfCacheConnector.hpp \
-    Private/clsRedisConnector.h \
-    Private/WebSocketServer.hpp \
-    Private/QJWT.h \
-    Private/clsSimpleCrypt.h
 
 include($$PRJDIR/qmake/install.pri)

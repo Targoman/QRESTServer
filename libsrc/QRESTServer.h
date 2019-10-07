@@ -27,11 +27,13 @@
 #include <QObject>
 #include <QScopedPointer>
 #include <QHostAddress>
+#include <QJsonObject>
 #include "libTargomanCommon/Macros.h"
-#include "QHttp/intfRESTAPIHolder.h"
+#include "QHttp/GenericTypes.h"
 
 namespace QHttp {
 
+class intfAPIArgManipulator;
 /********************************************************************************/
 /**
  * @brief The enuIPBlackListStatus enum is defined to be used as result of fnIsInBlackList_t
@@ -130,6 +132,8 @@ public:
      * @return a list of all APIs registered in the server
      */
     static QStringList registeredAPIs(bool _showParams = true, bool _showTypes = true, bool _prettifyTypes = true);
+
+    static void registerUserDefinedType(const char* _typeName, intfAPIArgManipulator* _argManipulator);
 };
 
 }

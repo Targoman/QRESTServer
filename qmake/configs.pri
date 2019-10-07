@@ -40,9 +40,9 @@ DEFINES += PROJ_VERSION=$$VERSION
 
 #+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-++-+-
 contains(QT_ARCH, x86_64){
-    LibFolderPattern     = $$PREFIX/lib64
+    LibFolderPattern     = lib64
 } else {
-    LibFolderPattern     = $$PREFIX/lib
+    LibFolderPattern     = lib
 }
 LibIncludeFolderPattern = ./include
 BinFolderPattern        = ./bin

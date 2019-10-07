@@ -31,4 +31,7 @@ QT -= gui
 EXTERNAL_DEPS=1
 
 LIBS += -lTargomanCommon \
+        -lQFieldValidator \
         -lqhttp
+
+EXTERNAL_DEPS=1

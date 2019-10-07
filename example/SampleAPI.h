@@ -25,8 +25,19 @@
 #define SAMPLEAPI_H
 
 #include "QHttp/intfRESTAPIHolder.h"
+#include "libTargomanCommon/Macros.h"
 
-namespace Sample1 {
+namespace ns {
+
+TARGOMAN_DEFINE_ENHANCED_ENUM (enuSample,
+                               s1,
+                               s2);
+
+TARGOMAN_DEFINE_ENUM (enuSample2,
+                      Unknown = 'U',
+                      dd1 = 'H',
+                      dd2 = 'I');
+
 class SampleAPI : public QHttp::intfRESTAPIHolder
 {
     Q_OBJECT
@@ -34,26 +45,59 @@ public:
     void init();
 
 private slots:
+    int API(GET, SampleData,(),
+            "Sample API")
+    CACHEABLE_1H QHttp::COOKIES_t API(GET, SampleDataWithCookie, (QHttp::COOKIES_t _COOKIES, QString _EXTRAPATH),
+                                      "Sample cacheable API for 1 hour")
+    QHttp::HEADERS_t API(GET, SampleDataWithHeaders, (QHttp::HEADERS_t _HEADERS),
+                         "Sample API with header")
+    QString API(GET, SampleDataReturningJWT, (),
+                "Sample API with returning string")
+    QHttp::EncodedJWT_t ASYNC_API(GET, SampleDataWithJWT, (QHttp::JWT_t _JWT),
+                                  "Sample AsyncAPI returning JWT as encoded")
+    int API(PUT,SampleData, (quint64 _id, const QString& _info = "defaultValue"),
+            "Sample API with data")
+    int API(DELETE, SampleData, (quint64 _id = 5),
+            "Sample API for delete")
+    QVariantList API(UPDATE,SampleData, (char _id = ',', const QString& _info = "df\",dsf"),
+                     "Sample API for Update")
 
-    int apiGETSampleData();
-    CACHEABLE_1H QHttp::COOKIES_t apiGETSampleDataWithCookie(QHttp::COOKIES_t _COOKIES);
-    QHttp::HEADERS_t apiGETSampleDataWithHeaders(QHttp::HEADERS_t _HEADERS);
-    QString apiGETSampleDataReturningJWT();
-    QHttp::JWT_t apiGETSampleDataWithJWT(QHttp::JWT_t _JWT);
-    int apiPUTSampleData(quint64 _id, const QString& _info = "defaultValue");
-    int apiDELETESampleData(quint64 _id = 5);
-    QVariantList apiUPDATESampleData(quint64 _id, const QString &_info = "dfdsf");
 
+    QHttp::stuTable API(, Translate, (const QString& _text="dfdfjk,", QString _info = ","),
+                        "Sample complex API")
+    QHttp::stuTable API(, SampleList, (const QVariantList& _list),
+                        "Sample list returning API")
 
-    QHttp::stuTable apiTranslate(const QString& _text, bool _info = ",");
-    QHttp::stuTable apiSampleList(const QVariantList& _list);
-    QString apiWSSample(const QString _value);
+    QString API(WS,Sample, (const QString _value),
+                "Sample web socket API")
 
 private:
     SampleAPI();
     TARGOMAN_DEFINE_SINGLETON_MODULE(SampleAPI);
 };
 
+
+class SampleSubModule : public QHttp::intfRESTAPIHolder{
+    Q_OBJECT
+public:
+    void init();
+
+private slots:
+    QString API(GET, ,(QString _EXTRAPATH, int from, int to),
+            "Sample API without name")
+
+    quint64 API(, SampleEnahancedEnum, (ns::enuSample::Type _val = enuSample::s1),
+                        "Sample list returning API")
+
+    quint64 API(, SampleTargomanEnum, (ns::enuSample2::Type _val = enuSample2::dd1, QString A= "sdlkjsdkfjkdlf" ),
+                        "Sample list returning API")
+
+private:
+    SampleSubModule();
+    TARGOMAN_DEFINE_SINGLETON_SUBMODULE(SampleAPI, SampleSubModule);
+};
 }
 
+Q_DECLARE_METATYPE(ns::enuSample::Type);
+Q_DECLARE_METATYPE(ns::enuSample2::Type);
 #endif // SAMPLEAPI_H

@@ -23,14 +23,23 @@
 
 #include "SampleAPI.h"
 #include "libTargomanCommon/CmdIO.h"
+#include "QHttp/QRESTServer.h"
 
-namespace Sample1 {
+
+namespace ns {
 
 using namespace QHttp;
 SampleAPI::SampleAPI()
 {
     TargomanDebug(1, "initialization");
+
+    QHTTP_REGISTER_TARGOMAN_ENUM(ns::enuSample);
+    QHTTP_REGISTER_TARGOMAN_ENUM(ns::enuSample2);
+
     this->registerMyRESTAPIs();
+
+    SampleSubModule::instance().init();
+
 }
 
 void SampleAPI::init()
@@ -43,9 +52,9 @@ CACHEABLE_3H int SampleAPI::apiGETSampleData()
     return 5;
 }
 
-COOKIES_t SampleAPI::apiGETSampleDataWithCookie(COOKIES_t _COOKIES)
+COOKIES_t SampleAPI::apiGETSampleDataWithCookie(COOKIES_t _COOKIES, QString _EXTRAPATH)
 {
-    TargomanDebug(1, "Called: " <<__FUNCTION__<<" Params: ("<<_COOKIES.toVariant().toString()<<")");
+    TargomanDebug(1, "Called: " <<__FUNCTION__<<" Params: ("<<_COOKIES.toVariant().toString()<<","<<_EXTRAPATH<<")");
     return _COOKIES;
 }
 
@@ -61,13 +70,13 @@ QString SampleAPI::apiGETSampleDataReturningJWT()
     return this->createSignedJWT(QJsonObject({{"a",1},{"b","fdsdfdf"}}), QJsonObject({{"priv1",4}}), 120, "fdffsdf");
 }
 
-JWT_t SampleAPI::apiGETSampleDataWithJWT(JWT_t _JWT)
+EncodedJWT_t SampleAPI::asyncApiGETSampleDataWithJWT(JWT_t _JWT)
 {
     TargomanDebug(1, "Called: " <<__FUNCTION__<<" Params: ("<<QJsonDocument(_JWT).toJson()<<")");
-    return _JWT;
+    return createSignedJWT(_JWT);
 }
 
-int SampleAPI::apiPUTSampleData(quint64 _id, const QString &_info)
+int SampleAPI::apiPUTSampleData(quint64 _id, const QString& _info)
 {
     TargomanDebug(1, "Called: " <<__FUNCTION__<<" Params: (\""<<_id<<"\",\""<<_info<<"\")");
     return _id;
@@ -79,20 +88,20 @@ int SampleAPI::apiDELETESampleData(quint64 _id)
     return 3;
 }
 
-QVariantList SampleAPI::apiUPDATESampleData(quint64 _id, const QString& _info)
+QVariantList SampleAPI::apiUPDATESampleData(char _id, const QString& _info)
 {
     TargomanDebug(1, "Called: " <<__FUNCTION__<<" Params: ("<<_id<<","<<_info<<")");
     return QVariantList({{1},{"sdjkfh"}});
 }
 
-stuTable SampleAPI::apiTranslate(const QString &_text, bool _detailed)
+stuTable SampleAPI::apiTranslate(const QString& _text, QString _detailed)
 {
-    TargomanDebug(1, "Called: " <<__FUNCTION__<<" Params: ("<<_text<<","<<_detailed<<")");
+    TargomanDebug(1, "Called: " <<__FUNCTION__<<" Params: (\""<<_text<<"\",\""<<_detailed<<"\")");
     return stuTable();
 }
 
 
-stuTable SampleAPI::apiSampleList(const QVariantList &_list)
+stuTable SampleAPI::apiSampleList(const QVariantList& _list)
 {
     TargomanDebug(1, "Called: " <<__FUNCTION__<<" Params: (_list)");
     return stuTable(_list.size(), {{"data", _list}});
@@ -104,5 +113,28 @@ QString SampleAPI::apiWSSample(const QString _value)
     return _value;
 }
 
+void SampleSubModule::init()
+{
 
 }
+
+QString SampleSubModule::apiGET(QString _EXTRAPATH, int from, int to)
+{
+    return _EXTRAPATH;
+}
+
+SampleSubModule::SampleSubModule()
+{
+    this->registerMyRESTAPIs();
+}
+
+quint64 SampleSubModule::apiSampleEnahancedEnum (ns::enuSample::Type _val){
+    return _val;
+}
+
+quint64 SampleSubModule::apiSampleTargomanEnum (ns::enuSample2::Type _val, QString A){
+    return _val;
+}
+
+}
+

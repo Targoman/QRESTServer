@@ -28,6 +28,7 @@
 #include "QHttp/QRESTServer.h"
 #include "libTargomanCommon/Logger.h"
 #include "SampleAPI.h"
+#include "libTargomanCommon/CmdIO.h"
 
 using namespace QHttp;
 
@@ -43,7 +44,9 @@ int main(int _argc, char *_argv[])
         Targoman::Common::Logger::instance().setActive();
         Targoman::Common::Logger::instance().setVisible();
 
-        Sample1::SampleAPI::instance().init();
+        ns::SampleAPI::instance().init();
+
+        Targoman::Common::printLoadedLibs();
 
         std::cout<<qPrintable(RESTServer::registeredAPIs(true, true).join("\n"))<<std::endl;
 
@@ -59,8 +62,8 @@ int main(int _argc, char *_argv[])
         RESTServer::start();
 
         App.exec();
-    }catch(Targoman::Common::exTargomanBase &e){
-        qDebug()<<e.what();
+    }catch(Targoman::Common::exTargomanBase& ex){
+        qDebug()<<ex.what();
         return 1;
     }
     return 0;

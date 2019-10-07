@@ -18,7 +18,7 @@
  *                                                                             *
  *******************************************************************************/
 /**
- * @author S. Mohammad M. Ziabary <ziabary@targoman.com>
+ * @author S. Mehran M. Ziabary <ziabary@targoman.com>
  */
 
 #include <QStringList>
@@ -29,7 +29,7 @@
 namespace QHttp {
 namespace Private{
 
-thread_local static clsSimpleCrypt* SimpleCryptInstance = NULL;
+thread_local static clsSimpleCrypt* SimpleCryptInstance = nullptr;
 static clsSimpleCrypt* simpleCryptInstance(){
     if(Q_UNLIKELY(!SimpleCryptInstance)){
         SimpleCryptInstance = new clsSimpleCrypt(gConfigs.Public.SimpleCryptKey);
@@ -42,7 +42,7 @@ QString QJWT::createSigned(QJsonObject _payload, QJsonObject _privatePayload, co
 {
     const QString Header = QString("{\"typ\":\"JWT\",\"alg\":\"%1\"}").arg(enuJWTHashAlgs::toStr(gConfigs.Public.JWTHashAlgorithm));
 
-    _payload["iat"] = (qint64)QDateTime::currentDateTime().toTime_t();
+    _payload["iat"] = static_cast<qint64>(QDateTime::currentDateTime().toTime_t());
     if(_expiry >= 0)
         _payload["exp"] = _payload["iat"].toInt() + _expiry;
     else
@@ -63,7 +63,7 @@ QString QJWT::createSigned(QJsonObject _payload, QJsonObject _privatePayload, co
     return Data + "." + QJWT::hash(Data).toBase64();
 }
 
-QJsonObject QJWT::verifyReturnPayload(const QString &_jwt)
+QJsonObject QJWT::verifyReturnPayload(const QString& _jwt)
 {
     QStringList JWTParts = _jwt.split('.');
     if(JWTParts.length() != 3)
@@ -71,7 +71,7 @@ QJsonObject QJWT::verifyReturnPayload(const QString &_jwt)
     if(QJWT::hash((JWTParts.at(0) + "." + JWTParts.at(1)).toUtf8()).toBase64() != JWTParts[2])
         throw exHTTPForbidden("JWT signature verification failed");
     QJsonParseError Error;
-    QJsonDocument Payload = QJsonDocument::fromJson(JWTParts.at(1).toUtf8(), &Error);
+    QJsonDocument Payload = QJsonDocument::fromJson(QByteArray::fromBase64(JWTParts.at(1).toLatin1()), &Error);
     if(Payload.isNull())
         throw exHTTPForbidden("Invalid JWT payload: " + Error.errorString());
 
@@ -79,7 +79,7 @@ QJsonObject QJWT::verifyReturnPayload(const QString &_jwt)
     if(JWTPayload.empty())
         throw exHTTPForbidden("Invalid JWT payload: empty object");
     if(JWTPayload.contains("exp") &&
-       (quint64)JWTPayload.value("exp").toInt() <= QDateTime::currentDateTime().toTime_t())
+            static_cast<quint64>(JWTPayload.value("exp").toInt()) <= QDateTime::currentDateTime().toTime_t())
             throw exHTTPUnauthorized("JWT expired");
 
     if(JWTPayload.contains("prv")){
@@ -97,7 +97,7 @@ QJsonObject QJWT::verifyReturnPayload(const QString &_jwt)
     return JWTPayload;
 }
 
-const QByteArray QJWT::hash(const QByteArray &_data)
+const QByteArray QJWT::hash(const QByteArray& _data)
 {
     switch(gConfigs.Public.JWTHashAlgorithm){
     case enuJWTHashAlgs::HS256:

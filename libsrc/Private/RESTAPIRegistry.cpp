@@ -31,14 +31,15 @@ namespace Private {
 
 /***********************************************************************************************/
 
-#define DO_ON_TYPE(_typeName, _baseType) DO_ON_TYPE_PROXY(_baseType, IGNORE_TYPE_##_typeName)
-#define DO_ON_TYPE_SELECTOR(_1,_2,N,...) N
-#define DO_ON_TYPE_PROXY(_type, ...) DO_ON_TYPE_SELECTOR(__VA_ARGS__, DO_ON_TYPE_IGNORED, DO_ON_TYPE_VALID)(_type)
-#define DO_ON_TYPE_IGNORED(_baseType) nullptr
+#define DO_ON_TYPE_VALID(_isIntegral, _baseType)  new tmplAPIArg<_baseType, _isIntegral>(TARGOMAN_M2STR(_baseType))
+#define DO_ON_TYPE_IGNORED(_isIntegral, _baseType) nullptr
+#define DO_ON_TYPE_SELECTOR(_1,_2,_N,...) _N
+#define DO_ON_TYPE_PROXY(_isIntegral, _baseType, ...) DO_ON_TYPE_SELECTOR(__VA_ARGS__, DO_ON_TYPE_IGNORED, DO_ON_TYPE_VALID)(_isIntegral, _baseType)
+#define DO_ON_TYPE(_isIntegral, _typeName, _baseType) DO_ON_TYPE_PROXY(_isIntegral, _baseType, IGNORE_TYPE_##_typeName)
 
-#define DO_ON_TYPE_VALID(_baseType)  new tmplAPIArg<_baseType>(TARGOMAN_M2STR(_baseType))
-#define MAKE_INFO_FOR_VALID_METATYPE(_typeName, _id, _baseType) { _id, { DO_ON_TYPE(_typeName, _baseType) }},
-#define MAKE_INVALID_METATYPE(_typeName, _id, _baseType) { _id, { nullptr }},
+#define MAKE_INFO_FOR_VALID_INTEGRAL_METATYPE(_typeName, _id, _baseType) { _id, { DO_ON_TYPE(COMPLEXITY_Integral,  _typeName, _baseType) } },
+#define MAKE_INFO_FOR_VALID_COMPLEX_METATYPE(_typeName, _id, _baseType)  { _id, { DO_ON_TYPE(COMPLEXITY_Complex, _typeName, _baseType) } },
+#define MAKE_INVALID_METATYPE(_typeName, _id, _baseType) { _id, { nullptr } },
 
 #define IGNORE_TYPE_Void ,
 #define IGNORE_TYPE_QByteArray ,
@@ -65,11 +66,11 @@ namespace Private {
 #define IGNORE_TYPE_QByteArrayList ,
 
 const QMap<int, intfAPIArgManipulator*> MetaTypeInfoMap = {
-    QT_FOR_EACH_STATIC_PRIMITIVE_TYPE(MAKE_INFO_FOR_VALID_METATYPE)
+    QT_FOR_EACH_STATIC_PRIMITIVE_TYPE(MAKE_INFO_FOR_VALID_INTEGRAL_METATYPE)
     QT_FOR_EACH_STATIC_PRIMITIVE_POINTER(MAKE_INVALID_METATYPE)
-    QT_FOR_EACH_STATIC_CORE_CLASS(MAKE_INFO_FOR_VALID_METATYPE)
+    QT_FOR_EACH_STATIC_CORE_CLASS(MAKE_INFO_FOR_VALID_COMPLEX_METATYPE)
     QT_FOR_EACH_STATIC_CORE_POINTER(MAKE_INVALID_METATYPE)
-    QT_FOR_EACH_STATIC_CORE_TEMPLATE(MAKE_INFO_FOR_VALID_METATYPE)
+    QT_FOR_EACH_STATIC_CORE_TEMPLATE(MAKE_INFO_FOR_VALID_COMPLEX_METATYPE)
     QT_FOR_EACH_STATIC_GUI_CLASS(MAKE_INVALID_METATYPE)
     QT_FOR_EACH_STATIC_WIDGETS_CLASS(MAKE_INVALID_METATYPE)
 };
@@ -92,7 +93,7 @@ void RESTAPIRegistry::registerRESTAPI(intfRESTAPIHolder* _module, const QMetaMet
     }
     if ((_method.name().startsWith("api") == false &&
          _method.name().startsWith("asyncApi") == false)||
-        _method.typeName() == NULL)
+        _method.typeName() == nullptr)
         return;
 
     try{
@@ -100,27 +101,122 @@ void RESTAPIRegistry::registerRESTAPI(intfRESTAPIHolder* _module, const QMetaMet
         QString MethodName = _method.name().constData();
         MethodName = MethodName.mid(MethodName.indexOf("api",0,Qt::CaseInsensitive) + 3);
 
+        QString MethodSignature, MethodDoc;
+        bool Found = false;
+        for (int i=0; i<_module->metaObject()->methodCount(); ++i)
+            if(_module->metaObject()->method(i).name() == "signOf" + MethodName){
+                _module->metaObject()->method(i).invoke(_module,
+                                                        Qt::DirectConnection,
+                                                        Q_RETURN_ARG(QString, MethodSignature)
+                                                        );
+                Found = true;
+                break;
+            }
+
+        if(!Found)
+            throw exRESTRegistry("Seems that you have not use API macro to define your API");
+
+        for (int i=0; i<_module->metaObject()->methodCount(); ++i)
+            if(_module->metaObject()->method(i).name() == "docOf" + MethodName){
+                _module->metaObject()->method(i).invoke(_module,
+                                                        Qt::DirectConnection,
+                                                        Q_RETURN_ARG(QString, MethodDoc)
+                                                        );
+                Found = true;
+                break;
+            }
+
+        if(!Found)
+            throw exRESTRegistry("Seems that you have not use API macro to define your API");
+
+
+        auto makeMethodName = [MethodName](int _start) -> QString{
+            if(MethodName.size() >= _start)
+                return MethodName.at(_start-1).toLower() + MethodName.mid(_start);
+            return "";
+        };
+
+        constexpr char COMMA_SIGN[] = "$_COMMA_$";
+
+        MethodSignature = MethodSignature.trimmed().replace("','", QString("'%1'").arg(COMMA_SIGN));
+        bool DQuoteStarted = false, BackslashFound = false;
+        QString CommaReplacedMethodSignature;
+        for(int i=0; i< MethodSignature.size(); ++i){
+            if(DQuoteStarted){
+                if(MethodSignature.at(i).toLatin1() == ',')
+                    CommaReplacedMethodSignature += COMMA_SIGN;
+                else if (MethodSignature.at(i).toLatin1() == '\\') {
+                    BackslashFound = true;
+                }else if (MethodSignature.at(i).toLatin1() == '"') {
+                    CommaReplacedMethodSignature += '"';
+                    if(BackslashFound)
+                        BackslashFound = false;
+                    else
+                        DQuoteStarted = false;
+                }else
+                    CommaReplacedMethodSignature += MethodSignature.at(i);
+            }else if (MethodSignature.at(i).toLatin1() == '"'){
+                CommaReplacedMethodSignature += '"';
+                DQuoteStarted = true;
+            }else
+                CommaReplacedMethodSignature += MethodSignature.at(i);
+        }
+
+
+        QVariantList DefaultValues;
+        quint8 ParamIndex = 0;
+        foreach(auto Param, CommaReplacedMethodSignature.split(',')){
+            if(Param.contains('=')){
+                QString Value = Param.split('=').last().replace(COMMA_SIGN, ",").trimmed();
+                if(Value.startsWith("(")) Value = Value.mid(1);
+                if(Value.endsWith(")")) Value = Value.mid(0, Value.size() - 1);
+                if(Value.startsWith("'")) Value = Value.mid(1);
+                if(Value.endsWith("'")) Value = Value.mid(0, Value.size() - 1);
+                if(Value.startsWith("\"")) Value = Value.mid(1);
+                if(Value.endsWith("\"")) Value = Value.mid(0, Value.size() - 1);
+                Value.replace("\\\"", "\"");
+                Value.replace("\\'", "'");
+
+                intfAPIArgManipulator* ArgSpecs;
+                if(_method.parameterType(ParamIndex) < QHTTP_BASE_USER_DEFINED_TYPEID)
+                    ArgSpecs = gOrderedMetaTypeInfo.at(_method.parameterType(ParamIndex));
+                else
+                    ArgSpecs = gUserDefinedTypesInfo.at(_method.parameterType(ParamIndex) - QHTTP_BASE_USER_DEFINED_TYPEID);
+
+                if(Value == "{}" || Value.contains("()"))
+                    DefaultValues.append(QVariant());
+                else if (ArgSpecs && ArgSpecs->complexity() == COMPLEXITY_Enum)
+                    DefaultValues.append(Value.mid(Value.indexOf("::") + 2));
+                else
+                    DefaultValues.append(Value);
+            }else
+                DefaultValues.append(QVariant());
+            ParamIndex++;
+        }
+
+        QMetaMethodExtended Method(_method, DefaultValues, MethodDoc);
+
         if(MethodName.startsWith("GET"))
-            RESTAPIRegistry::addRegistryEntry(RESTAPIRegistry::Registry, _module, _method, "GET", MethodName.at(3).toLower() + MethodName.mid(4));
+            RESTAPIRegistry::addRegistryEntry(RESTAPIRegistry::Registry, _module, Method, "GET", makeMethodName(sizeof("GET")));
         else if(MethodName.startsWith("POST"))
-            RESTAPIRegistry::addRegistryEntry(RESTAPIRegistry::Registry, _module, _method, "POST", MethodName.at(4).toLower() + MethodName.mid(5));
+            RESTAPIRegistry::addRegistryEntry(RESTAPIRegistry::Registry, _module, Method, "POST", makeMethodName(sizeof("POST")));
         else if(MethodName.startsWith("PUT"))
-            RESTAPIRegistry::addRegistryEntry(RESTAPIRegistry::Registry, _module, _method, "PUT", MethodName.at(3).toLower() + MethodName.mid(4));
+            RESTAPIRegistry::addRegistryEntry(RESTAPIRegistry::Registry, _module, Method, "PUT", makeMethodName(sizeof("PUT")));
         else if(MethodName.startsWith("PATCH"))
-            RESTAPIRegistry::addRegistryEntry(RESTAPIRegistry::Registry, _module, _method, "PATCH", MethodName.at(5).toLower() + MethodName.mid(6));
+            RESTAPIRegistry::addRegistryEntry(RESTAPIRegistry::Registry, _module, Method, "PATCH", makeMethodName(sizeof("PATCH")));
         else if (MethodName.startsWith("DELETE"))
-            RESTAPIRegistry::addRegistryEntry(RESTAPIRegistry::Registry, _module, _method, "DELETE", MethodName.at(6).toLower() + MethodName.mid(7));
+            RESTAPIRegistry::addRegistryEntry(RESTAPIRegistry::Registry, _module, Method, "DELETE", makeMethodName(sizeof("DELETE")));
         else if (MethodName.startsWith("UPDATE"))
-            RESTAPIRegistry::addRegistryEntry(RESTAPIRegistry::Registry, _module, _method, "PATCH", MethodName.at(6).toLower() + MethodName.mid(7));
+            RESTAPIRegistry::addRegistryEntry(RESTAPIRegistry::Registry, _module, Method, "PATCH", makeMethodName(sizeof("UPDATE")));
         else if (MethodName.startsWith("WS")){
 #ifdef QHTTP_ENABLE_WEBSOCKET
-            RESTAPIRegistry::addRegistryEntry(RESTAPIRegistry::WSRegistry, _module, _method, "WS", MethodName.at(2).toLower() + MethodName.mid(3));
+            RESTAPIRegistry::addRegistryEntry(RESTAPIRegistry::WSRegistry, _module, Method, "WS", makeMethodName(sizeof("WS")));
 #else
             throw exRESTRegistry("Websockets are not enabled in this QRestServer please compile with websockets support");
 #endif
         }else{
-            RESTAPIRegistry::addRegistryEntry(RESTAPIRegistry::Registry, _module, _method, "GET", MethodName.at(0).toLower() + MethodName.mid(1));
-            RESTAPIRegistry::addRegistryEntry(RESTAPIRegistry::Registry, _module, _method, "POST", MethodName.at(0).toLower() + MethodName.mid(1));
+            RESTAPIRegistry::addRegistryEntry(RESTAPIRegistry::Registry, _module, Method, "GET", MethodName.at(0).toLower() + MethodName.mid(1));
+            RESTAPIRegistry::addRegistryEntry(RESTAPIRegistry::Registry, _module, Method, "POST", MethodName.at(0).toLower() + MethodName.mid(1));
         }
     }catch(Targoman::Common::exTargomanBase& ex){
         TargomanError("Fatal Error: "<<ex.what());
@@ -128,7 +224,7 @@ void RESTAPIRegistry::registerRESTAPI(intfRESTAPIHolder* _module, const QMetaMet
     }
 }
 
-QMap<QString, QString> RESTAPIRegistry::extractMethods(QHash<QString, clsAPIObject*>& _registry, const QString &_module, bool _showTypes, bool _prettifyTypes)
+QMap<QString, QString> RESTAPIRegistry::extractMethods(QHash<QString, clsAPIObject*>& _registry, const QString& _module, bool _showTypes, bool _prettifyTypes)
 {
     static auto type2Str = [_prettifyTypes](int _typeID) {
         if(_prettifyTypes == false || _typeID > 1023)
@@ -136,6 +232,7 @@ QMap<QString, QString> RESTAPIRegistry::extractMethods(QHash<QString, clsAPIObje
 
         return gOrderedMetaTypeInfo.at(_typeID)->PrettyTypeName;
     };
+
 
     QMap<QString, QString> Methods;
     foreach(const QString& Key, _registry.keys()){
@@ -145,12 +242,32 @@ QMap<QString, QString> RESTAPIRegistry::extractMethods(QHash<QString, clsAPIObje
 
         clsAPIObject* APIObject = _registry.value(Key);
         QStringList Parameters;
-        for(int i=0; i< APIObject->BaseMethod.parameterCount(); ++i){
+        for(quint8 i=0; i< APIObject->BaseMethod.parameterCount(); ++i){
+
+            static auto defaultValue = [](clsAPIObject* _apiObject, quint8 i) -> QString{
+                if(_apiObject->RequiredParamsCount > i)
+                    return "";
+                intfAPIArgManipulator* ArgManipulator = _apiObject->argSpecs(i);
+                if(ArgManipulator){
+                    switch(ArgManipulator->complexity()){
+                    case COMPLEXITY_Integral: return QString(" = %1").arg(_apiObject->defaultValue(i).toString());
+                    case COMPLEXITY_String:
+                    case COMPLEXITY_Complex:
+                    case COMPLEXITY_Enum:
+                        return QString(" = \"%1\"").arg(_apiObject->defaultValue(i).toString().replace("\"", "\\\""));
+                    }
+                    return " = " + (ArgManipulator->isIntegralType() ? QString("%1") : (QString("\"%1\""))).arg(
+                                _apiObject->defaultValue(i).toString().replace("\"", "\\\""));
+                }
+                return "";
+            };
+
             Parameters.append((_showTypes ? type2Str(APIObject->BaseMethod.parameterType(i)) + " " : "" ) + (
                                   APIObject->BaseMethod.parameterNames().at(i).startsWith('_') ?
                                       APIObject->BaseMethod.parameterNames().at(i).mid(1) :
-                                      APIObject->BaseMethod.parameterNames().at(i)) + (
-                                  APIObject->RequiredParamsCount <= i ? "=optional" : ""));
+                                      APIObject->BaseMethod.parameterNames().at(i)) +
+                              defaultValue(APIObject, i)
+                              );
         }
 
         Methods.insert(Path + Key.split(" ").first(),
@@ -175,7 +292,7 @@ QJsonObject RESTAPIRegistry::retriveOpenAPIJson(){
                                                    {"400", QJsonObject({{"description", "Bad request."}})},
                                                    {"401", QJsonObject({{"description", "Authorization information is missing or invalid"}})},
                                                    {"404", QJsonObject({{"description", "Not found"}})},
-                                                   {"5XX", QJsonObject({{"description", "Unexpected error"}})},
+                                                   //{"5XX", QJsonObject({{"description", "Unexpected error"}})},
                                                });
 
     if(OpenAPI.isEmpty())
@@ -185,23 +302,9 @@ QJsonObject RESTAPIRegistry::retriveOpenAPIJson(){
                                        {"version", gConfigs.Public.Version},
                                        {"title", "NOT_SET"},
                                        {"description", ""},
-                                       {"contact", QJsonObject({{"email", ""}})}
+                                       {"contact", QJsonObject({{"email", "sample@example.com"}})}
                                    })},
                                   {"host", QString("127.0.0.1:%1").arg(gConfigs.Public.ListenPort)},
-                                  {"components", QJsonObject({
-                                       {"securitySchemes", QJsonObject({
-                                            {"BearerAuth", QJsonObject({
-                                                 {"type", "http"},
-                                                 {"scheme", "bearer"},
-                                                 {"bearerFormat", "JWT"}
-                                             })}
-                                        })},
-                                       {"responses", QJsonObject({
-                                            {"UnauthorizedError", QJsonObject({
-                                                 {"description", "Access token is missing or invalid"},
-                                             })}
-                                        })}
-                                   })},
                                   {"securityDefinitions", QJsonObject({
                                        {"Bearer", QJsonObject({
                                             {"type", "apiKey"},
@@ -210,12 +313,6 @@ QJsonObject RESTAPIRegistry::retriveOpenAPIJson(){
                                             {"description", "For accessing the API a valid JWT token must be passed in all the queries in the 'Authorization' header.\n\n A valid JWT token is generated by the API and retourned as answer of a call     to the route /login giving a valid user & password.\n\nThe following syntax must be used in the 'Authorization' header :\n\nBearer xxxxxx.yyyyyyy.zzzzzz"},
                                         })}
                                    })},
-                                  {"security", QJsonArray({
-                                       QJsonObject({
-                                           {"Bearer", QJsonArray()}
-                                       })
-                                   })
-                                  },
                                   {"basePath", gConfigs.Private.BasePathWithVersion},
                                   {"schemes", QJsonArray({"http", "https"})},
                               });
@@ -229,49 +326,154 @@ QJsonObject RESTAPIRegistry::retriveOpenAPIJson(){
         QString HTTPMethod = Key.split(" ").first().toLower();
 
         clsAPIObject* APIObject = RESTAPIRegistry::Registry.value(Key);
-        QJsonArray Parameters;
-        for(quint8 i=0; i< APIObject->BaseMethod.parameterCount(); ++i){
-            QJsonObject Schema({
-                                   {"type",QMetaType::typeName(APIObject->BaseMethod.parameterType(i))}
-                               });
 
-            QString ParamName = APIObject->BaseMethod.parameterNames().at(i).startsWith('_') ?
+        auto paramName = [APIObject](quint8 i) {
+            return APIObject->BaseMethod.parameterNames().at(i).startsWith('_') ?
                         APIObject->BaseMethod.parameterNames().at(i).mid(1) :
                         APIObject->BaseMethod.parameterNames().at(i);
+        };
 
-            if(ParamName == PARAM_COOKIES ||
-               ParamName == PARAM_JWT ||
-               ParamName == PARAM_HEADERS ||
-               ParamName == PARAM_REMOTE_IP )
-                continue;
-            Parameters.append(
-                        QJsonObject({
-                                        {"in", "path"},
-                                        {"name", ParamName},
-                                        {"required", APIObject->isRequiredParam(i)},
-                                        {"description", ""},
-                                        {"type", QMetaType::typeName(APIObject->BaseMethod.parameterType(i))},
-                                    })
-                        );
-        }
-
-        QJsonObject CurrPathMethodInfo = QJsonObject({{"parameters", Parameters}});
-        QStringList PathStringParts = PathString.split("/", QString::SkipEmptyParts);
-        PathStringParts.pop_back();
-        CurrPathMethodInfo["tags"] = QJsonArray({PathStringParts.join("_")});
-        CurrPathMethodInfo["produces"] = QJsonArray({"application/json"});
-        CurrPathMethodInfo["consumes"] = QJsonArray({"application/json"});
-        CurrPathMethodInfo["responses"] = DefaultResponses;
-
-
-        if(PathsObject.contains(PathString)){
-            QJsonObject CurrPathObject = PathsObject.value(PathString).toObject();
-            CurrPathObject[HTTPMethod] = CurrPathMethodInfo;
-            PathsObject[PathString] = CurrPathObject;
-        }else
-            PathsObject[PathString] = QJsonObject({
-                                                      {HTTPMethod, CurrPathMethodInfo}
+        auto fillParamTypeSpec = [APIObject](quint8 i, QJsonObject& ParamSpecs) -> void{
+            intfAPIArgManipulator* ArgManipulator = APIObject->argSpecs(i);
+            QString TypeName = QMetaType::typeName(APIObject->BaseMethod.parameterType(i));
+            switch(ArgManipulator->complexity()){
+            case COMPLEXITY_Integral:
+                if(TypeName == "bool")
+                    ParamSpecs["type"] = "boolean";
+                else if(TypeName.endsWith("int") || TypeName.endsWith("long"))
+                    ParamSpecs["type"] = "integer";
+                else if(TypeName.endsWith("char"))
+                    ParamSpecs["type"] = "string";
+                else
+                    ParamSpecs["type"] = "number";
+                break;
+            case COMPLEXITY_String: ParamSpecs["type"] = "string"; break;
+            case COMPLEXITY_Complex: ParamSpecs["type"] = "string";break;
+            case COMPLEXITY_Enum:
+                ParamSpecs["type"] = "array";
+                ParamSpecs["items"] = QJsonObject({
+                                                      {"type", "string"},
+                                                      {"enum", QJsonArray::fromStringList(ArgManipulator->options())},
+                                                      {"default", APIObject->defaultValue(i).toString()}
                                                   });
+                break;
+            }
+        };
+
+        auto addParamSpecs = [APIObject, paramName, HTTPMethod, fillParamTypeSpec](QJsonArray& Parameters, quint8 i, bool _useExtraPath) -> void {
+            QString ParamName = paramName(i);
+            if(ParamName == PARAM_HEADERS ||
+               ParamName == PARAM_REMOTE_IP ||
+               ParamName == PARAM_COOKIES
+               )
+                return;
+            QJsonObject ParamSpecs;
+
+            if(ParamName == PARAM_JWT){
+                return;
+                ParamSpecs["in"] = "header";
+                ParamSpecs["name"] = "JWT";
+                ParamSpecs["description"] = "JSON Web Token as provided by login methods";
+                ParamSpecs["required"] = true;
+                ParamSpecs["type"] = "string";
+                Parameters.append(ParamSpecs);
+                return;
+            }
+
+            if(ParamName == PARAM_EXTRAPATH){
+                if(_useExtraPath){
+                    ParamSpecs["in"] = "path";
+                    ParamSpecs["name"] = "ids";
+                    ParamSpecs["description"] = "List of comma separated primaryKey id/ids";
+                    ParamSpecs["required"] = true;
+                    ParamSpecs["type"] = "string";
+                    Parameters.append(ParamSpecs);
+                }
+                return;
+            }
+
+
+            if(HTTPMethod == "get" || HTTPMethod == "delete"){
+                ParamSpecs["in"] = "query";
+                ParamSpecs["name"] = ParamName;
+                ParamSpecs["description"] = QString("A value of type: %1").arg(QMetaType::typeName(APIObject->BaseMethod.parameterType(i)));
+                ParamSpecs["required"] = APIObject->isRequiredParam(i);
+                fillParamTypeSpec(i, ParamSpecs);
+                Parameters.append(ParamSpecs);
+            }
+        };
+
+        auto createPathInfo = [PathString, DefaultResponses, APIObject, HTTPMethod, addParamSpecs, paramName, fillParamTypeSpec](bool _useExtraPath)->QJsonObject{
+            QJsonObject PathInfo = QJsonObject({{"summary", APIObject->BaseMethod.Doc}});
+            QStringList PathStringParts = PathString.split("/", QString::SkipEmptyParts);
+            if(APIObject->requiresExtraPath() == false || PathStringParts.last().at(0).toLower() == PathStringParts.last().at(0))
+                PathStringParts.pop_back();
+            PathInfo["tags"] = QJsonArray({PathStringParts.join("_")});
+            PathInfo["produces"] = QJsonArray({"application/json"});
+            if(HTTPMethod != "get" && HTTPMethod != "delete"){
+                PathInfo["consumes"] = QJsonArray({"application/json"});
+
+                QJsonObject Properties;
+                for(quint8 i=0; i< APIObject->BaseMethod.parameterCount(); ++i){
+                    QJsonObject ParamSpecs;
+                    fillParamTypeSpec(i, ParamSpecs);
+                    Properties[paramName(i)] = ParamSpecs;
+                }
+
+                QJsonArray Parameters;
+                for(quint8 i=0; i< APIObject->BaseMethod.parameterCount(); ++i)
+                    addParamSpecs(Parameters, i, _useExtraPath);
+
+                Parameters.append(QJsonObject({
+                                                  {"in", "body"},
+                                                  {"name", "body"},
+                                                  {"description", "Pramaeter Object"},
+                                                  {"required", true},
+                                                  {"schema", QJsonObject({
+                                                       {"type", "object"},
+                                                       {"properties", Properties}
+                                                   })}
+                                              }));
+
+                PathInfo["parameters"] = Parameters;
+            }else{
+                QJsonArray Parameters;
+                for(quint8 i=0; i< APIObject->BaseMethod.parameterCount(); ++i){
+                    addParamSpecs(Parameters, i, _useExtraPath);
+                }
+                if(Parameters.size())
+                    PathInfo["parameters"] = Parameters;
+            }
+
+            PathInfo["responses"] = DefaultResponses;
+
+            if(APIObject->requiresJWT()){
+                PathInfo["security"] =  QJsonArray({
+                     QJsonObject({
+                         {"Bearer", QJsonArray()}
+                     })
+                 });
+            }
+            return PathInfo;
+        };
+
+        auto add2Paths = [PathString, HTTPMethod](QJsonObject& PathsObject, const QJsonObject& _currPathMethodInfo, bool _useExtraPath){
+            QString Path = PathString + (_useExtraPath ? "/{ids}" : "");
+            if(PathsObject.contains(Path)){
+                QJsonObject CurrPathObject = PathsObject.value(Path).toObject();
+                CurrPathObject[HTTPMethod] = _currPathMethodInfo;
+                PathsObject[Path] = CurrPathObject;
+            }else
+                PathsObject[Path] = QJsonObject({
+                                                          {HTTPMethod, _currPathMethodInfo}
+                                                      });
+        };
+
+        if(APIObject->requiresExtraPath())
+            add2Paths(PathsObject, createPathInfo(true), true);
+
+
+        add2Paths(PathsObject, createPathInfo(false), false);
     }
 
     OpenAPI["paths"] = PathsObject;
@@ -279,7 +481,7 @@ QJsonObject RESTAPIRegistry::retriveOpenAPIJson(){
     return OpenAPI;
 }
 
-QStringList RESTAPIRegistry::registeredAPIs(const QString &_module, bool _showParams, bool _showTypes, bool _prettifyTypes){
+QStringList RESTAPIRegistry::registeredAPIs(const QString& _module, bool _showParams, bool _showTypes, bool _prettifyTypes){
     if(_showParams == false){
 #ifdef QHTTP_ENABLE_WEBSOCKET
         QStringList Methods = RESTAPIRegistry::Registry.keys();
@@ -306,7 +508,7 @@ QString RESTAPIRegistry::isValidType(int _typeID, bool _validate4Input){
     if(_typeID >= QHTTP_BASE_USER_DEFINED_TYPEID){
         if((_typeID - QHTTP_BASE_USER_DEFINED_TYPEID >= gUserDefinedTypesInfo.size() ||
             gUserDefinedTypesInfo.at(_typeID - QHTTP_BASE_USER_DEFINED_TYPEID) == nullptr))
-           return "is user defined but not registered";
+            return "is user defined but not registered";
 
         if(strcmp(gUserDefinedTypesInfo.at(_typeID - QHTTP_BASE_USER_DEFINED_TYPEID)->RealTypeName, QMetaType::typeName(_typeID)))
             return QString("Seems that registration table is corrupted: %1:%2 <-> %3:%4").arg(
@@ -326,7 +528,7 @@ QString RESTAPIRegistry::isValidType(int _typeID, bool _validate4Input){
     return "";
 }
 
-void RESTAPIRegistry::validateMethodInputAndOutput(const QMetaMethod &_method){
+void RESTAPIRegistry::validateMethodInputAndOutput(const QMetaMethod& _method){
     if(_method.parameterCount() > 9)
         throw exRESTRegistry("Unable to register methods with more than 9 input args");
 
@@ -354,15 +556,15 @@ void RESTAPIRegistry::validateMethodInputAndOutput(const QMetaMethod &_method){
     }
 }
 
-const char* CACHE_INTERNAL = "CACHEABLE_";
-const char* CACHE_CENTRAL  = "CENTRALCACHE_";
+constexpr char CACHE_INTERNAL[] = "CACHEABLE_";
+constexpr char CACHE_CENTRAL[]  = "CENTRALCACHE_";
 
-void RESTAPIRegistry::addRegistryEntry(QHash<QString, QHttp::Private::clsAPIObject *> &_registry,
-                                       intfRESTAPIHolder *_module,
-                                       const QMetaMethod &_method,
-                                       const QString &_httpMethod,
-                                       const QString &_methodName){
-    QString MethodKey = RESTAPIRegistry::makeRESTAPIKey(_httpMethod, "/" + _module->moduleFullName().replace("::", "/")+ '/' + _methodName);
+void RESTAPIRegistry::addRegistryEntry(QHash<QString, QHttp::Private::clsAPIObject *>& _registry,
+                                       intfRESTAPIHolder* _module,
+                                       const QMetaMethodExtended& _method,
+                                       const QString& _httpMethod,
+                                       const QString& _methodName){
+    QString MethodKey = RESTAPIRegistry::makeRESTAPIKey(_httpMethod, "/" + _module->moduleBaseName().replace("::", "/")+ '/' + _methodName);
 
     if(_registry.contains(MethodKey)){
         if(RESTAPIRegistry::Registry.value(MethodKey)->isPolymorphic(_method))
@@ -383,7 +585,7 @@ void RESTAPIRegistry::addRegistryEntry(QHash<QString, QHttp::Private::clsAPIObje
 }
 
 int RESTAPIRegistry::getCacheSeconds(const QMetaMethod& _method, const char* _type){
-    if(_method.tag() == NULL || _method.tag()[0] == '\0')
+    if(_method.tag() == nullptr || _method.tag()[0] == '\0')
         return 0;
     QString Tag = _method.tag();
     if(Tag.startsWith(_type) && Tag.size () > 12){
@@ -412,6 +614,14 @@ QHash<QString, clsAPIObject*>  RESTAPIRegistry::Registry;
 #ifdef QHTTP_ENABLE_WEBSOCKET
 QHash<QString, clsAPIObject*>  RESTAPIRegistry::WSRegistry;
 #endif
+
+/****************************************************/
+intfCacheConnector::~intfCacheConnector()
+{;}
+
+/****************************************************/
+clsAPIObject::~clsAPIObject()
+{;}
 
 }
 }

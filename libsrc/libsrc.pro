@@ -73,10 +73,10 @@ win32:DEFINES *= QHTTP_EXPORT
 TARGET = $$ProjectName
 
 DESTDIR      = $$BaseLibraryFolder
-MOC_DIR      = $$BuildFolderPattern/$$TARGET/moc
-OBJECTS_DIR  = $$BuildFolderPattern/$$TARGET/obj
-RCC_DIR      = $$BuildFolderPattern/$$TARGET/rcc
-UI_DIR       = $$BuildFolderPattern/$$TARGET/ui
+MOC_DIR      = $$BaseBuildFolder/$$TARGET/moc
+OBJECTS_DIR  = $$BaseBuildFolder/$$TARGET/obj
+RCC_DIR      = $$BaseBuildFolder/$$TARGET/rcc
+UI_DIR       = $$BaseBuildFolder/$$TARGET/ui
 
 QMAKE_CXXFLAGS_RELEASE += -fPIC
 QMAKE_CXXFLAGS_DEBUG += -fPIC

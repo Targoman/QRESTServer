@@ -85,6 +85,7 @@ public:
         qint64       MaxUploadedFileSize;
         quint32      MaxCachedItems;
         QString      CacheConnector;
+        QString      AccessControl;
         QJsonObject BaseOpenAPIObject;
 
 #ifdef QHTTP_ENABLE_WEBSOCKET

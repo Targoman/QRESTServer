@@ -157,7 +157,10 @@ void clsRequestHandler::process(const QString& _api) {
     });
     this->Request->onEnd([this, _api](){
         try{
-            this->findAndCallAPI (_api);
+            if(this->Request->method() == qhttp::EHTTP_OPTIONS)
+                this->sendCORSOptions();
+            else
+                this->findAndCallAPI (_api);
         }catch(exTargomanBase& ex){
             this->sendError(static_cast<qhttp::TStatusCode>(ex.httpCode()), ex.what(), ex.httpCode() >= 500);
         }catch(QFieldValidator::exRequiredParam &ex){
@@ -302,6 +305,20 @@ void clsRequestHandler::sendResponse(qhttp::TStatusCode _code, QVariant _respons
     this->sendResponseBase(_code, QJsonObject({{"result", QJsonValue::fromVariant(_response) }}));
 }
 
+void clsRequestHandler::sendCORSOptions()
+{
+    this->Response->addHeaderValue("Access-Control-Allow-Origin", gConfigs.Public.AccessControl);
+    this->Response->addHeaderValue("Access-Control-Allow-Credentials", QString("true"));
+    this->Response->addHeaderValue("Access-Control-Allow-Methods", QString("GET, POST, PUT, PATCH, DELETE"));
+    this->Response->addHeaderValue("Access-Control-Allow-Headers", QString("authorization,access-control-allow-origin,Access-Control-Allow-Headers,DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type"));
+    this->Response->addHeaderValue("Access-Control-Max-Age", 1728000);
+    this->Response->addHeaderValue("content-length", 0);
+    this->Response->addHeaderValue("content-type", QString("application/json; charset=utf-8"));
+    this->Response->setStatusCode(qhttp::ESTATUS_NO_CONTENT);
+    this->Response->end();
+    this->deleteLater();
+}
+
 void clsRequestHandler::sendResponseBase(qhttp::TStatusCode _code, QJsonObject _dataObject, bool _closeConnection){
 
     QByteArray Data = QJsonDocument(_dataObject).toJson(gConfigs.Public.IndentedJson ? QJsonDocument::Indented : QJsonDocument::Compact);
@@ -311,7 +328,7 @@ void clsRequestHandler::sendResponseBase(qhttp::TStatusCode _code, QJsonObject _
                     ":"<<
                     this->Request->connection()->tcpSocket()->peerPort()<<
                     "]: (code:"<<_code<<"):"<<Data)
-            this->Response->setStatusCode(_code);
+    this->Response->setStatusCode(_code);
     if(_closeConnection) this->Response->addHeader("connection", "close");
     this->Response->addHeaderValue("content-length", Data.length());
     this->Response->addHeaderValue("content-type", QString("application/json; charset=utf-8"));

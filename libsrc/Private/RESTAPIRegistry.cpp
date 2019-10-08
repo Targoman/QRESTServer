@@ -243,7 +243,6 @@ QMap<QString, QString> RESTAPIRegistry::extractMethods(QHash<QString, clsAPIObje
         clsAPIObject* APIObject = _registry.value(Key);
         QStringList Parameters;
         for(quint8 i=0; i< APIObject->BaseMethod.parameterCount(); ++i){
-
             static auto defaultValue = [](clsAPIObject* _apiObject, quint8 i) -> QString{
                 if(_apiObject->RequiredParamsCount > i)
                     return "";
@@ -372,13 +371,13 @@ QJsonObject RESTAPIRegistry::retriveOpenAPIJson(){
 
             if(ParamName == PARAM_JWT){
                 return;
-                ParamSpecs["in"] = "header";
+                /*ParamSpecs["in"] = "header";
                 ParamSpecs["name"] = "JWT";
                 ParamSpecs["description"] = "JSON Web Token as provided by login methods";
                 ParamSpecs["required"] = true;
                 ParamSpecs["type"] = "string";
                 Parameters.append(ParamSpecs);
-                return;
+                return;*/
             }
 
             if(ParamName == PARAM_EXTRAPATH){
@@ -392,9 +391,6 @@ QJsonObject RESTAPIRegistry::retriveOpenAPIJson(){
                 }
                 return;
             }
-
-            if(_useExtraPath)
-                return;
 
             if(HTTPMethod == "get" || HTTPMethod == "delete"){
                 ParamSpecs["in"] = "query";

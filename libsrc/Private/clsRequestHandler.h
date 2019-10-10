@@ -126,6 +126,7 @@ public:
                    const QString& _message,
                    bool _closeConnection = false);
     void sendResponse(qhttp::TStatusCode _code, QVariant _response);
+    void sendCORSOptions();
 private:
     void sendResponseBase(qhttp::TStatusCode _code, QJsonObject _dataObject, bool _closeConnection = false);
     QString toIPv4(const QString _ip);

@@ -76,8 +76,7 @@ namespace QHttp {
 #  define CENTRALCACHE_24H
 #endif
 
-#define COMPLEX
-#define API(_method, _name, _sig, _doc) api##_method##_name _sig;QString signOf##_method##_name(){ return #_sig; } QString docOf##_method##_name(){ return #_doc; }
+#define API(_method, _name, _sig, _doc) api##_method##_name _sig; QString signOf##_method##_name(){ return #_sig; } QString docOf##_method##_name(){ return #_doc; }
 #define ASYNC_API(_method, _name, _sig, _doc) asyncApi##_method##_name _sig;QString signOf##_method##_name(){ return #_sig; } QString docOf##_method##_name(){ return #_doc; }
 
 /**********************************************************************/

@@ -243,7 +243,6 @@ QMap<QString, QString> RESTAPIRegistry::extractMethods(QHash<QString, clsAPIObje
         clsAPIObject* APIObject = _registry.value(Key);
         QStringList Parameters;
         for(quint8 i=0; i< APIObject->BaseMethod.parameterCount(); ++i){
-
             static auto defaultValue = [](clsAPIObject* _apiObject, quint8 i) -> QString{
                 if(_apiObject->RequiredParamsCount > i)
                     return "";
@@ -289,9 +288,10 @@ QJsonObject RESTAPIRegistry::retriveOpenAPIJson(){
     QJsonObject OpenAPI = gConfigs.Public.BaseOpenAPIObject;
     QJsonObject DefaultResponses = QJsonObject({
                                                    {"200", QJsonObject({{"description", "Success"}})},
-                                                   {"400", QJsonObject({{"description", "Bad request."}})},
-                                                   {"401", QJsonObject({{"description", "Authorization information is missing or invalid"}})},
-                                                   {"404", QJsonObject({{"description", "Not found"}})},
+                                                   //{"400", QJsonObject({{"description", "Bad request."}})},
+                                                   //{"401", QJsonObject({{"description", "Authorization information is missing or invalid"}})},
+                                                   //{"403", QJsonObject({{"description", "Access forbidden"}})},
+                                                   //{"404", QJsonObject({{"description", "Not found"}})},
                                                    //{"5XX", QJsonObject({{"description", "Unexpected error"}})},
                                                });
 
@@ -371,27 +371,26 @@ QJsonObject RESTAPIRegistry::retriveOpenAPIJson(){
 
             if(ParamName == PARAM_JWT){
                 return;
-                ParamSpecs["in"] = "header";
+                /*ParamSpecs["in"] = "header";
                 ParamSpecs["name"] = "JWT";
                 ParamSpecs["description"] = "JSON Web Token as provided by login methods";
                 ParamSpecs["required"] = true;
                 ParamSpecs["type"] = "string";
                 Parameters.append(ParamSpecs);
-                return;
+                return;*/
             }
 
             if(ParamName == PARAM_EXTRAPATH){
                 if(_useExtraPath){
                     ParamSpecs["in"] = "path";
-                    ParamSpecs["name"] = "ids";
-                    ParamSpecs["description"] = "List of comma separated primaryKey id/ids";
+                    ParamSpecs["name"] = "id";
+                    ParamSpecs["description"] = "primaryKey id";
                     ParamSpecs["required"] = true;
-                    ParamSpecs["type"] = "string";
+                    ParamSpecs["type"] = "number";
                     Parameters.append(ParamSpecs);
                 }
                 return;
             }
-
 
             if(HTTPMethod == "get" || HTTPMethod == "delete"){
                 ParamSpecs["in"] = "query";
@@ -458,7 +457,7 @@ QJsonObject RESTAPIRegistry::retriveOpenAPIJson(){
         };
 
         auto add2Paths = [PathString, HTTPMethod](QJsonObject& PathsObject, const QJsonObject& _currPathMethodInfo, bool _useExtraPath){
-            QString Path = PathString + (_useExtraPath ? "/{ids}" : "");
+            QString Path = PathString + (_useExtraPath ? "/{id}" : "");
             if(PathsObject.contains(Path)){
                 QJsonObject CurrPathObject = PathsObject.value(Path).toObject();
                 CurrPathObject[HTTPMethod] = _currPathMethodInfo;

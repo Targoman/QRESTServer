@@ -36,11 +36,11 @@
 namespace QHttp {
 namespace Private {
 
-#define PARAM_JWT       "JWT"
-#define PARAM_COOKIES   "COOKIES"
-#define PARAM_REMOTE_IP "REMOTE_IP"
-#define PARAM_HEADERS   "HEADERS"
-#define PARAM_EXTRAPATH "EXTRAPATH"
+#define PARAM_JWT       "QHttp::JWT_t"
+#define PARAM_COOKIES   "QHttp::COOKIES_t"
+#define PARAM_REMOTE_IP "QHttp::RemoteIP_t"
+#define PARAM_HEADERS   "QHttp::HEADERS_t"
+#define PARAM_EXTRAPATH "QHttp::EXTRAPATH_t"
 
 class QMetaMethodExtended : public QMetaMethod {
 public:
@@ -65,8 +65,12 @@ public:
         Cache4SecsCentral(_cache4Central),
         RequiredParamsCount(static_cast<quint8>(_method.parameterCount()))
     {
-        foreach(const QByteArray& ParamName, _method.parameterNames())
+        quint8 i = 0;
+        foreach(const QByteArray& ParamName, _method.parameterNames()){
             this->ParamNames.append(ParamName.startsWith('_') ? ParamName.mid(1) : ParamName);
+            this->ParamTypes.append(QMetaType::typeName(_method.parameterType(i)));
+            ++i;
+        }
     }
     ~clsAPIObject();
 
@@ -75,23 +79,23 @@ public:
     }
 
     inline bool requiresJWT() const {
-        return ParamNames.contains(PARAM_JWT);
+        return this->ParamTypes.contains(PARAM_JWT);
     }
 
     inline bool requiresCookies() const {
-        return this->ParamNames.contains(PARAM_COOKIES);
+        return this->ParamTypes.contains(PARAM_COOKIES);
     }
 
     inline bool requiresRemoteIP() const {
-        return this->ParamNames.contains(PARAM_REMOTE_IP);
+        return this->ParamTypes.contains(PARAM_REMOTE_IP);
     }
 
     inline bool requiresExtraPath() const {
-        return this->ParamNames.contains(PARAM_EXTRAPATH);
+        return this->ParamTypes.contains(PARAM_EXTRAPATH);
     }
 
     inline bool requiresHeaders() const {
-        return this->ParamNames.contains(PARAM_HEADERS);
+        return this->ParamTypes.contains(PARAM_HEADERS);
     }
 
     inline QString paramType(quint8 _paramIndex) const {
@@ -125,15 +129,15 @@ public:
         Q_ASSERT_X(this->parent(), "parent module", "Parent module not found to invoke method");
 
         int ExtraArgCount = 0;
-        if(this->ParamNames.contains(PARAM_COOKIES))
+        if(this->ParamTypes.contains(PARAM_COOKIES))
             ExtraArgCount++;
-        if(this->ParamNames.contains(PARAM_HEADERS))
+        if(this->ParamTypes.contains(PARAM_HEADERS))
             ExtraArgCount++;
-        if(this->ParamNames.contains(PARAM_JWT))
+        if(this->ParamTypes.contains(PARAM_JWT))
             ExtraArgCount++;
-        if(this->ParamNames.contains(PARAM_REMOTE_IP))
+        if(this->ParamTypes.contains(PARAM_REMOTE_IP))
             ExtraArgCount++;
-        if(this->ParamNames.contains(PARAM_EXTRAPATH))
+        if(this->ParamTypes.contains(PARAM_EXTRAPATH))
             ExtraArgCount++;
 
         if(_args.size() + _bodyArgs.size() + ExtraArgCount < this->RequiredParamsCount)
@@ -148,6 +152,14 @@ public:
             bool ParamNotFound = true;
             QVariant ArgumentValue;
 
+            if(this->ParamTypes.at(i) == PARAM_COOKIES
+               ||this->ParamTypes.at(i) == PARAM_HEADERS
+               ||this->ParamTypes.at(i) == PARAM_JWT
+               ||this->ParamTypes.at(i) == PARAM_REMOTE_IP
+               ||this->ParamTypes.at(i) == PARAM_EXTRAPATH
+               )
+                continue;
+
             static auto parseArgValue = [ArgumentValue](const QString& _paramName, const QString& _value) -> QVariant {
                 if((_value.startsWith('[') && _value.endsWith(']')) ||
                    (_value.startsWith('{') && _value.endsWith('}'))){
@@ -161,27 +173,27 @@ public:
                 }
             };
 
-            if(this->ParamNames.at(i) == PARAM_COOKIES){
+            if(this->ParamTypes.at(i) == PARAM_COOKIES){
                 ParamNotFound = false;
                 ArgumentValue = _cookies.toVariant();
             }
 
-            if(ParamNotFound && this->ParamNames.at(i) == PARAM_HEADERS){
+            if(ParamNotFound && this->ParamTypes.at(i) == PARAM_HEADERS){
                 ParamNotFound = false;
                 ArgumentValue = _headers.toVariant();
             }
 
-            if(ParamNotFound && this->ParamNames.at(i) == PARAM_JWT){
+            if(ParamNotFound && this->ParamTypes.at(i) == PARAM_JWT){
                 ParamNotFound = false;
                 ArgumentValue = _jwt;
             }
 
-            if(ParamNotFound && this->ParamNames.at(i) == PARAM_REMOTE_IP){
+            if(ParamNotFound && this->ParamTypes.at(i) == PARAM_REMOTE_IP){
                 ParamNotFound = false;
                 ArgumentValue = _remoteIP;
             }
 
-            if(ParamNotFound && this->ParamNames.at(i) == PARAM_EXTRAPATH){
+            if(ParamNotFound && this->ParamTypes.at(i) == PARAM_EXTRAPATH){
                 ParamNotFound = false;
                 ArgumentValue = _extraAPIPath;
             }
@@ -367,6 +379,7 @@ private:
     qint32        Cache4Secs;
     qint32        Cache4SecsCentral;
     QList<QByteArray>  ParamNames;
+    QList<QString>  ParamTypes;
     quint8        RequiredParamsCount;
 
     friend class RESTAPIRegistry;

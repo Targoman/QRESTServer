@@ -76,6 +76,12 @@ EncodedJWT_t SampleAPI::asyncApiGETSampleDataWithJWT(JWT_t _JWT)
     return createSignedJWT(_JWT);
 }
 
+EncodedJWT_t SampleAPI::asyncApiGETSampleDataWithJWTAndRemoteIP(QHttp::JWT_t _JWT, QHttp::RemoteIP_t _ip, int sample)
+{
+    TargomanDebug(1, "Called: " <<__FUNCTION__<<" Params: ("<<QJsonDocument(_JWT).toJson()<<")");
+    return createSignedJWT(_JWT);
+}
+
 int SampleAPI::apiPUTSampleData(quint64 _id, const QString& _info)
 {
     TargomanDebug(1, "Called: " <<__FUNCTION__<<" Params: (\""<<_id<<"\",\""<<_info<<"\")");

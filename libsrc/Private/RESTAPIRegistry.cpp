@@ -346,9 +346,14 @@ QJsonObject RESTAPIRegistry::retriveOpenAPIJson(){
                     ParamSpecs["type"] = "string";
                 else
                     ParamSpecs["type"] = "number";
+
+                ParamSpecs["default"] = APIObject->defaultValue(i).toString();
                 break;
-            case COMPLEXITY_String: ParamSpecs["type"] = "string"; break;
-            case COMPLEXITY_Complex: ParamSpecs["type"] = "string";break;
+            case COMPLEXITY_String:
+            case COMPLEXITY_Complex:
+                ParamSpecs["type"] = "string";
+                ParamSpecs["default"] = APIObject->defaultValue(i).toString();
+                break;
             case COMPLEXITY_Enum:
                 ParamSpecs["type"] = "array";
                 ParamSpecs["items"] = QJsonObject({
@@ -361,15 +366,15 @@ QJsonObject RESTAPIRegistry::retriveOpenAPIJson(){
         };
 
         auto addParamSpecs = [APIObject, paramName, HTTPMethod, fillParamTypeSpec](QJsonArray& Parameters, quint8 i, bool _useExtraPath) -> void {
-            QString ParamName = paramName(i);
-            if(ParamName == PARAM_HEADERS ||
-               ParamName == PARAM_REMOTE_IP ||
-               ParamName == PARAM_COOKIES
+            QString ParamType = QMetaType::typeName(APIObject->BaseMethod.parameterType(i));
+            if(ParamType == PARAM_HEADERS ||
+               ParamType == PARAM_REMOTE_IP ||
+               ParamType == PARAM_COOKIES
                )
                 return;
             QJsonObject ParamSpecs;
 
-            if(ParamName == PARAM_JWT){
+            if(ParamType == PARAM_JWT){
                 return;
                 /*ParamSpecs["in"] = "header";
                 ParamSpecs["name"] = "JWT";
@@ -380,7 +385,7 @@ QJsonObject RESTAPIRegistry::retriveOpenAPIJson(){
                 return;*/
             }
 
-            if(ParamName == PARAM_EXTRAPATH){
+            if(ParamType == PARAM_EXTRAPATH){
                 if(_useExtraPath){
                     ParamSpecs["in"] = "path";
                     ParamSpecs["name"] = "id";
@@ -394,8 +399,8 @@ QJsonObject RESTAPIRegistry::retriveOpenAPIJson(){
 
             if(HTTPMethod == "get" || HTTPMethod == "delete"){
                 ParamSpecs["in"] = "query";
-                ParamSpecs["name"] = ParamName;
-                ParamSpecs["description"] = QString("A value of type: %1").arg(QMetaType::typeName(APIObject->BaseMethod.parameterType(i)));
+                ParamSpecs["name"] = QString(paramName(i));
+                ParamSpecs["description"] = QString("A value of type: %1").arg(ParamType);
                 ParamSpecs["required"] = APIObject->isRequiredParam(i);
                 fillParamTypeSpec(i, ParamSpecs);
                 Parameters.append(ParamSpecs);

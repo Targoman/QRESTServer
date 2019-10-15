@@ -52,8 +52,8 @@ int main(int _argc, char *_argv[])
 
         RESTServer::stuConfig Configs;
 
-        Configs.BasePath = "/a";
-        Configs.Version = "v2";
+        Configs.BasePath = "/rest";
+        Configs.Version = "v1";
         Configs.ListenPort = 9009;
         Configs.IndentedJson = true;
         Configs.WebSocketServerName = "ws";

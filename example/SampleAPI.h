@@ -45,6 +45,10 @@ public:
     void init();
 
 private slots:
+    QHttp::EncodedJWT_t ASYNC_API(GET, SampleDataWithJWTAndRemoteIP, (QHttp::JWT_t _JWT, QHttp::RemoteIP_t _REMOTE_IP, int sample=1),
+                                  "Sample AsyncAPI returning JWT as encoded")
+
+//private :
     int API(GET, SampleData,(),
             "Sample API")
     CACHEABLE_1H QHttp::COOKIES_t API(GET, SampleDataWithCookie, (QHttp::COOKIES_t _COOKIES, QString _EXTRAPATH),
@@ -83,6 +87,7 @@ public:
     void init();
 
 private slots:
+//private:
     QString API(GET, ,(QString _EXTRAPATH, int from, int to),
             "Sample API without name")
 

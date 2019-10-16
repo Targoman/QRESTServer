@@ -52,7 +52,7 @@ CACHEABLE_3H int SampleAPI::apiGETSampleData()
     return 5;
 }
 
-COOKIES_t SampleAPI::apiGETSampleDataWithCookie(COOKIES_t _COOKIES, QString _EXTRAPATH)
+COOKIES_t SampleAPI::apiGETSampleDataWithCookie(COOKIES_t _COOKIES, QHttp::ExtraPath_t _EXTRAPATH)
 {
     TargomanDebug(1, "Called: " <<__FUNCTION__<<" Params: ("<<_COOKIES.toVariant().toString()<<","<<_EXTRAPATH<<")");
     return _COOKIES;
@@ -88,9 +88,9 @@ int SampleAPI::apiPUTSampleData(quint64 _id, const QString& _info)
     return _id;
 }
 
-int SampleAPI::apiDELETESampleData(quint64 _id)
+int SampleAPI::apiDELETESampleData(QHttp::ExtraPath_t _EXTRAPATH)
 {
-    TargomanDebug(1, "Called: " <<__FUNCTION__<<" Params: ("<<_id<<")");
+    TargomanDebug(1, "Called: " <<__FUNCTION__<<" Params: ("<<_EXTRAPATH<<")");
     return 3;
 }
 
@@ -124,7 +124,7 @@ void SampleSubModule::init()
 
 }
 
-QString SampleSubModule::apiGET(QString _EXTRAPATH, int from, int to)
+QString SampleSubModule::apiGET(QHttp::ExtraPath_t _EXTRAPATH, int from, int to)
 {
     return _EXTRAPATH;
 }

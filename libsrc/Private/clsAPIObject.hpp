@@ -40,7 +40,7 @@ namespace Private {
 #define PARAM_COOKIES   "QHttp::COOKIES_t"
 #define PARAM_REMOTE_IP "QHttp::RemoteIP_t"
 #define PARAM_HEADERS   "QHttp::HEADERS_t"
-#define PARAM_EXTRAPATH "QHttp::EXTRAPATH_t"
+#define PARAM_EXTRAPATH "QHttp::ExtraPath_t"
 
 class QMetaMethodExtended : public QMetaMethod {
 public:

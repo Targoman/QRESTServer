@@ -24,6 +24,7 @@
 #ifndef QHTTP_GENERICTYPES_H
 #define QHTTP_GENERICTYPES_H
 
+#include <QJsonDocument>
 #include <QJsonObject>
 #include "libTargomanCommon/clsCountAndSpeed.h"
 #include "QHttp/qhttpfwd.hpp"
@@ -70,8 +71,10 @@ QHTTP_ADD_COMPLEX_TYPE(qhttp::THeaderHash, HEADERS_t);
 QHTTP_ADD_COMPLEX_TYPE(qhttp::THeaderHash, COOKIES_t);
 
 QHTTP_ADD_SIMPLE_TYPE(QJsonObject, JWT_t);
+QHTTP_ADD_SIMPLE_TYPE(QJsonDocument, JSON_t);
+
 QHTTP_ADD_SIMPLE_TYPE(QString, EncodedJWT_t);
-QHTTP_ADD_SIMPLE_TYPE(QString, JSON_t);
+QHTTP_ADD_SIMPLE_TYPE(QString, ExtraPath_t);
 QHTTP_ADD_SIMPLE_TYPE(QString, RemoteIP_t);
 QHTTP_ADD_SIMPLE_TYPE(QString, MD5_t);
 QHTTP_ADD_SIMPLE_TYPE(QString, Email_t);
@@ -89,6 +92,7 @@ Q_DECLARE_METATYPE(QHttp::COOKIES_t)
 Q_DECLARE_METATYPE(QHttp::JWT_t)
 Q_DECLARE_METATYPE(QHttp::EncodedJWT_t)
 Q_DECLARE_METATYPE(QHttp::JSON_t)
+Q_DECLARE_METATYPE(QHttp::ExtraPath_t)
 Q_DECLARE_METATYPE(QHttp::RemoteIP_t)
 Q_DECLARE_METATYPE(QHttp::MD5_t)
 Q_DECLARE_METATYPE(QHttp::Email_t)

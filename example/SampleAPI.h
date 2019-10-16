@@ -51,7 +51,7 @@ private slots:
 //private :
     int API(GET, SampleData,(),
             "Sample API")
-    CACHEABLE_1H QHttp::COOKIES_t API(GET, SampleDataWithCookie, (QHttp::COOKIES_t _COOKIES, QString _EXTRAPATH),
+    CACHEABLE_1H QHttp::COOKIES_t API(GET, SampleDataWithCookie, (QHttp::COOKIES_t _COOKIES, QHttp::ExtraPath_t _EXTRAPATH),
                                       "Sample cacheable API for 1 hour")
     QHttp::HEADERS_t API(GET, SampleDataWithHeaders, (QHttp::HEADERS_t _HEADERS),
                          "Sample API with header")
@@ -61,7 +61,7 @@ private slots:
                                   "Sample AsyncAPI returning JWT as encoded")
     int API(PUT,SampleData, (quint64 _id, const QString& _info = "defaultValue"),
             "Sample API with data")
-    int API(DELETE, SampleData, (quint64 _id = 5),
+    int API(DELETE, SampleData, (QHttp::ExtraPath_t _EXTRAPATH),
             "Sample API for delete")
     QVariantList API(UPDATE,SampleData, (char _id = ',', const QString& _info = "df\",dsf"),
                      "Sample API for Update")
@@ -88,7 +88,7 @@ public:
 
 private slots:
 //private:
-    QString API(GET, ,(QString _EXTRAPATH, int from, int to),
+    QString API(GET, ,(QHttp::ExtraPath_t _EXTRAPATH, int from, int to),
             "Sample API without name")
 
     quint64 API(, SampleEnahancedEnum, (ns::enuSample::Type _val = enuSample::s1),

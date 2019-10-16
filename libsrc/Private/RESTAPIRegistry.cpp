@@ -468,16 +468,15 @@ QJsonObject RESTAPIRegistry::retriveOpenAPIJson(){
                 CurrPathObject[HTTPMethod] = _currPathMethodInfo;
                 PathsObject[Path] = CurrPathObject;
             }else
-                PathsObject[Path] = QJsonObject({
-                                                          {HTTPMethod, _currPathMethodInfo}
-                                                      });
+                PathsObject[Path] = QJsonObject({ {HTTPMethod, _currPathMethodInfo} });
         };
 
         if(APIObject->requiresExtraPath())
             add2Paths(PathsObject, createPathInfo(true), true);
 
 
-        add2Paths(PathsObject, createPathInfo(false), false);
+        if(APIObject->requiresExtraPath() == false || APIObject->ParamTypes.size() > 1)
+            add2Paths(PathsObject, createPathInfo(false), false);
     }
 
     OpenAPI["paths"] = PathsObject;

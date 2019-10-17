@@ -77,6 +77,7 @@ const QMap<int, intfAPIArgManipulator*> MetaTypeInfoMap = {
 
 QList<intfAPIArgManipulator*> gOrderedMetaTypeInfo;
 QList<intfAPIArgManipulator*> gUserDefinedTypesInfo;
+QJsonObject RESTAPIRegistry::CachedOpenAPI;
 
 /***********************************************************************************************/
 void RESTAPIRegistry::registerRESTAPI(intfRESTAPIHolder* _module, const QMetaMethod& _method){
@@ -284,8 +285,10 @@ QMap<QString, QString> RESTAPIRegistry::extractMethods(QHash<QString, clsAPIObje
 }
 
 QJsonObject RESTAPIRegistry::retriveOpenAPIJson(){
+    if(RESTAPIRegistry::CachedOpenAPI.isEmpty() == false)
+        return RESTAPIRegistry::CachedOpenAPI;
 
-    QJsonObject OpenAPI = gConfigs.Public.BaseOpenAPIObject;
+    RESTAPIRegistry::CachedOpenAPI = gConfigs.Public.BaseOpenAPIObject;
     QJsonObject DefaultResponses = QJsonObject({
                                                    {"200", QJsonObject({{"description", "Success"}})},
                                                    //{"400", QJsonObject({{"description", "Bad request."}})},
@@ -295,8 +298,8 @@ QJsonObject RESTAPIRegistry::retriveOpenAPIJson(){
                                                    //{"5XX", QJsonObject({{"description", "Unexpected error"}})},
                                                });
 
-    if(OpenAPI.isEmpty())
-        OpenAPI = QJsonObject({
+    if(RESTAPIRegistry::CachedOpenAPI.isEmpty())
+        RESTAPIRegistry::CachedOpenAPI = QJsonObject({
                                   {"swagger","2.0"},
                                   {"info",QJsonObject({
                                        {"version", gConfigs.Public.Version},
@@ -317,7 +320,7 @@ QJsonObject RESTAPIRegistry::retriveOpenAPIJson(){
                                   {"schemes", QJsonArray({"http", "https"})},
                               });
 
-    if(OpenAPI.value("info").isObject() == false)
+    if(RESTAPIRegistry::CachedOpenAPI.value("info").isObject() == false)
         throw exHTTPInternalServerError("Invalid OpenAPI base json");
 
     QJsonObject PathsObject;
@@ -333,7 +336,7 @@ QJsonObject RESTAPIRegistry::retriveOpenAPIJson(){
                         APIObject->BaseMethod.parameterNames().at(i);
         };
 
-        auto fillParamTypeSpec = [APIObject](quint8 i, QJsonObject& ParamSpecs) -> void{
+        auto fillParamTypeSpec = [APIObject](quint8 i, QJsonObject& ParamSpecs, bool addExample = false) -> void{
             intfAPIArgManipulator* ArgManipulator = APIObject->argSpecs(i);
             QString TypeName = QMetaType::typeName(APIObject->BaseMethod.parameterType(i));
             switch(ArgManipulator->complexity()){
@@ -346,44 +349,35 @@ QJsonObject RESTAPIRegistry::retriveOpenAPIJson(){
                     ParamSpecs["type"] = "string";
                 else
                     ParamSpecs["type"] = "number";
-
-                ParamSpecs["default"] = APIObject->defaultValue(i).toString();
+                ParamSpecs["description"] = QString("A value of type: %1").arg(QMetaType::typeName(APIObject->BaseMethod.parameterType(i)));
                 break;
             case COMPLEXITY_String:
             case COMPLEXITY_Complex:
                 ParamSpecs["type"] = "string";
-                ParamSpecs["default"] = APIObject->defaultValue(i).toString();
+                ParamSpecs["description"] = QString("A value of type: %1").arg(QMetaType::typeName(APIObject->BaseMethod.parameterType(i)));
                 break;
             case COMPLEXITY_Enum:
-                ParamSpecs["type"] = "array";
-                ParamSpecs["items"] = QJsonObject({
-                                                      {"type", "string"},
-                                                      {"enum", QJsonArray::fromStringList(ArgManipulator->options())},
-                                                      {"default", APIObject->defaultValue(i).toString()}
-                                                  });
+                ParamSpecs["type"] = "string";
+                ParamSpecs["enum"] = QJsonArray::fromStringList(ArgManipulator->options());
                 break;
             }
+            if(APIObject->defaultValue(i).isValid()){
+                ParamSpecs["default"] = APIObject->defaultValue(i).toString();
+                if(addExample)
+                    ParamSpecs["example"] = APIObject->defaultValue(i).toString();
+            }
+
         };
 
         auto addParamSpecs = [APIObject, paramName, HTTPMethod, fillParamTypeSpec](QJsonArray& Parameters, quint8 i, bool _useExtraPath) -> void {
             QString ParamType = QMetaType::typeName(APIObject->BaseMethod.parameterType(i));
-            if(ParamType == PARAM_HEADERS ||
-               ParamType == PARAM_REMOTE_IP ||
-               ParamType == PARAM_COOKIES
+            if(   ParamType == PARAM_HEADERS
+               || ParamType == PARAM_REMOTE_IP
+               || ParamType == PARAM_COOKIES
+               || ParamType == PARAM_JWT
                )
                 return;
             QJsonObject ParamSpecs;
-
-            if(ParamType == PARAM_JWT){
-                return;
-                /*ParamSpecs["in"] = "header";
-                ParamSpecs["name"] = "JWT";
-                ParamSpecs["description"] = "JSON Web Token as provided by login methods";
-                ParamSpecs["required"] = true;
-                ParamSpecs["type"] = "string";
-                Parameters.append(ParamSpecs);
-                return;*/
-            }
 
             if(ParamType == PARAM_EXTRAPATH){
                 if(_useExtraPath){
@@ -410,7 +404,7 @@ QJsonObject RESTAPIRegistry::retriveOpenAPIJson(){
         auto createPathInfo = [PathString, DefaultResponses, APIObject, HTTPMethod, addParamSpecs, paramName, fillParamTypeSpec](bool _useExtraPath)->QJsonObject{
             QJsonObject PathInfo = QJsonObject({{"summary", APIObject->BaseMethod.Doc}});
             QStringList PathStringParts = PathString.split("/", QString::SkipEmptyParts);
-            if(APIObject->requiresExtraPath() == false || PathStringParts.last().at(0).toLower() == PathStringParts.last().at(0))
+            if(APIObject->HasExtraMethodName)
                 PathStringParts.pop_back();
             PathInfo["tags"] = QJsonArray({PathStringParts.join("_")});
             PathInfo["produces"] = QJsonArray({"application/json"});
@@ -419,8 +413,16 @@ QJsonObject RESTAPIRegistry::retriveOpenAPIJson(){
 
                 QJsonObject Properties;
                 for(quint8 i=0; i< APIObject->BaseMethod.parameterCount(); ++i){
+                    QString ParamType = QMetaType::typeName(APIObject->BaseMethod.parameterType(i));
+                    if(   ParamType == PARAM_HEADERS
+                       || ParamType == PARAM_REMOTE_IP
+                       || ParamType == PARAM_COOKIES
+                       || ParamType == PARAM_JWT
+                       )
+                        continue;
+
                     QJsonObject ParamSpecs;
-                    fillParamTypeSpec(i, ParamSpecs);
+                    fillParamTypeSpec(i, ParamSpecs, true);
                     Properties[paramName(i)] = ParamSpecs;
                 }
 
@@ -479,9 +481,9 @@ QJsonObject RESTAPIRegistry::retriveOpenAPIJson(){
             add2Paths(PathsObject, createPathInfo(false), false);
     }
 
-    OpenAPI["paths"] = PathsObject;
+    RESTAPIRegistry::CachedOpenAPI["paths"] = PathsObject;
 
-    return OpenAPI;
+    return RESTAPIRegistry::CachedOpenAPI;
 }
 
 QStringList RESTAPIRegistry::registeredAPIs(const QString& _module, bool _showParams, bool _showTypes, bool _prettifyTypes){
@@ -532,8 +534,8 @@ QString RESTAPIRegistry::isValidType(int _typeID, bool _validate4Input){
 }
 
 void RESTAPIRegistry::validateMethodInputAndOutput(const QMetaMethod& _method){
-    if(_method.parameterCount() > 9)
-        throw exRESTRegistry("Unable to register methods with more than 9 input args");
+    if(_method.parameterCount() > 10)
+        throw exRESTRegistry("Unable to register methods with more than 10 input args <"+_method.name()+">");
 
     QString ErrMessage;
     if ((ErrMessage = RESTAPIRegistry::isValidType(_method.returnType(), false)).size())
@@ -582,7 +584,8 @@ void RESTAPIRegistry::addRegistryEntry(QHash<QString, QHttp::Private::clsAPIObje
                                           _method,
                                           QString(_method.name()).startsWith("async"),
                                           RESTAPIRegistry::getCacheSeconds(_method, CACHE_INTERNAL),
-                                          RESTAPIRegistry::getCacheSeconds(_method, CACHE_CENTRAL)
+                                          RESTAPIRegistry::getCacheSeconds(_method, CACHE_CENTRAL),
+                                          !_methodName.isEmpty()
                                           ));
     }
 }

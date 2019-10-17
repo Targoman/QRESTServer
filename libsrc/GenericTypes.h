@@ -80,6 +80,7 @@ QHTTP_ADD_SIMPLE_TYPE(QString, MD5_t);
 QHTTP_ADD_SIMPLE_TYPE(QString, Email_t);
 QHTTP_ADD_SIMPLE_TYPE(QString, Mobile_t);
 QHTTP_ADD_SIMPLE_TYPE(QString, Sheba_t);
+QHTTP_ADD_SIMPLE_TYPE(QString, Base64Image_t);
 
 /**********************************************************************/
 extern void registerGenericTypes();
@@ -98,6 +99,7 @@ Q_DECLARE_METATYPE(QHttp::MD5_t)
 Q_DECLARE_METATYPE(QHttp::Email_t)
 Q_DECLARE_METATYPE(QHttp::Mobile_t)
 Q_DECLARE_METATYPE(QHttp::Sheba_t)
+Q_DECLARE_METATYPE(QHttp::Base64Image_t)
 
 
 #endif // QHTTP_GENERICTYPES_H

@@ -57,13 +57,14 @@ public:
 class clsAPIObject : public intfAPIObject, public QObject
 {
 public:
-    clsAPIObject(intfRESTAPIHolder* _module, QMetaMethodExtended _method, bool _async, qint32 _cache4Internal, qint32 _cache4Central) :
+    clsAPIObject(intfRESTAPIHolder* _module, QMetaMethodExtended _method, bool _async, qint32 _cache4Internal, qint32 _cache4Central, bool _hasExtraMethodName) :
         QObject(_module),
         BaseMethod(_method),
         IsAsync(_async),
         Cache4Secs(_cache4Internal),
         Cache4SecsCentral(_cache4Central),
-        RequiredParamsCount(static_cast<quint8>(_method.parameterCount()))
+        RequiredParamsCount(static_cast<quint8>(_method.parameterCount())),
+        HasExtraMethodName(_hasExtraMethodName)
     {
         quint8 i = 0;
         foreach(const QByteArray& ParamName, _method.parameterNames()){
@@ -373,14 +374,15 @@ private:
     }
 
 private:
-    QMetaMethodExtended   BaseMethod;
-    QList<QMetaMethodExtended> LessArgumentMethods;
-    bool          IsAsync;
-    qint32        Cache4Secs;
-    qint32        Cache4SecsCentral;
-    QList<QByteArray>  ParamNames;
-    QList<QString>  ParamTypes;
-    quint8        RequiredParamsCount;
+    QMetaMethodExtended         BaseMethod;
+    QList<QMetaMethodExtended>  LessArgumentMethods;
+    bool                        IsAsync;
+    qint32                      Cache4Secs;
+    qint32                      Cache4SecsCentral;
+    QList<QByteArray>           ParamNames;
+    QList<QString>              ParamTypes;
+    quint8                      RequiredParamsCount;
+    bool                        HasExtraMethodName;
 
     friend class RESTAPIRegistry;
 };

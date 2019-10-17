@@ -95,7 +95,7 @@ void registerGenericTypes()
                 COMPLEXITY_String,
                 QHttp::EncodedJWT_t,
                 [](const QHttp::EncodedJWT_t& _value) -> QVariant {return _value;},
-    nullptr
+                nullptr
     );
 
     QHTTP_REGISTER_METATYPE(
@@ -105,12 +105,12 @@ void registerGenericTypes()
                 [](const QVariant& _value, const QByteArray&) -> QHttp::RemoteIP_t {QHttp::RemoteIP_t Value;Value=_value.toString();return  Value;}
     );
 
-    QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(COMPLEXITY_String, QHttp::ExtraPath_t, optional(QFieldValidator().json()), _value);
-    QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(COMPLEXITY_String, QHttp::MD5_t, optional(QFieldValidator().md5()), _value);
-    QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(COMPLEXITY_String, QHttp::Email_t, optional(QFieldValidator().email()), _value);
-    QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(COMPLEXITY_String, QHttp::Mobile_t, optional(QFieldValidator().mobile()), _value);
 
-
+    QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(COMPLEXITY_String, QHttp::ExtraPath_t, optional(QFV.json()), _value);
+    QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(COMPLEXITY_String, QHttp::MD5_t, optional(QFV.md5()), _value);
+    QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(COMPLEXITY_String, QHttp::Email_t, optional(QFV.email()), _value);
+    QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(COMPLEXITY_String, QHttp::Mobile_t, optional(QFV.mobile()), _value);
+    QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(COMPLEXITY_String, QHttp::Base64Image_t, optional(QFV.base64Image()), _value);
 }
 
 }

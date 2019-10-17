@@ -67,6 +67,8 @@ private:
 
 private:
     static QHash<QString, clsAPIObject*>  Registry;
+    static QJsonObject CachedOpenAPI;
+
 #ifdef QHTTP_ENABLE_WEBSOCKET
     static QHash<QString, clsAPIObject*>  WSRegistry;
 #endif

@@ -81,7 +81,11 @@ QHTTP_ADD_SIMPLE_TYPE(QString, IPv4_t);
 QHTTP_ADD_SIMPLE_TYPE(QString, Email_t);
 QHTTP_ADD_SIMPLE_TYPE(QString, Mobile_t);
 QHTTP_ADD_SIMPLE_TYPE(QString, Sheba_t);
+QHTTP_ADD_SIMPLE_TYPE(QString, ISO639_2_t);
 QHTTP_ADD_SIMPLE_TYPE(QString, Base64Image_t);
+QHTTP_ADD_SIMPLE_TYPE(QString, Date_t);
+QHTTP_ADD_SIMPLE_TYPE(QString, Time_t);
+QHTTP_ADD_SIMPLE_TYPE(QString, DateTime_t);
 
 /**********************************************************************/
 extern void registerGenericTypes();
@@ -101,6 +105,10 @@ Q_DECLARE_METATYPE(QHttp::IPv4_t)
 Q_DECLARE_METATYPE(QHttp::Email_t)
 Q_DECLARE_METATYPE(QHttp::Mobile_t)
 Q_DECLARE_METATYPE(QHttp::Sheba_t)
+Q_DECLARE_METATYPE(QHttp::ISO639_2_t)
+Q_DECLARE_METATYPE(QHttp::Date_t)
+Q_DECLARE_METATYPE(QHttp::Time_t)
+Q_DECLARE_METATYPE(QHttp::DateTime_t)
 Q_DECLARE_METATYPE(QHttp::Base64Image_t)
 
 

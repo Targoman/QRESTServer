@@ -54,7 +54,7 @@ int main(int _argc, char *_argv[])
 
         Configs.BasePath = "/rest";
         Configs.Version = "v1";
-        Configs.ListenPort = 9009;
+        Configs.ListenPort = 10000;
         Configs.IndentedJson = true;
         Configs.WebSocketServerName = "ws";
 

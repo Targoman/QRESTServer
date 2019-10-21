@@ -478,8 +478,19 @@ QJsonObject RESTAPIRegistry::retriveOpenAPIJson(){
         if(APIObject->requiresExtraPath())
             add2Paths(PathsObject, createPathInfo(true), true);
 
+        quint8 HasNonAutoParams = false;
+        foreach(auto ParamType, APIObject->ParamTypes)
+            if(   ParamType != PARAM_HEADERS
+               && ParamType != PARAM_REMOTE_IP
+               && ParamType != PARAM_COOKIES
+               && ParamType != PARAM_JWT
+                  ){
+                HasNonAutoParams = true;
+                break;
+            }
 
-        if(APIObject->requiresExtraPath() == false || APIObject->ParamTypes.size() > 1)
+
+        if(HasNonAutoParams)
             add2Paths(PathsObject, createPathInfo(false), false);
     }
 

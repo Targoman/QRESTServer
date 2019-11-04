@@ -153,14 +153,6 @@ public:
             bool ParamNotFound = true;
             QVariant ArgumentValue;
 
-            if(this->ParamTypes.at(i) == PARAM_COOKIES
-               ||this->ParamTypes.at(i) == PARAM_HEADERS
-               ||this->ParamTypes.at(i) == PARAM_JWT
-               ||this->ParamTypes.at(i) == PARAM_REMOTE_IP
-               ||this->ParamTypes.at(i) == PARAM_EXTRAPATH
-               )
-                continue;
-
             static auto parseArgValue = [ArgumentValue](const QString& _paramName, const QString& _value) -> QVariant {
                 if((_value.startsWith('[') && _value.endsWith(']')) ||
                    (_value.startsWith('{') && _value.endsWith('}'))){

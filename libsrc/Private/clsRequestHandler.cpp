@@ -122,8 +122,9 @@ void clsRequestHandler::process(const QString& _api) {
                 }else{
                     QList<QByteArray> Params = this->RemainingData.split('&');
                     static auto decodePercentEncoding = [](QByteArray& _value){
-                        return _value.
-                                replace("+"," ").
+                        return _value = _value.replace("+"," ");
+                        /*
+                        _value.replace(QRegularExpression("%([0-9][0-9])"))
                                 replace("%09","\t").
                                 replace("%0A","\n").
                                 replace("%0D","\r").
@@ -301,7 +302,7 @@ void clsRequestHandler::process(const QString& _api) {
                                 replace("%FD","ý").
                                 replace("%FE","þ").
                                 replace("%FF","ÿ")
-                                ;
+                                ;*/
                     };
 
 

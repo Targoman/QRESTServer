@@ -81,12 +81,15 @@ void registerGenericTypes()
                 QHttp::JSON_t,
                 [](const QHttp::JSON_t& _value) -> QVariant {return _value;},
                 [](const QVariant& _value, const QByteArray& _paramName) -> QHttp::JSON_t {
+                    if(_value.isValid() == false)
+                        return QJsonDocument();
+
                     QJsonParseError Error;
                     QJsonDocument Doc;
                     Doc = Doc.fromJson(_value.toString().toUtf8(), &Error);
 
                     if(Error.error != QJsonParseError::NoError)
-                        throw exHTTPBadRequest(_paramName + " is not a valid Json: " + Error.errorString());
+                        throw exHTTPBadRequest(_paramName + " is not a valid Json: <"+_value.toString()+">" + Error.errorString());
                     return  *reinterpret_cast<QHttp::JSON_t*>(&Doc);
                 }
     );

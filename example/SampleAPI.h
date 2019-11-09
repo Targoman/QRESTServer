@@ -63,8 +63,6 @@ private slots:
                                   "Sample AsyncAPI returning JWT as encoded")
     int API(PUT,SampleData, (quint64 _id, const QString& _info = "defaultValue"),
             "Sample API with data")
-    int API(DELETE, SampleData, (QHttp::ExtraPath_t _EXTRAPATH),
-            "Sample API for delete")
     QVariantList API(UPDATE,SampleData, (char _id = ',', const QString& _info = "df\",dsf"),
                      "Sample API for Update")
 

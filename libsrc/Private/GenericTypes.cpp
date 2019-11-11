@@ -109,7 +109,7 @@ void registerGenericTypes()
     );
 
 
-    QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(COMPLEXITY_String, QHttp::ExtraPath_t, optional(QFV.json()), _value);
+    QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(COMPLEXITY_String, QHttp::ExtraPath_t, optional(QFV.asciiAlNum(false, ",")), _value);
     QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(COMPLEXITY_String, QHttp::MD5_t, optional(QFV.md5()), _value);
     QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(COMPLEXITY_String, QHttp::Email_t, optional(QFV.email()), _value);
     QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(COMPLEXITY_String, QHttp::Mobile_t, optional(QFV.mobile()), _value);

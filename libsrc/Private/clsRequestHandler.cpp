@@ -73,12 +73,13 @@ void clsRequestHandler::process(const QString& _api) {
             default:
                 throw exHTTPBadRequest("Method: "+this->Request->methodString()+" is not supported or does not accept request body");
             }
-            static const char APPLICATION_JSON_HEADER[] = "application/json";
-            static const char MULTIPART_BOUNDARY_HEADER[] = "multipart/form-data; boundary=";
+            static constexpr char APPLICATION_JSON_HEADER[] = "application/json";
+            static constexpr char APPLICATION_FORM_HEADER[] = "application/x-www-form-urlencoded";
+            static constexpr char MULTIPART_BOUNDARY_HEADER[] = "multipart/form-data; boundary=";
 
             switch(ContentType.at(0)){
             case 'a':{
-                if(ContentType != APPLICATION_JSON_HEADER)
+                if(ContentType != APPLICATION_JSON_HEADER && ContentType != APPLICATION_FORM_HEADER)
                     throw exHTTPBadRequest(("unsupported Content-Type: " + ContentType).constData());
 
                 if(_data.size() == ContentLength){
@@ -93,30 +94,48 @@ void clsRequestHandler::process(const QString& _api) {
                 }
 
                 this->RemainingData = this->RemainingData.trimmed();
-                if(this->RemainingData.startsWith('{') == false || this->RemainingData.endsWith('}') == false)
-                    throw exHTTPBadRequest("Invalid JSON Object");
-                QJsonParseError Error;
-                QJsonDocument JSON = QJsonDocument::fromJson(this->RemainingData, &Error);
-                if(JSON.isNull() || JSON.isObject() == false)
-                    throw exHTTPBadRequest(QString("Invalid JSON Object: %1").arg(Error.errorString()));
-                QJsonObject JSONObject = JSON.object();
-                for(auto JSONObjectIter = JSONObject.begin();
-                    JSONObjectIter != JSONObject.end();
-                    ++JSONObjectIter){
-                    if(JSONObjectIter.value().isBool())
-                        this->Request->addUserDefinedData(JSONObjectIter.key(), JSONObjectIter.value().toBool() ? "1" : "0");
-                    else if(JSONObjectIter.value().isNull())
-                        this->Request->addUserDefinedData(JSONObjectIter.key(), QString());
-                    else if(JSONObjectIter.value().isArray())
-                        this->Request->addUserDefinedData(JSONObjectIter.key(), QJsonDocument(JSONObjectIter.value().toArray()).toJson());
-                    else if(JSONObjectIter.value().isObject())
-                        this->Request->addUserDefinedData(JSONObjectIter.key(), QJsonDocument(JSONObjectIter.value().toObject()).toJson());
-                    else if(JSONObjectIter.value().isDouble())
-                        this->Request->addUserDefinedData(JSONObjectIter.key(), QString("%1").arg(JSONObjectIter.value().toDouble()));
-                    else
-                        this->Request->addUserDefinedData(JSONObjectIter.key(), JSONObjectIter.value().toString());
-                }
 
+                if(this->RemainingData.startsWith('{') || this->RemainingData.startsWith('[')){
+                    if(this->RemainingData.startsWith('{') == false || this->RemainingData.endsWith('}') == false)
+                        throw exHTTPBadRequest("Invalid JSON Object");
+                    QJsonParseError Error;
+                    QJsonDocument JSON = QJsonDocument::fromJson(this->RemainingData, &Error);
+                    if(JSON.isNull() || JSON.isObject() == false)
+                        throw exHTTPBadRequest(QString("Invalid JSON Object: %1").arg(Error.errorString()));
+                    QJsonObject JSONObject = JSON.object();
+                    for(auto JSONObjectIter = JSONObject.begin();
+                        JSONObjectIter != JSONObject.end();
+                        ++JSONObjectIter){
+                        if(JSONObjectIter.value().isBool())
+                            this->Request->addUserDefinedData(JSONObjectIter.key(), JSONObjectIter.value().toBool() ? "1" : "0");
+                        else if(JSONObjectIter.value().isNull())
+                            this->Request->addUserDefinedData(JSONObjectIter.key(), QString());
+                        else if(JSONObjectIter.value().isArray())
+                            this->Request->addUserDefinedData(JSONObjectIter.key(), QJsonDocument(JSONObjectIter.value().toArray()).toJson());
+                        else if(JSONObjectIter.value().isObject())
+                            this->Request->addUserDefinedData(JSONObjectIter.key(), QJsonDocument(JSONObjectIter.value().toObject()).toJson());
+                        else if(JSONObjectIter.value().isDouble())
+                            this->Request->addUserDefinedData(JSONObjectIter.key(), QString("%1").arg(JSONObjectIter.value().toDouble()));
+                        else
+                            this->Request->addUserDefinedData(JSONObjectIter.key(), JSONObjectIter.value().toString());
+                    }
+                }else{
+                    QList<QByteArray> Params = this->RemainingData.split('&');
+                    static auto decodePercentEncoding = [](QByteArray& _value){
+                        _value = _value.replace("+"," ");
+                        QUrl URL = QUrl::fromPercentEncoding("http://127.0.0.1/?key=" + _value);
+                        _value=URL.query(QUrl::FullyDecoded).toUtf8();
+                        _value=_value.mid(_value.indexOf('=') + 1);
+                        return _value;
+                    };
+
+                    foreach(auto Param, Params){
+                        QList<QByteArray> ParamParts = Param.split('=');
+                        if(ParamParts.size() != 2)
+                            throw exHTTPBadRequest("Invalid Param: " + Param);
+                        this->Request->addUserDefinedData(ParamParts.first(), decodePercentEncoding(ParamParts.last()));
+                    }
+                }
                 break;
             }
             case 'm':{
@@ -134,7 +153,7 @@ void clsRequestHandler::process(const QString& _api) {
                 qlonglong Fed = 0;
                 while(!this->MultipartFormDataHandler->stopped() && _data.size() > Fed){
                     do {
-                        qulonglong Ret = this->MultipartFormDataHandler->feed(_data.mid(Fed).constData(), _data.size() - Fed);
+                        qulonglong Ret = this->MultipartFormDataHandler->feed(_data.mid(static_cast<int>(Fed)).constData(), _data.size() - Fed);
                         Fed += Ret;
                     } while (Fed < _data.size() && !this->MultipartFormDataHandler->stopped());
                 }

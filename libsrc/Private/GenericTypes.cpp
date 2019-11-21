@@ -81,13 +81,21 @@ void registerGenericTypes()
                 QHttp::JSON_t,
                 [](const QHttp::JSON_t& _value) -> QVariant {return _value;},
                 [](const QVariant& _value, const QByteArray& _paramName) -> QHttp::JSON_t {
+                    if(_value.isValid() == false)
+                        return QJsonDocument();
+
+                    if(_value.canConvert<QVariantMap>() ||
+                       _value.canConvert<QVariantList>() ||
+                       _value.canConvert<double>())
+                        return QJsonDocument::fromVariant(_value);
+
                     QJsonParseError Error;
                     QJsonDocument Doc;
                     Doc = Doc.fromJson(_value.toString().toUtf8(), &Error);
 
                     if(Error.error != QJsonParseError::NoError)
-                        throw exHTTPBadRequest(_paramName + " is not a valid Json: " + Error.errorString());
-                    return  *reinterpret_cast<QHttp::JSON_t*>(&Doc);
+                        throw exHTTPBadRequest(_paramName + " is not a valid Json: <"+_value.toString()+">" + Error.errorString());
+                    return  Doc;
                 }
     );
 
@@ -106,7 +114,22 @@ void registerGenericTypes()
     );
 
 
-    QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(COMPLEXITY_String, QHttp::ExtraPath_t, optional(QFV.json()), _value);
+    QHTTP_REGISTER_METATYPE(
+                COMPLEXITY_String,
+                QHttp::ExtraPath_t,
+                [](const QHttp::ExtraPath_t& _value) -> QVariant {return _value;},
+                [](const QVariant& _value, const QByteArray& _paramName) -> QHttp::ExtraPath_t {
+                    static QFieldValidator Validator = QFV.asciiAlNum(false, ",");
+                    QHttp::ExtraPath_t Value;
+                    QUrl URL = QUrl::fromPercentEncoding(("http://127.0.0.1/" + _value.toString()).toUtf8());
+                    Value=URL.path().remove(0,1);
+
+                    if(Validator.isValid(Value, _paramName) == false) throw exHTTPBadRequest(Validator.errorMessage());
+                    return  Value;
+                }
+    );
+
+    //QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(COMPLEXITY_String, QHttp::ExtraPath_t, optional(QFV.asciiAlNum(false, ",")), _value);
     QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(COMPLEXITY_String, QHttp::MD5_t, optional(QFV.md5()), _value);
     QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(COMPLEXITY_String, QHttp::Email_t, optional(QFV.email()), _value);
     QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(COMPLEXITY_String, QHttp::Mobile_t, optional(QFV.mobile()), _value);

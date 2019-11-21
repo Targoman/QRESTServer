@@ -88,8 +88,8 @@ public:
         this->userData = reinterpret_cast<void*>(this);
     }
 
-    size_t feed(const char *_buffer, size_t _len){
-        return MultipartReader::feed(_buffer, _len);
+    size_t feed(const char *_buffer, long long  _len){
+        return static_cast<size_t>(MultipartReader::feed(_buffer, _len));
     }
 
 private:

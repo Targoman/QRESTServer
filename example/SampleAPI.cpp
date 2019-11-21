@@ -119,6 +119,10 @@ QString SampleAPI::apiWSSample(const QString _value)
     return _value;
 }
 
+int SampleAPI::apiRefresh(QHttp::JWT_t _JWT){
+    return 1;
+}
+
 void SampleSubModule::init()
 {
 

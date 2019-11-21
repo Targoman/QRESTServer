@@ -387,7 +387,7 @@ QJsonObject RESTAPIRegistry::retriveOpenAPIJson(){
                     ParamSpecs["name"] = "id";
                     ParamSpecs["description"] = "primaryKey id";
                     ParamSpecs["required"] = true;
-                    ParamSpecs["type"] = "number";
+                    ParamSpecs["type"] = "string";
                     Parameters.append(ParamSpecs);
                 }
                 return;
@@ -480,11 +480,11 @@ QJsonObject RESTAPIRegistry::retriveOpenAPIJson(){
 
         quint8 HasNonAutoParams = false;
         foreach(auto ParamType, APIObject->ParamTypes)
-            if(ParamType != PARAM_HEADERS
+            if(/*ParamType != PARAM_HEADERS
                && ParamType != PARAM_REMOTE_IP
                && ParamType != PARAM_COOKIES
                && ParamType != PARAM_JWT
-               && ParamType != PARAM_EXTRAPATH
+               &&*/ ParamType != PARAM_EXTRAPATH
                ){
                 HasNonAutoParams = true;
                 break;

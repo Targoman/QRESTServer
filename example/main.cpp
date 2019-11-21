@@ -52,6 +52,12 @@ int main(int _argc, char *_argv[])
 
         RESTServer::stuConfig Configs;
 
+
+
+        QRegularExpression Rx("%(\\d{2,2})");
+        QString Sample="abcd%2d%20%eddfed";
+
+
         Configs.BasePath = "/rest";
         Configs.Version = "v1";
         Configs.ListenPort = 10000;

@@ -84,13 +84,18 @@ void registerGenericTypes()
                     if(_value.isValid() == false)
                         return QJsonDocument();
 
+                    if(_value.canConvert<QVariantMap>() ||
+                       _value.canConvert<QVariantList>() ||
+                       _value.canConvert<double>())
+                        return QJsonDocument::fromVariant(_value);
+
                     QJsonParseError Error;
                     QJsonDocument Doc;
                     Doc = Doc.fromJson(_value.toString().toUtf8(), &Error);
 
                     if(Error.error != QJsonParseError::NoError)
                         throw exHTTPBadRequest(_paramName + " is not a valid Json: <"+_value.toString()+">" + Error.errorString());
-                    return  *reinterpret_cast<QHttp::JSON_t*>(&Doc);
+                    return  Doc;
                 }
     );
 

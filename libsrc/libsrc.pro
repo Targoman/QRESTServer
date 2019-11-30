@@ -28,6 +28,7 @@ DIST_HEADERS += \
     GenericTypes.h \
     intfAPIArgManipulator.h \
     tmplAPIArg.h \
+    stuORMField.hpp \
 
 PRIVATE_HEADERS += \
     Private/intfCacheConnector.hpp \

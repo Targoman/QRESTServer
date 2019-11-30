@@ -41,6 +41,7 @@ namespace Private {
 #define PARAM_REMOTE_IP "QHttp::RemoteIP_t"
 #define PARAM_HEADERS   "QHttp::HEADERS_t"
 #define PARAM_EXTRAPATH "QHttp::ExtraPath_t"
+#define PARAM_DIRECTFILTER "QHttp::DirectFilters_t"
 
 class QMetaMethodExtended : public QMetaMethod {
 public:
@@ -64,7 +65,8 @@ public:
         Cache4Secs(_cache4Internal),
         Cache4SecsCentral(_cache4Central),
         RequiredParamsCount(static_cast<quint8>(_method.parameterCount())),
-        HasExtraMethodName(_hasExtraMethodName)
+        HasExtraMethodName(_hasExtraMethodName),
+        Parent(_module)
     {
         quint8 i = 0;
         foreach(const QByteArray& ParamName, _method.parameterNames()){
@@ -97,6 +99,10 @@ public:
 
     inline bool requiresHeaders() const {
         return this->ParamTypes.contains(PARAM_HEADERS);
+    }
+
+    inline bool requiresDirectFilters() const {
+        return this->ParamTypes.contains(PARAM_DIRECTFILTER);
     }
 
     inline QString paramType(quint8 _paramIndex) const {
@@ -139,6 +145,8 @@ public:
         if(this->ParamTypes.contains(PARAM_REMOTE_IP))
             ExtraArgCount++;
         if(this->ParamTypes.contains(PARAM_EXTRAPATH))
+            ExtraArgCount++;
+        if(this->ParamTypes.contains(PARAM_DIRECTFILTER))
             ExtraArgCount++;
 
         if(_args.size() + _bodyArgs.size() + ExtraArgCount < this->RequiredParamsCount)
@@ -189,6 +197,15 @@ public:
             if(ParamNotFound && this->ParamTypes.at(i) == PARAM_EXTRAPATH){
                 ParamNotFound = false;
                 ArgumentValue = _extraAPIPath;
+            }
+
+            if(ParamNotFound && this->ParamTypes.at(i) == PARAM_DIRECTFILTER){
+                ParamNotFound = false;
+                QHttp::DirectFilters_t DirectFilters;
+                foreach (const QString& Arg, _args)
+                    DirectFilters.insert(Arg.mid(0,Arg.indexOf('=')), parseArgValue(Arg.mid(0,Arg.indexOf('=')), QUrl::fromPercentEncoding(Arg.mid(Arg.indexOf('=') + 1).toUtf8())));
+
+                ArgumentValue = DirectFilters;
             }
 
             if(ParamNotFound)
@@ -375,6 +392,7 @@ private:
     QList<QString>              ParamTypes;
     quint8                      RequiredParamsCount;
     bool                        HasExtraMethodName;
+    intfRESTAPIHolder*          Parent;
 
     friend class RESTAPIRegistry;
 };

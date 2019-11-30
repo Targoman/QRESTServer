@@ -30,6 +30,8 @@ namespace QHttp {
 
 enum enuVarComplexity {
     COMPLEXITY_Integral,
+    COMPLEXITY_Number,
+    COMPLEXITY_Boolean,
     COMPLEXITY_String,
     COMPLEXITY_Complex,
     COMPLEXITY_Enum
@@ -58,6 +60,7 @@ public:
     virtual bool isIntegralType() = 0;
     virtual enuVarComplexity complexity() = 0;
     virtual QStringList options() = 0;
+    virtual void validate(const QVariant& _val, const QByteArray& _paramName) = 0;
 
     QString     PrettyTypeName;
     char*       RealTypeName;

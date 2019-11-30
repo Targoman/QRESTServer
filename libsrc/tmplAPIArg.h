@@ -61,6 +61,12 @@ public:
            _apiObject->invokeMethod(_arguments, QReturnArgument<_itmplType >(this->RealTypeName, Result));
            return this->toVariant == nullptr ? QVariant::fromValue(Result) : this->toVariant(Result);
     }
+    inline void validate(const QVariant& _val, const QByteArray& _paramName) final {
+        if(this->fromVariant == nullptr && !_val.canConvert<_itmplType>())
+                throw exHTTPBadRequest("Invalid value specified for parameter: " + _paramName);
+        if(this->fromVariant)
+            this->fromVariant(_val, _paramName);
+    }
     inline void cleanup (void* _argStorage) final {if(_argStorage) delete (reinterpret_cast<_itmplType*>(_argStorage));}
     inline bool hasFromVariantMethod() final {return this->fromVariant != nullptr;}
     inline bool hasToVariantMethod() final {return this->toVariant != nullptr;}

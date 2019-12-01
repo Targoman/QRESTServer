@@ -425,8 +425,8 @@ QJsonObject RESTAPIRegistry::retriveOpenAPIJson(){
             if(HTTPMethod == "get" || HTTPMethod == "delete"){
                 if(_extraPathsStorage){
                     if(ParamType == PARAM_DIRECTFILTER){
-                        foreach(auto Item, APIObject->Parent->filterItems()){
-                            if(Item.Filterable == false || Item.PKIndex >= 0)
+                        foreach(auto Item, APIObject->Parent->filterItems(HTTPMethod == "get" ? qhttp::EHTTP_GET : qhttp::EHTTP_DELETE)){
+                            if(Item.IsFilterable == false || Item.PKIndex >= 0)
                                 continue;
                             QJsonObject ParamSpecs;
                             ParamSpecs["in"] = "query";
@@ -716,19 +716,23 @@ QHttp::stuORMField::stuORMField() :
 stuORMField::stuORMField(const QString& _name,
                          const QString& _type,
                          const QFieldValidator& _extraValidator,
-                         bool _readOnly,
-                         bool  _sortable,
-                         bool  _filterable,
-                         bool _primaryKey,
+                         bool _isReadOnly,
+                         bool  _isSortable,
+                         bool  _isFilterable,
+                         bool _isSelfIdentifier,
+                         bool _isVirtual,
+                         bool _isPrimaryKey,
                          const QString& _renameAs):
     Name(_name),
     ParameterType(QMetaType::type(_type.toUtf8())),
     ParamTypeName(_type),
     ExtraValidator(_extraValidator),
-    Sortable(_sortable),
-    Filterable(_filterable),
-    IsReadOnly(_readOnly),
-    PKIndex(_primaryKey ? 0 : -1),
+    IsSortable(_isSortable),
+    IsFilterable(_isFilterable),
+    IsReadOnly(_isReadOnly),
+    IsSelfIdentifier(_isSelfIdentifier),
+    IsVirtual(_isVirtual),
+    PKIndex(_isPrimaryKey ? 0 : -1),
     RenameAs(_renameAs)
 {
     this->ParameterType = QMetaType::type(_type.toUtf8());

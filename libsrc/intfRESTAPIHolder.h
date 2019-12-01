@@ -94,7 +94,7 @@ class intfRESTAPIHolder : public Targoman::Common::Configuration::intfModule{
 public:
     intfRESTAPIHolder(Targoman::Common::Configuration::intfModule *_parent = nullptr);
     virtual ~intfRESTAPIHolder(){}
-    virtual QList<stuORMField> filterItems() { return {}; }
+    virtual QList<stuORMField> filterItems(qhttp::THttpMethod _method = qhttp::EHTTP_ACL) const { Q_UNUSED(_method) return {}; }
     virtual void updateFilterParamType(const QString& _fieldTypeName, int _typeID) {Q_UNUSED(_fieldTypeName) Q_UNUSED(_typeID)}
 
 private slots:

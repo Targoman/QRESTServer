@@ -40,9 +40,11 @@ struct stuORMField{
     int             ParameterType;
     QString         ParamTypeName;
     QFieldValidator ExtraValidator;
-    bool            Sortable;
-    bool            Filterable;
+    bool            IsSortable;
+    bool            IsFilterable;
     bool            IsReadOnly;
+    bool            IsSelfIdentifier;
+    bool            IsVirtual;
     qint8           PKIndex;
     QString         RenameAs;
 
@@ -50,14 +52,20 @@ struct stuORMField{
     stuORMField(const QString& _name,
                 const QString& _type,
                 const QFieldValidator& _extraValidator = QFV.allwaysValid(),
-                bool _readOnly = false,
-                bool  _sortable = true,
-                bool  _filterable = true,
-                bool _primaryKey = false,
+                bool _isReadOnly = false,
+                bool _isSortable = true,
+                bool _isFilterable = true,
+                bool _isSelfIdentifier = false,
+                bool _isVirtual = false,
+                bool _isPrimaryKey = false,
                 const QString& _renameAs = {});
     void registerTypeIfNotRegisterd(QHttp::intfRESTAPIHolder* _module);
     void validate(const QVariant _value) const;
 };
+///                         RO   Sort  Filter Self  Virt   PK
+#define ORM_PRIMARY_KEY     true, true, true, true, false, true
+#define ORM_SELF_REAL       true, true, true, true, false
+#define ORM_SELF_VIRTUAL    true, true, true, true, true
 
 }
 #endif // QHTTP_STUORMFIELD_HPP

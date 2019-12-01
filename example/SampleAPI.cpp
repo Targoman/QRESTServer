@@ -128,7 +128,7 @@ void SampleSubModule::init()
 
 }
 
-QString SampleSubModule::apiGET(QHttp::ExtraPath_t _EXTRAPATH, int from, int to)
+QString SampleSubModule::apiGET(QHttp::ExtraPath_t _EXTRAPATH, QHttp::DirectFilters_t _FILTERS, int from, int to)
 {
     return _EXTRAPATH;
 }

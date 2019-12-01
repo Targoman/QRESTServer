@@ -77,6 +77,13 @@ void registerGenericTypes()
     );
 
     QHTTP_REGISTER_METATYPE(
+                COMPLEXITY_Complex,
+                QHttp::DirectFilters_t,
+                nullptr,
+                [](const QVariant& _value, const QByteArray&) -> QHttp::DirectFilters_t {return _value.toMap();}
+    );
+
+    QHTTP_REGISTER_METATYPE(
                 COMPLEXITY_String,
                 QHttp::JSON_t,
                 [](const QHttp::JSON_t& _value) -> QVariant {return _value;},
@@ -118,18 +125,15 @@ void registerGenericTypes()
                 COMPLEXITY_String,
                 QHttp::ExtraPath_t,
                 [](const QHttp::ExtraPath_t& _value) -> QVariant {return _value;},
-                [](const QVariant& _value, const QByteArray& _paramName) -> QHttp::ExtraPath_t {
-                    static QFieldValidator Validator = QFV.asciiAlNum(false, ",");
+                [](const QVariant& _value, const QByteArray&) -> QHttp::ExtraPath_t {
                     QHttp::ExtraPath_t Value;
                     QUrl URL = QUrl::fromPercentEncoding(("http://127.0.0.1/" + _value.toString()).toUtf8());
                     Value=URL.path().remove(0,1);
 
-                    if(Validator.isValid(Value, _paramName) == false) throw exHTTPBadRequest(Validator.errorMessage());
                     return  Value;
                 }
     );
 
-    //QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(COMPLEXITY_String, QHttp::ExtraPath_t, optional(QFV.asciiAlNum(false, ",")), _value);
     QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(COMPLEXITY_String, QHttp::MD5_t, optional(QFV.md5()), _value);
     QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(COMPLEXITY_String, QHttp::Email_t, optional(QFV.email()), _value);
     QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(COMPLEXITY_String, QHttp::Mobile_t, optional(QFV.mobile()), _value);

@@ -44,7 +44,7 @@ class SampleAPI : public QHttp::intfRESTAPIHolder
 public:
     void init();
 
-private slots:
+//private slots:
     int API(,Refresh,(QHttp::JWT_t _JWT),"")
 
 //private :
@@ -88,10 +88,10 @@ class SampleSubModule : public QHttp::intfRESTAPIHolder{
 public:
     void init();
 
-//private slots:
-    QString API(GET, ,(QHttp::ExtraPath_t _EXTRAPATH, int from, int to),
+private slots:
+    QString API(GET, ,(QHttp::ExtraPath_t _EXTRAPATH, QHttp::DirectFilters_t _FILTERS, int from, int to),
             "Sample API without name")
-
+private:
     quint64 API(, SampleEnahancedEnum, (ns::enuSample::Type _val = enuSample::s1),
                         "Sample list returning API")
 

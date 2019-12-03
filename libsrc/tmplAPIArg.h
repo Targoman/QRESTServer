@@ -38,12 +38,14 @@ public:
     tmplAPIArg(const QString& _typeName,
                std::function<QVariant(const _itmplType& _value)> _toVariant = {},
                std::function<_itmplType(const QVariant& _value, const QByteArray& _paramName)> _fromVariant = {},
-               std::function<QStringList()> _options = {}
+               std::function<QStringList()> _options = {},
+               std::function<QString(const QList<clsORMField>& _allFields)> _description = {}
                ) :
         intfAPIArgManipulator(_typeName),
         toVariant(_toVariant),
         fromVariant(_fromVariant),
-        optionsLambda(_options)
+        optionsLambda(_options),
+        descriptionLambda(_description)
     {}
     virtual ~tmplAPIArg(){;}
 
@@ -73,7 +75,7 @@ public:
     inline bool isIntegralType() final { return _itmplVarType == COMPLEXITY_Integral;}
     inline QStringList options() final { return this->optionsLambda ? this->optionsLambda() : QStringList() ;}
     inline enuVarComplexity complexity() final { return _itmplVarType;}
-
+    inline QString description(const QList<clsORMField>& _allFields) final { return this->descriptionLambda ? this->descriptionLambda(_allFields) : QString("A value of type: %1").arg(this->PrettyTypeName);}
     inline QString toString(const QVariant _val) {
         if(this->hasFromVariantMethod() && this->hasToVariantMethod())
             return this->toVariant(this->fromVariant(_val, {})).toString();
@@ -84,6 +86,7 @@ private:
     std::function<QVariant(_itmplType _value)> toVariant;
     std::function<_itmplType(QVariant _value, const QByteArray& _paramName)> fromVariant;
     std::function<QStringList()> optionsLambda;
+    std::function<QString(const QList<clsORMField>& _allFields)> descriptionLambda;
 
     friend class Private::intfCacheConnector;
 };

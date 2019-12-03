@@ -103,14 +103,18 @@ void registerGenericTypes()
                     if(Error.error != QJsonParseError::NoError)
                         throw exHTTPBadRequest(_paramName + " is not a valid Json: <"+_value.toString()+">" + Error.errorString());
                     return  Doc;
-                }
+                },
+                nullptr,
+                [](const QList<clsORMField>&){ return "A valid JSON string"; }
     );
 
     QHTTP_REGISTER_METATYPE(
                 COMPLEXITY_String,
                 QHttp::EncodedJWT_t,
                 [](const QHttp::EncodedJWT_t& _value) -> QVariant {return _value;},
-                nullptr
+                nullptr,
+                nullptr,
+                [](const QList<clsORMField>&){ return "A signed JsonWebToken string"; }
     );
 
     QHTTP_REGISTER_METATYPE(
@@ -134,15 +138,15 @@ void registerGenericTypes()
                 }
     );
 
-    QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(COMPLEXITY_String, QHttp::MD5_t, optional(QFV.md5()), _value);
-    QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(COMPLEXITY_String, QHttp::Email_t, optional(QFV.email()), _value);
-    QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(COMPLEXITY_String, QHttp::Mobile_t, optional(QFV.mobile()), _value);
-    QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(COMPLEXITY_String, QHttp::IPv4_t, optional(QFV.ipv4()), _value);
-    QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(COMPLEXITY_String, QHttp::ISO639_2_t, optional(QFV.maxLenght(2).languageCode()), _value);
-    QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(COMPLEXITY_String, QHttp::Base64Image_t, optional(QFV.base64Image()), _value);
-    QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(COMPLEXITY_String, QHttp::Date_t, optional(QFV.date()), _value);
-    QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(COMPLEXITY_String, QHttp::Time_t, optional(QFV.time()), _value);
-    QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(COMPLEXITY_String, QHttp::DateTime_t, optional(QFV.dateTime()), _value);
+    QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(COMPLEXITY_String, QHttp::MD5_t, optional(QFV.md5()), _value, [](const QList<clsORMField>&){ return "A valid MD5 string"; });
+    QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(COMPLEXITY_String, QHttp::Email_t, optional(QFV.email()), _value, [](const QList<clsORMField>&){ return "A valid email"; });
+    QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(COMPLEXITY_String, QHttp::Mobile_t, optional(QFV.mobile()), _value, [](const QList<clsORMField>&){ return "A valid mobile number with/without country code"; });
+    QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(COMPLEXITY_String, QHttp::IPv4_t, optional(QFV.ipv4()), _value, [](const QList<clsORMField>&){ return "A valid IP version 4"; });
+    QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(COMPLEXITY_String, QHttp::ISO639_2_t, optional(QFV.maxLenght(2).languageCode()), _value, [](const QList<clsORMField>&){ return "A valid ISO639 two-letter language code"; });
+    QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(COMPLEXITY_String, QHttp::Base64Image_t, optional(QFV.base64Image()), _value, [](const QList<clsORMField>&){ return "A valid base64 encoded png/jpg image"; });
+    QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(COMPLEXITY_String, QHttp::Date_t, optional(QFV.date()), _value, [](const QList<clsORMField>&){ return "A valid gregorian date"; });
+    QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(COMPLEXITY_String, QHttp::Time_t, optional(QFV.time()), _value, [](const QList<clsORMField>&){ return "A valid time"; });
+    QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(COMPLEXITY_String, QHttp::DateTime_t, optional(QFV.dateTime()), _value, [](const QList<clsORMField>&){ return "A valid datetime"; });
 }
 
 }

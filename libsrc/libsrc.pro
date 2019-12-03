@@ -28,7 +28,7 @@ DIST_HEADERS += \
     GenericTypes.h \
     intfAPIArgManipulator.h \
     tmplAPIArg.h \
-    stuORMField.hpp \
+    clsORMField.hpp \
 
 PRIVATE_HEADERS += \
     Private/intfCacheConnector.hpp \
@@ -89,6 +89,6 @@ build_static {
 
 HEADERS += $$DIST_HEADERS \
            $$PRIVATE_HEADERS \
-           $$SUBMODULE_HEADERS \
+           $$SUBMODULE_HEADERS
 
 include($$PRJDIR/qmake/install.pri)

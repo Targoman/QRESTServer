@@ -21,8 +21,8 @@
  * @author S. Mehran M. Ziabary <ziabary@targoman.com>
  */
 
-#ifndef QHTTP_STUORMFIELD_HPP
-#define QHTTP_STUORMFIELD_HPP
+#ifndef QHTTP_clsORMField_HPP
+#define QHTTP_clsORMField_HPP
 
 #include "intfAPIArgManipulator.h"
 #include "QFieldValidator.h"
@@ -33,11 +33,27 @@ namespace Private {
 class RESTAPIRegistry;
 }
 
-#define T(_type) #_type
+#define S(_type) #_type
 
-struct stuORMField{
+class clsORMFieldData : public QSharedData{
+public:
+    clsORMFieldData();
+    clsORMFieldData(const QString& _name,
+                    const QString& _type,
+                    const QFieldValidator& _extraValidator,
+                    bool _isReadOnly,
+                    bool _isSortable,
+                    bool _isFilterable,
+                    bool _isSelfIdentifier,
+                    bool _isVirtual,
+                    bool _isPrimaryKey,
+                    const QString& _renameAs);
+    clsORMFieldData(const clsORMFieldData& _o);
+    ~clsORMFieldData() { }
+
+public:
     QString         Name;
-    int             ParameterType;
+    QMetaType::Type ParameterType;
     QString         ParamTypeName;
     QFieldValidator ExtraValidator;
     bool            IsSortable;
@@ -45,11 +61,15 @@ struct stuORMField{
     bool            IsReadOnly;
     bool            IsSelfIdentifier;
     bool            IsVirtual;
-    qint8           PKIndex;
+    bool            IsPrimaryKey;
     QString         RenameAs;
+};
 
-    stuORMField();
-    stuORMField(const QString& _name,
+class clsORMField{
+public:
+    clsORMField();
+    clsORMField(const clsORMField& _other, const QString& _newName = QString());
+    clsORMField(const QString& _name,
                 const QString& _type,
                 const QFieldValidator& _extraValidator = QFV.allwaysValid(),
                 bool _isReadOnly = false,
@@ -59,13 +79,31 @@ struct stuORMField{
                 bool _isVirtual = false,
                 bool _isPrimaryKey = false,
                 const QString& _renameAs = {});
+    ~clsORMField();
     void registerTypeIfNotRegisterd(QHttp::intfRESTAPIHolder* _module);
+    void updateTypeID(QMetaType::Type _type);
     void validate(const QVariant _value) const;
+    inline QString         name() const {return this->Data->Name;}
+    inline int             parameterType() const {return this->Data->ParameterType;}
+    inline QString         paramTypeName() const {return this->Data->ParamTypeName;}
+    inline QFieldValidator extraValidator() const {return this->Data->ExtraValidator;}
+    inline bool            isSortable() const {return this->Data->IsSortable;}
+    inline bool            isFilterable() const {return this->Data->IsFilterable;}
+    inline bool            isReadOnly() const {return this->Data->IsReadOnly;}
+    inline bool            isSelfIdentifier() const {return this->Data->IsSelfIdentifier;}
+    inline bool            isVirtual() const {return this->Data->IsVirtual;}
+    inline bool            isPrimaryKey() const {return this->Data->IsPrimaryKey;}
+    inline QString         renameAs() const {return this->Data->RenameAs;}
+
+private:
+    QExplicitlySharedDataPointer<clsORMFieldData> Data;
 };
+
+
 ///                         RO   Sort  Filter Self  Virt   PK
 #define ORM_PRIMARY_KEY     true, true, true, true, false, true
 #define ORM_SELF_REAL       true, true, true, true, false
 #define ORM_SELF_VIRTUAL    true, true, true, true, true
 
 }
-#endif // QHTTP_STUORMFIELD_HPP
+#endif // QHTTP_clsORMField_HPP

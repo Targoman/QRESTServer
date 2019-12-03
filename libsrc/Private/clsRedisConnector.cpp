@@ -26,6 +26,10 @@
 #include "clsRedisConnector.h"
 #include "libTargomanCommon/Logger.h"
 
+extern "C" {
+    #include "hiredis/hiredis.h"
+}
+
 namespace QHttp {
 namespace Private{
 

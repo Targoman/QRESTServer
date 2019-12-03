@@ -24,6 +24,7 @@
 #ifndef QHTTP_INTFAPIARGMANIPULATOR_H
 #define QHTTP_INTFAPIARGMANIPULATOR_H
 
+#include "QHttp/clsORMField.hpp"
 #include "QHttp/HTTPExceptions.h"
 
 namespace QHttp {
@@ -60,6 +61,7 @@ public:
     virtual bool isIntegralType() = 0;
     virtual enuVarComplexity complexity() = 0;
     virtual QStringList options() = 0;
+    virtual QString description(const QList<clsORMField>& _allFields) = 0;
     virtual void validate(const QVariant& _val, const QByteArray& _paramName) = 0;
 
     QString     PrettyTypeName;
@@ -74,14 +76,13 @@ public:
         public:_name(){;}_name(const _type& _other):_type(_other){;} \
         _name fromVariant (const QVariant& _value){_type Value = _type::fromVariant (_value); return *reinterpret_cast<_name*>(&Value);}}
 
-#define QHTTP_REGISTER_METATYPE(_complexity, _type, _lambdaToVariant, _lambdaFromVariant) \
+#define QHTTP_REGISTER_METATYPE(_complexity, _type, ...) \
     qRegisterMetaType<_type>(); \
     QHttp::RESTServer::registerUserDefinedType(TARGOMAN_M2STR(_type), \
                                                new tmplAPIArg<_type, _complexity>(TARGOMAN_M2STR(_type), \
-                                                                     _lambdaToVariant, \
-                                                                     _lambdaFromVariant))
+                                                                     __VA_ARGS__))
 
-#define QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(_complexity, _type, _validationRule, _toVariant) \
+#define QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(_complexity, _type, _validationRule, _toVariant, ...) \
     QHTTP_REGISTER_METATYPE( \
         _complexity, _type, \
         [](const _type& _value) -> QVariant {return _toVariant;}, \
@@ -89,16 +90,17 @@ public:
             static QFieldValidator Validator = QFieldValidator()._validationRule; \
             if(Validator.isValid(_value, _paramName) == false) throw exHTTPBadRequest(Validator.errorMessage()); \
             _type Value; Value=_value.toString();  return  Value; \
-        } \
+        }, nullptr, __VA_ARGS__ \
     )
 
-#define QHTTP_REGISTER_METATYPE_WITHOPTIONS(_complexity, _type, _lambdaToVariant, _lambdaFromVariant, _options) \
+#define QHTTP_REGISTER_METATYPE_WITHOPTIONS(_complexity, _type, _lambdaToVariant, _lambdaFromVariant, _options, ...) \
     qRegisterMetaType<_type>(); \
     QHttp::RESTServer::registerUserDefinedType(TARGOMAN_M2STR(_type), \
                                                new tmplAPIArg<_type, _complexity>(TARGOMAN_M2STR(_type), \
                                                                      _lambdaToVariant, \
                                                                      _lambdaFromVariant, \
-                                                                     _options \
+                                                                     _options, \
+                                                                     __VA_ARGS__ \
     ))
 
 #define QHTTP_REGISTER_TARGOMAN_ENUM(_enum) \
@@ -112,7 +114,8 @@ public:
                         QString(TARGOMAN_M2STR(_enum)).startsWith("enu") ? QString(TARGOMAN_M2STR(_enum)).mid(3) : QString(TARGOMAN_M2STR(_enum)))); \
             return _enum::toEnum(_value.toString()); \
         }, \
-        []() -> QStringList { return _enum::options();} \
+        []() -> QStringList { return _enum::options();}, \
+        [](const QList<QHttp::clsORMField>&){return QString("One of (%1)").arg(_enum::options().join('|'));}\
     )
 }
 

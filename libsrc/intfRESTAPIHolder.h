@@ -29,7 +29,6 @@
 #include "libTargomanCommon/Configuration/intfConfigurableModule.hpp"
 #include "QHttp/HTTPExceptions.h"
 #include "QHttp/qhttpfwd.hpp"
-#include "QHttp/stuORMField.hpp"
 #include "QHttp/GenericTypes.h"
 
 namespace QHttp {
@@ -94,8 +93,8 @@ class intfRESTAPIHolder : public Targoman::Common::Configuration::intfModule{
 public:
     intfRESTAPIHolder(Targoman::Common::Configuration::intfModule *_parent = nullptr);
     virtual ~intfRESTAPIHolder(){}
-    virtual QList<stuORMField> filterItems(qhttp::THttpMethod _method = qhttp::EHTTP_ACL) const { Q_UNUSED(_method) return {}; }
-    virtual void updateFilterParamType(const QString& _fieldTypeName, int _typeID) {Q_UNUSED(_fieldTypeName) Q_UNUSED(_typeID)}
+    virtual QList<clsORMField> filterItems(qhttp::THttpMethod _method = qhttp::EHTTP_ACL) { Q_UNUSED(_method) return {}; }
+    virtual void updateFilterParamType(const QString& _fieldTypeName, QMetaType::Type _typeID) {Q_UNUSED(_fieldTypeName) Q_UNUSED(_typeID)}
 
 private slots:
     /**

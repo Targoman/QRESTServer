@@ -26,15 +26,12 @@
 
 #ifdef QHTTP_REDIS_PROTOCOL
 
-extern "C" {
-    #include "hiredis/hiredis.h"
-}
-
 #include "Private/intfCacheConnector.hpp"
+
+class redisContext;
 
 namespace QHttp {
 namespace Private{
-
 
 class clsRedisConnector : public intfCacheConnector {
 public:

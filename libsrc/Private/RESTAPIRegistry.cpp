@@ -400,7 +400,7 @@ QJsonObject RESTAPIRegistry::retriveOpenAPIJson(){
             if(ParamType == PARAM_EXTRAPATH){
                 if(_extraPathsStorage){
                     QList<clsORMField> PKs;
-                    foreach(auto Item, APIObject->Parent->filterItems())
+                    foreach(auto Item, APIObject->Parent->filterItems(qhttp::EHTTP_DELETE))
                         if(Item.isPrimaryKey())
                             PKs.append(Item);
                     foreach(auto PK, PKs){
@@ -534,6 +534,8 @@ QJsonObject RESTAPIRegistry::retriveOpenAPIJson(){
         };
 
         auto add2Paths = [PathString, HTTPMethod](QJsonObject& PathsObject, const QJsonObject& _currPathMethodInfo, QStringList* _extraPathsStorage){
+            if(HTTPMethod == "delete" && _currPathMethodInfo.value("parameters").toArray().isEmpty())
+                return;
             QString Path = PathString + (_extraPathsStorage ? ("/{" + _extraPathsStorage->join("},{") + "}") : "");
             if(PathsObject.contains(Path)){
                 QJsonObject CurrPathObject = PathsObject.value(Path).toObject();

@@ -332,6 +332,7 @@ QJsonObject RESTAPIRegistry::retriveOpenAPIJson(){
         throw exHTTPInternalServerError("Invalid OpenAPI base json");
 
     QJsonObject PathsObject;
+    QJsonArray TagsArray;
     foreach(const QString& Key, RESTAPIRegistry::Registry.keys()){
         QString PathString = Key.split(" ").last();
         QString HTTPMethod = Key.split(" ").first().toLower();
@@ -466,12 +467,15 @@ QJsonObject RESTAPIRegistry::retriveOpenAPIJson(){
             }
         };
 
-        auto createPathInfo = [PathString, DefaultResponses, APIObject, HTTPMethod, addParamSpecs, paramName, fillParamTypeSpec](QStringList* _extraPathsStorage)->QJsonObject{
+        QStringList PathStringParts = PathString.split("/", QString::SkipEmptyParts);
+        if(APIObject->HasExtraMethodName)
+            PathStringParts.pop_back();
+        QString TagName  =  PathStringParts.join("_");
+
+        auto createPathInfo = [TagName, DefaultResponses, APIObject, HTTPMethod, addParamSpecs, paramName, fillParamTypeSpec](QStringList* _extraPathsStorage)->QJsonObject{
             QJsonObject PathInfo = QJsonObject({{"summary", APIObject->BaseMethod.Doc}});
-            QStringList PathStringParts = PathString.split("/", QString::SkipEmptyParts);
-            if(APIObject->HasExtraMethodName)
-                PathStringParts.pop_back();
-            PathInfo["tags"] = QJsonArray({PathStringParts.join("_")});
+
+            PathInfo["tags"] = QJsonArray({TagName});
             PathInfo["produces"] = QJsonArray({"application/json"});
             if(HTTPMethod != "get" && HTTPMethod != "delete"){
                 PathInfo["consumes"] = QJsonArray({"application/json"});
@@ -563,9 +567,32 @@ QJsonObject RESTAPIRegistry::retriveOpenAPIJson(){
 
         if(HasNonAutoParams)
             add2Paths(PathsObject, createPathInfo(nullptr), nullptr);
+
+        QList<clsORMField> Filters = APIObject->Parent->filterItems();
+        QStringList ModelDescription;
+        foreach(auto Filter, Filters){
+            QString FilterInfo = "* " + Filter.name();
+            QStringList Flags;
+            if(Filter.isSortable()) Flags.append("Sortable");
+            if(Filter.isFilterable()) Flags.append("Filterable");
+            if(Filter.isPrimaryKey()) Flags.append("*PrimaryKey*");
+            if(Filter.isSelfIdentifier()) Flags.append("**SelfIdentifier**");
+            if(Filter.isVirtual()) Flags.append("Virtual");
+            if(Flags.size())
+                FilterInfo += " (" + Flags.join("|") + ")";
+            ModelDescription.append(FilterInfo);
+        }
+
+        if(false && ModelDescription.size()){
+            TagsArray.append(QJsonObject({
+                                 {"name", TagName},
+                                 {"description", QString("Model:\n" + ModelDescription.join("\n"))}
+                             }));
+        }
     }
 
     RESTAPIRegistry::CachedOpenAPI["paths"] = PathsObject;
+    //RESTAPIRegistry::CachedOpenAPI["tags"] = TagsArray;
 
     return RESTAPIRegistry::CachedOpenAPI;
 }

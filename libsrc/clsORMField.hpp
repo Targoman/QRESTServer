@@ -101,7 +101,7 @@ private:
 
 
 ///                         RO   Sort  Filter Self  Virt   PK
-#define ORM_PRIMARY_KEY     true, true, true, true, false, true
+#define ORM_PRIMARY_KEY     true, true, true, false, false, true
 #define ORM_SELF_REAL       true, true, true, true, false
 #define ORM_SELF_VIRTUAL    true, true, true, true, true
 

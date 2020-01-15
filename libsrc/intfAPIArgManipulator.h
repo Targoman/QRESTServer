@@ -59,7 +59,7 @@ public:
     virtual bool hasFromVariantMethod() const = 0;
     virtual bool hasToVariantMethod() const = 0;
     virtual QString toString(const QVariant _val) const = 0;
-    virtual bool isIntegralType() const  = 0;
+    virtual bool isPrimitiveType() const  = 0;
     virtual enuVarComplexity complexity() const = 0;
     virtual QStringList options() const = 0;
     virtual QString description(const QList<clsORMField>& _allFields) const = 0;

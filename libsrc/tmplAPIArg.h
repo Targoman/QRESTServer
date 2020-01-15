@@ -76,7 +76,7 @@ public:
     inline void cleanup (void* _argStorage) final {if(_argStorage) delete (reinterpret_cast<_itmplType*>(_argStorage));}
     inline bool hasFromVariantMethod() const final {return this->fromVariantLambda != nullptr;}
     inline bool hasToVariantMethod() const final {return this->toVariantLambda != nullptr;}
-    inline bool isIntegralType() const final { return _itmplVarType == COMPLEXITY_Integral;}
+    inline bool isPrimitiveType() const final { return _itmplVarType == COMPLEXITY_Integral;}
     inline QStringList options() const final { return this->optionsLambda ? this->optionsLambda() : QStringList() ;}
     inline enuVarComplexity complexity() const final { return _itmplVarType;}
     inline QString description(const QList<clsORMField>& _allFields) const final { return this->descriptionLambda ? this->descriptionLambda(_allFields) : QString("A value of type: %1").arg(this->PrettyTypeName);}

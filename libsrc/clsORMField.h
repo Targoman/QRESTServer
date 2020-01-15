@@ -29,7 +29,7 @@
 
 namespace QHttp {
 class intfRESTAPIHolder;
-class intfAPIArgManipulator
+class intfAPIArgManipulator;
 namespace Private {
 class RESTAPIRegistry;
 }

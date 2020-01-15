@@ -273,7 +273,7 @@ QMap<QString, QString> RESTAPIRegistry::extractMethods(QHash<QString, clsAPIObje
                     case COMPLEXITY_Enum:
                         return QString(" = \"%1\"").arg(_apiObject->defaultValue(i).toString().replace("\"", "\\\""));
                     }
-                    return " = " + (ArgManipulator->isIntegralType() ? QString("%1") : (QString("\"%1\""))).arg(
+                    return " = " + (ArgManipulator->isPrimitiveType() ? QString("%1") : (QString("\"%1\""))).arg(
                                 _apiObject->defaultValue(i).toString().replace("\"", "\\\""));
                 }
                 return "";

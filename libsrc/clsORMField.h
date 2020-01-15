@@ -28,8 +28,10 @@
 #include "QFieldValidator.h"
 
 namespace QHttp {
+
 class intfRESTAPIHolder;
 class intfAPIArgManipulator;
+
 namespace Private {
 class RESTAPIRegistry;
 }

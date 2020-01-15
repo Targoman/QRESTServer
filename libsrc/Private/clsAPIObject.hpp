@@ -41,7 +41,7 @@ namespace Private {
 #define PARAM_REMOTE_IP "QHttp::RemoteIP_t"
 #define PARAM_HEADERS   "QHttp::HEADERS_t"
 #define PARAM_EXTRAPATH "QHttp::ExtraPath_t"
-#define PARAM_DIRECTFILTER "QHttp::DirectFilters_t"
+#define PARAM_ORMFILTER "QHttp::ORMFilters_t"
 
 class QMetaMethodExtended : public QMetaMethod {
 public:
@@ -101,8 +101,8 @@ public:
         return this->ParamTypes.contains(PARAM_HEADERS);
     }
 
-    inline bool requiresDirectFilters() const {
-        return this->ParamTypes.contains(PARAM_DIRECTFILTER);
+    inline bool requiresORMFilters() const {
+        return this->ParamTypes.contains(PARAM_ORMFILTER);
     }
 
     inline QString paramType(quint8 _paramIndex) const {
@@ -146,7 +146,7 @@ public:
             ExtraArgCount++;
         if(this->ParamTypes.contains(PARAM_EXTRAPATH))
             ExtraArgCount++;
-        if(this->ParamTypes.contains(PARAM_DIRECTFILTER))
+        if(this->ParamTypes.contains(PARAM_ORMFILTER))
             ExtraArgCount++;
 
         if(_args.size() + _bodyArgs.size() + ExtraArgCount < this->RequiredParamsCount)
@@ -199,13 +199,13 @@ public:
                 ArgumentValue = _extraAPIPath;
             }
 
-            if(ParamNotFound && this->ParamTypes.at(i) == PARAM_DIRECTFILTER){
+            if(ParamNotFound && this->ParamTypes.at(i) == PARAM_ORMFILTER){
                 ParamNotFound = false;
-                QHttp::DirectFilters_t DirectFilters;
+                QHttp::ORMFilters_t ORMFilters;
                 foreach (const QString& Arg, _args)
-                    DirectFilters.insert(Arg.mid(0,Arg.indexOf('=')), parseArgValue(Arg.mid(0,Arg.indexOf('=')), QUrl::fromPercentEncoding(Arg.mid(Arg.indexOf('=') + 1).toUtf8())));
+                    ORMFilters.insert(Arg.mid(0,Arg.indexOf('=')), parseArgValue(Arg.mid(0,Arg.indexOf('=')), QUrl::fromPercentEncoding(Arg.mid(Arg.indexOf('=') + 1).toUtf8())));
 
-                ArgumentValue = DirectFilters;
+                ArgumentValue = ORMFilters;
             }
 
             if(ParamNotFound)

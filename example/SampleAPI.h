@@ -89,7 +89,7 @@ public:
     void init();
 
 private slots:
-    QString API(GET, ,(QHttp::ExtraPath_t _EXTRAPATH, QHttp::DirectFilters_t _FILTERS, int from, int to),
+    QString API(GET, ,(QHttp::ExtraPath_t _EXTRAPATH, QHttp::ORMFilters_t _FILTERS, int from, int to),
             "Sample API without name")
 private:
     quint64 API(, SampleEnahancedEnum, (ns::enuSample::Type _val = enuSample::s1),

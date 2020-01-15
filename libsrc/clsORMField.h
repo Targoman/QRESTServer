@@ -21,18 +21,20 @@
  * @author S. Mehran M. Ziabary <ziabary@targoman.com>
  */
 
-#ifndef QHTTP_clsORMField_HPP
-#define QHTTP_clsORMField_HPP
+#ifndef QHTTP_CLSORMFIELD_H
+#define QHTTP_CLSORMFIELD_H
 
-#include "intfAPIArgManipulator.h"
+//#include "intfAPIArgManipulator.h"
 #include "QFieldValidator.h"
 
 namespace QHttp {
 class intfRESTAPIHolder;
+class intfAPIArgManipulator
 namespace Private {
 class RESTAPIRegistry;
 }
 
+class intfAPIArgManipulator;
 #define S(_type) #_type
 
 class clsORMFieldData : public QSharedData{
@@ -40,6 +42,7 @@ public:
     clsORMFieldData();
     clsORMFieldData(const QString& _name,
                     const QString& _type,
+                    QVariant _defaultValue,
                     const QFieldValidator& _extraValidator,
                     bool _isReadOnly,
                     bool _isSortable,
@@ -55,6 +58,7 @@ public:
     QString         Name;
     QMetaType::Type ParameterType;
     QString         ParamTypeName;
+    QVariant        DefaultValue;
     QFieldValidator ExtraValidator;
     bool            IsSortable;
     bool            IsFilterable;
@@ -72,6 +76,7 @@ public:
     clsORMField(const QString& _name,
                 const QString& _type,
                 const QFieldValidator& _extraValidator = QFV.allwaysValid(),
+                QVariant _defaultValue = {},
                 bool _isReadOnly = false,
                 bool _isSortable = true,
                 bool _isFilterable = true,
@@ -82,7 +87,7 @@ public:
     ~clsORMField();
     void registerTypeIfNotRegisterd(QHttp::intfRESTAPIHolder* _module);
     void updateTypeID(QMetaType::Type _type);
-    void validate(const QVariant _value) const;
+    void validate(const QVariant _value);
     inline QString         name() const {return this->Data->Name;}
     inline int             parameterType() const {return this->Data->ParameterType;}
     inline QString         paramTypeName() const {return this->Data->ParamTypeName;}
@@ -94,16 +99,23 @@ public:
     inline bool            isVirtual() const {return this->Data->IsVirtual;}
     inline bool            isPrimaryKey() const {return this->Data->IsPrimaryKey;}
     inline QString         renameAs() const {return this->Data->RenameAs;}
+    inline QVariant        defaultValue() const {return this->Data->DefaultValue;}
+    QString                toString(const QVariant& _value);
+    QVariant               toDB(const QString& _value);
+    QVariant               fromDB(const QVariant& _value);
+    const intfAPIArgManipulator& argSpecs();
 
 private:
     QExplicitlySharedDataPointer<clsORMFieldData> Data;
 };
 
+static const QVariant       QNull    = QVariant();
+static const QVariant       QInvalid = QVariant(QVariant::Invalid);
 
-///                         RO   Sort  Filter Self  Virt   PK
-#define ORM_PRIMARY_KEY     true, true, true, false, false, true
-#define ORM_SELF_REAL       true, true, true, true, false
-#define ORM_SELF_VIRTUAL    true, true, true, true, true
+///                         Default     RO   Sort  Filter Self  Virt   PK
+#define ORM_PRIMARY_KEY     QInvalid,   true, true, true, false, false, true
+#define ORM_SELF_REAL       QInvalid,   true, true, true, true, false
+#define ORM_SELF_VIRTUAL    QInvalid,   true, true, true, true, true
 
 }
-#endif // QHTTP_clsORMField_HPP
+#endif // QHTTP_CLSORMFIELD_H

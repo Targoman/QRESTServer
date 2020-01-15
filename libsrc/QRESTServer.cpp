@@ -200,10 +200,6 @@ QHttp::EncodedJWT_t intfRESTAPIHolder::createSignedJWT(QJsonObject _payload, QJs
     return Private::QJWT::createSigned(_payload, _privatePayload, _expiry, _sessionID);
 }
 
-QStringList intfRESTAPIHolder::apiGETListOfAPIs(bool _showParams, bool _showTypes, bool _prettifyTypes){
-    return RESTAPIRegistry::registeredAPIs("", _showParams, _showTypes, _prettifyTypes);
-}
-
 intfAPIArgManipulator::intfAPIArgManipulator(const QString& _realTypeName)
 {
     this->PrettyTypeName = (_realTypeName.startsWith('Q') ? _realTypeName.mid(1) : _realTypeName).toLower();

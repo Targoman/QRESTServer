@@ -42,6 +42,7 @@ namespace Private {
 #define MAKE_INVALID_METATYPE(_typeName, _id, _baseType) { _id, { nullptr } },
 
 #define IGNORE_TYPE_Void ,
+#define IGNORE_TYPE_Bool ,
 #define IGNORE_TYPE_QByteArray ,
 #define IGNORE_TYPE_QBitArray ,
 #define IGNORE_TYPE_QLocale ,
@@ -73,6 +74,14 @@ const QMap<int, intfAPIArgManipulator*> MetaTypeInfoMap = {
     QT_FOR_EACH_STATIC_CORE_TEMPLATE(MAKE_INFO_FOR_VALID_COMPLEX_METATYPE)
     QT_FOR_EACH_STATIC_GUI_CLASS(MAKE_INVALID_METATYPE)
     QT_FOR_EACH_STATIC_WIDGETS_CLASS(MAKE_INVALID_METATYPE)
+    {qMetaTypeId<bool>(), { new tmplAPIArg<bool, COMPLEXITY_Integral>("bool",{},
+                            [](const QVariant& _value, const QByteArray& _paramName) -> bool {
+                                if(_value.toString() == "false" || _value.toString() == "0") return false;
+                                if(_value.toString() == "true" || _value.toString() == "1") return true;
+                                throw exHTTPBadRequest(_paramName + " is not a valid bool");
+                            },
+                            {},{},
+                            [](const QString& _val) -> QVariant {return !(_val == "false" || _val == "0");}) } }
 };
 
 QList<intfAPIArgManipulator*> gOrderedMetaTypeInfo;
@@ -293,8 +302,9 @@ QMap<QString, QString> RESTAPIRegistry::extractMethods(QHash<QString, clsAPIObje
 }
 
 QJsonObject RESTAPIRegistry::retriveOpenAPIJson(){
-    if(RESTAPIRegistry::CachedOpenAPI.isEmpty() == false)
+     if(RESTAPIRegistry::CachedOpenAPI.isEmpty() == false)
         return RESTAPIRegistry::CachedOpenAPI;
+/**/
 
     RESTAPIRegistry::CachedOpenAPI = gConfigs.Public.BaseOpenAPIObject;
     QJsonObject DefaultResponses = QJsonObject({
@@ -372,7 +382,6 @@ QJsonObject RESTAPIRegistry::retriveOpenAPIJson(){
                 const QList<clsORMField>& _fields,
                 QString _typeName,
                 QJsonObject& ParamSpecs,
-
                 QVariant _deafaultValue = {},
                 bool addExample = false) -> void{
             ParamSpecs["description"] = _argMan->description(_fields);
@@ -384,6 +393,8 @@ QJsonObject RESTAPIRegistry::retriveOpenAPIJson(){
                 ParamSpecs["default"] = _deafaultValue.toString();
                 if(addExample)
                     ParamSpecs["example"] = _deafaultValue.toString();
+            }else if(addExample) {
+                ParamSpecs["example"] = QJsonValue();
             }
 
         };
@@ -426,7 +437,7 @@ QJsonObject RESTAPIRegistry::retriveOpenAPIJson(){
 
             if(HTTPMethod == "get" || HTTPMethod == "delete"){
                 if(_extraPathsStorage){
-                    if(ParamType == PARAM_DIRECTFILTER){
+                    if(ParamType == PARAM_ORMFILTER){
                         foreach(auto Item, APIObject->Parent->filterItems(HTTPMethod == "get" ? qhttp::EHTTP_GET : qhttp::EHTTP_DELETE)){
                             if(Item.isFilterable()== false || Item.isPrimaryKey())
                                 continue;
@@ -443,14 +454,15 @@ QJsonObject RESTAPIRegistry::retriveOpenAPIJson(){
                             fillParamTypeSpec(ArgSpecs,
                                               APIObject->Parent->filterItems(),
                                               QMetaType::typeName(Item.parameterType()),
-                                              ParamSpecs
+                                              ParamSpecs,
+                                              Item.defaultValue()
                                               );
                             _parameters.append(ParamSpecs);
                         }
                     }
                     return ;
                 }
-                if(ParamType == PARAM_DIRECTFILTER)
+                if(ParamType == PARAM_ORMFILTER)
                     return;
 
                 ParamSpecs["in"] = "query";
@@ -490,14 +502,47 @@ QJsonObject RESTAPIRegistry::retriveOpenAPIJson(){
                           )
                         continue;
 
-                    QJsonObject ParamSpecs;
-                    fillParamTypeSpec(APIObject->argSpecs(i),
-                                      APIObject->Parent->filterItems(),
-                                      QMetaType::typeName(APIObject->BaseMethod.parameterType(i)),
-                                      ParamSpecs,
-                                      APIObject->defaultValue(i),
-                                      true);
-                    Properties[paramName(i)] = ParamSpecs;
+                    if(ParamType == PARAM_ORMFILTER){
+                        foreach(auto Item, APIObject->Parent->filterItems(HTTPMethod == "put" ? qhttp::EHTTP_PUT :
+                                                                          HTTPMethod == "patch" ? qhttp::EHTTP_PATCH :
+                                                                          qhttp::EHTTP_BIND)){
+                            if(Item.isReadOnly() && Item.isPrimaryKey() == false)
+                                continue;
+                            QJsonObject ParamSpecs;
+                            intfAPIArgManipulator* ArgSpecs;
+                            if(Item.parameterType()< QHTTP_BASE_USER_DEFINED_TYPEID)
+                                ArgSpecs = gOrderedMetaTypeInfo.at(Item.parameterType());
+                            else
+                                ArgSpecs = gUserDefinedTypesInfo.at(Item.parameterType()- QHTTP_BASE_USER_DEFINED_TYPEID);
+
+                            if(!ArgSpecs){
+                                Item.registerTypeIfNotRegisterd(APIObject->Parent);
+                                if(Item.parameterType()< QHTTP_BASE_USER_DEFINED_TYPEID)
+                                    ArgSpecs = gOrderedMetaTypeInfo.at(Item.parameterType());
+                                else
+                                    ArgSpecs = gUserDefinedTypesInfo.at(Item.parameterType()- QHTTP_BASE_USER_DEFINED_TYPEID);
+                            }
+
+                            Q_ASSERT(ArgSpecs);
+                            fillParamTypeSpec(ArgSpecs,
+                                              APIObject->Parent->filterItems(),
+                                              QMetaType::typeName(Item.parameterType()),
+                                              ParamSpecs,
+                                              HTTPMethod == "put" ? Item.toString(Item.defaultValue()) : QVariant(),
+                                              Item.isPrimaryKey() == false
+                                              );
+                            Properties[Item.name()] = ParamSpecs;
+                        }
+                    }else{
+                        QJsonObject ParamSpecs;
+                        fillParamTypeSpec(APIObject->argSpecs(i),
+                                          APIObject->Parent->filterItems(),
+                                          QMetaType::typeName(APIObject->BaseMethod.parameterType(i)),
+                                          ParamSpecs,
+                                          APIObject->defaultValue(i),
+                                          true);
+                        Properties[paramName(i)] = ParamSpecs;
+                    }
                 }
 
                 QJsonArray Parameters;
@@ -555,10 +600,10 @@ QJsonObject RESTAPIRegistry::retriveOpenAPIJson(){
         quint8 HasNonAutoParams = false;
         foreach(auto ParamType, APIObject->ParamTypes)
             if(/*ParamType != PARAM_HEADERS
-               && ParamType != PARAM_REMOTE_IP
-               && ParamType != PARAM_COOKIES
-               && ParamType != PARAM_JWT
-               &&*/ ParamType != PARAM_EXTRAPATH
+                  && ParamType != PARAM_REMOTE_IP
+                  && ParamType != PARAM_COOKIES
+                  && ParamType != PARAM_JWT
+                  &&*/ ParamType != PARAM_EXTRAPATH
                ){
                 HasNonAutoParams = true;
                 break;
@@ -585,9 +630,9 @@ QJsonObject RESTAPIRegistry::retriveOpenAPIJson(){
 
         if(false && ModelDescription.size()){
             TagsArray.append(QJsonObject({
-                                 {"name", TagName},
-                                 {"description", QString("Model:\n" + ModelDescription.join("\n"))}
-                             }));
+                                             {"name", TagName},
+                                             {"description", QString("Model:\n" + ModelDescription.join("\n"))}
+                                         }));
         }
     }
 
@@ -742,111 +787,4 @@ clsAPIObject::~clsAPIObject()
 
 }
 
-/****************************************************/
-QHttp::clsORMFieldData::clsORMFieldData() : ParameterType(QMetaType::UnknownType) { }
-QHttp::clsORMFieldData::clsORMFieldData(const QString& _name,
-                const QString& _type,
-                const QFieldValidator& _extraValidator,
-                bool _isReadOnly,
-                bool _isSortable,
-                bool _isFilterable,
-                bool _isSelfIdentifier,
-                bool _isVirtual,
-                bool _isPrimaryKey,
-                const QString& _renameAs) :
-    Name(_name),
-    ParameterType(static_cast<QMetaType::Type>(QMetaType::type(_type.toUtf8()))),
-    ParamTypeName(_type),
-    ExtraValidator(_extraValidator),
-    IsSortable(_isSortable),
-    IsFilterable(_isFilterable),
-    IsReadOnly(_isReadOnly),
-    IsSelfIdentifier(_isSelfIdentifier),
-    IsVirtual(_isVirtual),
-    IsPrimaryKey(_isPrimaryKey),
-    RenameAs(_renameAs)
-{}
-
-QHttp::clsORMFieldData::clsORMFieldData(const clsORMFieldData& _o)
-        : QSharedData(_o),
-          Name(_o.Name),
-          ParameterType(_o.ParameterType),
-          ParamTypeName(_o.ParamTypeName),
-          ExtraValidator(_o.ExtraValidator),
-          IsSortable(_o.IsSortable),
-          IsFilterable(_o.IsFilterable),
-          IsReadOnly(_o.IsReadOnly),
-          IsSelfIdentifier(_o.IsSelfIdentifier),
-          IsVirtual(_o.IsVirtual),
-          IsPrimaryKey(_o.IsPrimaryKey),
-          RenameAs(_o.RenameAs)
-{}
-
-
-QHttp::clsORMField::clsORMField() :
-    Data(new clsORMFieldData)
-{}
-
-QHttp::clsORMField::clsORMField(const QHttp::clsORMField& _other, const QString& _newName) :
-    Data(_other.Data)
-{
-    if(_newName.size()){
-        this->Data.detach();
-        this->Data->Name = _newName;
-    }
-}
-
-clsORMField::clsORMField(const QString& _name,
-                         const QString& _type,
-                         const QFieldValidator& _extraValidator,
-                         bool  _isReadOnly,
-                         bool  _isSortable,
-                         bool  _isFilterable,
-                         bool  _isSelfIdentifier,
-                         bool  _isVirtual,
-                         bool  _isPrimaryKey,
-                         const QString& _renameAs):
-    Data(new clsORMFieldData(
-             _name,
-             _type,
-             _extraValidator,
-             _isReadOnly,
-             _isSortable,
-             _isFilterable,
-             _isSelfIdentifier,
-             _isVirtual,
-             _isPrimaryKey,
-             _renameAs
-             ))
-{}
-
-QHttp::clsORMField::~clsORMField()
-{ }
-
-void QHttp::clsORMField::registerTypeIfNotRegisterd(intfRESTAPIHolder* _module)
-{
-    if(Q_UNLIKELY(this->Data->ParameterType == QMetaType::UnknownType)){
-        this->Data->ParameterType = static_cast<QMetaType::Type>(QMetaType::type(this->Data->ParamTypeName.toUtf8()));
-        if(this->Data->ParameterType == QMetaType::UnknownType)
-            throw Private::exRESTRegistry("Unregistered type: <"+this->Data->ParamTypeName+">");
-        _module->updateFilterParamType(this->Data->ParamTypeName, this->Data->ParameterType);
-    }
-}
-
-void QHttp::clsORMField::updateTypeID(QMetaType::Type _type)
-{
-    this->Data->ParameterType = _type;
-}
-
-void QHttp::clsORMField::validate(const QVariant _value) const
-{
-    Q_ASSERT(this->Data->ParameterType != QMetaType::UnknownType);
-    intfAPIArgManipulator* ArgSpecs;
-    if(this->Data->ParameterType < Private::QHTTP_BASE_USER_DEFINED_TYPEID)
-        ArgSpecs = Private::gOrderedMetaTypeInfo.at(this->Data->ParameterType);
-    else
-        ArgSpecs = Private::gUserDefinedTypesInfo.at(this->Data->ParameterType - Private::QHTTP_BASE_USER_DEFINED_TYPEID);
-
-    ArgSpecs->validate(_value, this->Data->Name.toLatin1());
-}
 }

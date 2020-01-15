@@ -459,11 +459,11 @@ void clsMultipartFormDataRequestHandler::onMultiPartEnd(void *_userData) {
     }
     if(Self->LastTempFile.isNull() == false){
         Self->SameNameItems.append(
-                    QString("{\"name\":\"%1\",\"tmpname\":\"%2\",\"size\":\"%3\",\"type\":\"%4\"}").arg(
-                        Self->LastFileName.c_str()).arg(
-                        Self->LastTempFile->fileName()).arg(
-                        Self->LastWrittenBytes).arg(
-                        Self->LastMime.c_str()));
+                    stuFileInfo(
+                        Self->LastFileName.c_str(),
+                        Self->LastTempFile->fileName(),
+                        static_cast<quint64>(Self->LastWrittenBytes),
+                        Self->LastMime.c_str()).toVariant().toString());
         Self->LastTempFile.reset();
     }else
         Self->SameNameItems.append(Self->LastValue);

@@ -39,11 +39,15 @@ public:
                std::function<QVariant(const _itmplType& _value)> _toVariant = {},
                std::function<_itmplType(const QVariant& _value, const QByteArray& _paramName)> _fromVariant = {},
                std::function<QStringList()> _options = {},
-               std::function<QString(const QList<clsORMField>& _allFields)> _description = {}
+               std::function<QString(const QList<clsORMField>& _allFields)> _description = {},
+               std::function<QVariant(const QString& _val)> _toORMValue = {},
+               std::function<QVariant(const QVariant& _val)> _fromORMValue = {}
                ) :
         intfAPIArgManipulator(_typeName),
-        toVariant(_toVariant),
-        fromVariant(_fromVariant),
+        toVariantLambda(_toVariant),
+        fromVariantLambda(_fromVariant),
+        toORMValueLambda(_toORMValue),
+        fromORMValueLambda(_fromORMValue),
         optionsLambda(_options),
         descriptionLambda(_description)
     {}
@@ -51,40 +55,49 @@ public:
 
     virtual QGenericArgument makeGenericArgument(const QVariant& _val, const QByteArray& _paramName, void** _argStorage) final{
         *_argStorage = nullptr;
-        if(this->fromVariant == nullptr && !_val.canConvert<_itmplType>())
+        if(this->fromVariantLambda == nullptr && !_val.canConvert<_itmplType>())
                 throw exHTTPBadRequest("Invalid value specified for parameter: " + _paramName);
         *_argStorage = new _itmplType;
         *(reinterpret_cast<_itmplType*>(*_argStorage)) =
-                this->fromVariant == nullptr ? _val.value<_itmplType>() : this->fromVariant(_val, _paramName);
+                this->fromVariantLambda == nullptr ? _val.value<_itmplType>() : this->fromVariantLambda(_val, _paramName);
         return QGenericArgument(this->RealTypeName, *_argStorage);
     }
     inline QVariant invokeMethod(const intfAPIObject *_apiObject, const QVariantList& _arguments) final {
            _itmplType Result;
            _apiObject->invokeMethod(_arguments, QReturnArgument<_itmplType >(this->RealTypeName, Result));
-           return this->toVariant == nullptr ? QVariant::fromValue(Result) : this->toVariant(Result);
+           return this->toVariantLambda == nullptr ? QVariant::fromValue(Result) : this->toVariantLambda(Result);
     }
-    inline void validate(const QVariant& _val, const QByteArray& _paramName) final {
-        if(this->fromVariant == nullptr && !_val.canConvert<_itmplType>())
+    inline void validate(const QVariant& _val, const QByteArray& _paramName) const final {
+        if(this->fromVariantLambda == nullptr && !_val.canConvert<_itmplType>())
                 throw exHTTPBadRequest("Invalid value specified for parameter: " + _paramName);
-        if(this->fromVariant)
-            this->fromVariant(_val, _paramName);
+        if(this->fromVariantLambda)
+            this->fromVariantLambda(_val, _paramName);
     }
     inline void cleanup (void* _argStorage) final {if(_argStorage) delete (reinterpret_cast<_itmplType*>(_argStorage));}
-    inline bool hasFromVariantMethod() final {return this->fromVariant != nullptr;}
-    inline bool hasToVariantMethod() final {return this->toVariant != nullptr;}
-    inline bool isIntegralType() final { return _itmplVarType == COMPLEXITY_Integral;}
-    inline QStringList options() final { return this->optionsLambda ? this->optionsLambda() : QStringList() ;}
-    inline enuVarComplexity complexity() final { return _itmplVarType;}
-    inline QString description(const QList<clsORMField>& _allFields) final { return this->descriptionLambda ? this->descriptionLambda(_allFields) : QString("A value of type: %1").arg(this->PrettyTypeName);}
-    inline QString toString(const QVariant _val) {
+    inline bool hasFromVariantMethod() const final {return this->fromVariantLambda != nullptr;}
+    inline bool hasToVariantMethod() const final {return this->toVariantLambda != nullptr;}
+    inline bool isIntegralType() const final { return _itmplVarType == COMPLEXITY_Integral;}
+    inline QStringList options() const final { return this->optionsLambda ? this->optionsLambda() : QStringList() ;}
+    inline enuVarComplexity complexity() const final { return _itmplVarType;}
+    inline QString description(const QList<clsORMField>& _allFields) const final { return this->descriptionLambda ? this->descriptionLambda(_allFields) : QString("A value of type: %1").arg(this->PrettyTypeName);}
+    inline QString toString(const QVariant _val) const final {
         if(this->hasFromVariantMethod() && this->hasToVariantMethod())
-            return this->toVariant(this->fromVariant(_val, {})).toString();
+            return this->toVariantLambda(this->fromVariantLambda(_val, {})).toString();
         return QString();
     }
+    inline QVariant toORMValue(const QString& _val) const final {
+        return this->toORMValueLambda  == nullptr ?
+                    _val :
+                    this->toORMValueLambda(_val);
+    }
+
+    inline std::function<QVariant(const QVariant& _val)> fromORMValueConverter() const final {return this->fromORMValueLambda;}
 
 private:
-    std::function<QVariant(_itmplType _value)> toVariant;
-    std::function<_itmplType(QVariant _value, const QByteArray& _paramName)> fromVariant;
+    std::function<QVariant(_itmplType _value)> toVariantLambda;
+    std::function<_itmplType(QVariant _value, const QByteArray& _paramName)> fromVariantLambda;
+    std::function<QVariant(QString _value)> toORMValueLambda;
+    std::function<QVariant(const QVariant& _val)> fromORMValueLambda;
     std::function<QStringList()> optionsLambda;
     std::function<QString(const QList<clsORMField>& _allFields)> descriptionLambda;
 

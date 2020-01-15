@@ -28,7 +28,7 @@ DIST_HEADERS += \
     GenericTypes.h \
     intfAPIArgManipulator.h \
     tmplAPIArg.h \
-    clsORMField.hpp \
+    clsORMField.h \
 
 PRIVATE_HEADERS += \
     Private/intfCacheConnector.hpp \
@@ -54,7 +54,8 @@ SOURCES += \
     Private/clsRedisConnector.cpp \
     Private/QJWT.cpp \
     Private/clsSimpleCrypt.cpp \
-    Private/GenericTypes.cpp
+    Private/GenericTypes.cpp \
+    clsORMField.cpp
 
 # +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-#
 OTHER_FILES += \

@@ -57,12 +57,30 @@ struct stuTable{
         TotalRows(_totalRows),
         Rows(_rows)
     {}
-    QVariant toVariant(){
+    QVariant toVariant() const{
       return QVariantMap({
                            {"rows", this->Rows},
                            {"totalRows", this->TotalRows}
                          });
     }
+};
+
+struct stuFileInfo{
+  QString Name;
+  QString TempName;
+  quint64 Size;
+  QString Mime;
+
+  stuFileInfo(const QString& _name = {}, const QString& _tmpName = {}, quint64 _size = 0, const QString& _mime = {}) :
+    Name(_name),
+    TempName(_tmpName),
+    Size(_size),
+    Mime(_mime)
+  {}
+
+  QVariant toVariant() const;
+
+  stuFileInfo fromVariant(const QVariant& _value, const QByteArray& _paramName = {}) const;
 };
 
 /**********************************************************************/
@@ -73,7 +91,7 @@ QHTTP_ADD_COMPLEX_TYPE(qhttp::THeaderHash, COOKIES_t);
 QHTTP_ADD_SIMPLE_TYPE(QJsonObject, JWT_t);
 QHTTP_ADD_SIMPLE_TYPE(QJsonDocument, JSON_t);
 
-QHTTP_ADD_SIMPLE_TYPE(QVariantMap, DirectFilters_t);
+QHTTP_ADD_SIMPLE_TYPE(QVariantMap, ORMFilters_t);
 QHTTP_ADD_SIMPLE_TYPE(QString, EncodedJWT_t);
 QHTTP_ADD_SIMPLE_TYPE(QString, ExtraPath_t);
 QHTTP_ADD_SIMPLE_TYPE(QString, RemoteIP_t);
@@ -94,13 +112,14 @@ extern void registerGenericTypes();
 
 /**********************************************************************/
 Q_DECLARE_METATYPE(QHttp::stuTable)
+Q_DECLARE_METATYPE(QHttp::stuFileInfo)
 Q_DECLARE_METATYPE(QHttp::HEADERS_t)
 Q_DECLARE_METATYPE(QHttp::COOKIES_t)
 Q_DECLARE_METATYPE(QHttp::JWT_t)
 Q_DECLARE_METATYPE(QHttp::EncodedJWT_t)
 Q_DECLARE_METATYPE(QHttp::JSON_t)
 Q_DECLARE_METATYPE(QHttp::ExtraPath_t)
-Q_DECLARE_METATYPE(QHttp::DirectFilters_t)
+Q_DECLARE_METATYPE(QHttp::ORMFilters_t)
 Q_DECLARE_METATYPE(QHttp::RemoteIP_t)
 Q_DECLARE_METATYPE(QHttp::MD5_t)
 Q_DECLARE_METATYPE(QHttp::IPv4_t)

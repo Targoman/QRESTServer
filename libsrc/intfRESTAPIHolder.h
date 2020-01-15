@@ -96,18 +96,6 @@ public:
     virtual QList<clsORMField> filterItems(qhttp::THttpMethod _method = qhttp::EHTTP_ACL) { Q_UNUSED(_method) return {}; }
     virtual void updateFilterParamType(const QString& _fieldTypeName, QMetaType::Type _typeID) {Q_UNUSED(_fieldTypeName) Q_UNUSED(_typeID)}
 
-private slots:
-    /**
-     * @brief GETListAPIs A default slot in all the modules to list APIs registered in that module. This API output will be cached forever
-     *        so just the first call for each module will cost some
-     * @param _showParams if set to `true` will list API parameters else just API name will be output
-     * @param _showTypes if set to `true` will show input types of API parameters and return type else just names will be shown
-     * @param _prettifyTypes if set to true a pretty and general form of Qt Types will be printed else will print original QMetaType names
-     * @return a list of APIs registered in the module
-     */
-    CACHEABLE_INF QStringList API(GET, ListOfAPIs, (bool _showParams = true, bool _showTypes = true, bool _prettifyTypes = true),
-                                  "Default API in all modules and submodules to list all registered APIs in that module/submodule")
-
 protected:
     /**
      * @brief exportAPIs will detect and export acceptable functions to API registry.

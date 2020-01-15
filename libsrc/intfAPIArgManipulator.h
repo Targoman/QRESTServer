@@ -24,8 +24,8 @@
 #ifndef QHTTP_INTFAPIARGMANIPULATOR_H
 #define QHTTP_INTFAPIARGMANIPULATOR_H
 
-#include "QHttp/clsORMField.hpp"
 #include "QHttp/HTTPExceptions.h"
+#include "QHttp/clsORMField.h"
 
 namespace QHttp {
 
@@ -50,19 +50,22 @@ public:
 class intfAPIArgManipulator{
 public:
     intfAPIArgManipulator(const QString& _realTypeName);
+    typedef std::function<QVariant(const QVariant& _value)> Converter_t;
     virtual ~intfAPIArgManipulator();
 
     virtual QGenericArgument makeGenericArgument(const QVariant& _val, const QByteArray& _paramName, void** _argStorage) = 0;
     virtual QVariant invokeMethod(const intfAPIObject* _apiObject, const QVariantList& _arguments) = 0;
     virtual void cleanup (void* _argStorage) = 0;
-    virtual bool hasFromVariantMethod() = 0;
-    virtual bool hasToVariantMethod() = 0;
-    virtual QString toString(const QVariant _val) = 0;
-    virtual bool isIntegralType() = 0;
-    virtual enuVarComplexity complexity() = 0;
-    virtual QStringList options() = 0;
-    virtual QString description(const QList<clsORMField>& _allFields) = 0;
-    virtual void validate(const QVariant& _val, const QByteArray& _paramName) = 0;
+    virtual bool hasFromVariantMethod() const = 0;
+    virtual bool hasToVariantMethod() const = 0;
+    virtual QString toString(const QVariant _val) const = 0;
+    virtual bool isIntegralType() const  = 0;
+    virtual enuVarComplexity complexity() const = 0;
+    virtual QStringList options() const = 0;
+    virtual QString description(const QList<clsORMField>& _allFields) const = 0;
+    virtual void validate(const QVariant& _val, const QByteArray& _paramName) const = 0;
+    virtual QVariant toORMValue(const QString& _val) const = 0;
+    virtual std::function<QVariant(const QVariant& _val)> fromORMValueConverter() const = 0;
 
     QString     PrettyTypeName;
     char*       RealTypeName;
@@ -108,17 +111,25 @@ public:
         COMPLEXITY_Enum, _enum::Type, \
         [](_enum::Type _value) -> QVariant{return _enum::toStr(_value);}, \
         [](const QVariant& _value, const QByteArray& _paramName) -> _enum::Type { \
-            if(_enum::options().contains(_value.toString()) == false) \
-                throw exHTTPBadRequest(QString("%1 is not a valid %2").arg( \
-                        _paramName.constData()).arg( \
-                        QString(TARGOMAN_M2STR(_enum)).startsWith("enu") ? QString(TARGOMAN_M2STR(_enum)).mid(3) : QString(TARGOMAN_M2STR(_enum)))); \
-            return _enum::toEnum(_value.toString()); \
-        }, \
+            if(_enum::options().contains(_value.toString())) return _enum::toEnum(_value.toString()); \
+            else try { return _enum::toEnum(_value.toString(), true); } catch(...) { \
+              throw exHTTPBadRequest(QString("%1 is not a valid %2").arg( \
+                      _paramName.size() ? _paramName.constData() : _value.toString()).arg( \
+                      QString(TARGOMAN_M2STR(_enum)).startsWith("enu") ? QString(TARGOMAN_M2STR(_enum)).mid(3) : QString(TARGOMAN_M2STR(_enum)))); \
+        }}, \
         []() -> QStringList { return _enum::options();}, \
-        [](const QList<QHttp::clsORMField>&){return QString("One of (%1)").arg(_enum::options().join('|'));}\
+        [](const QList<QHttp::clsORMField>&){return QString("One of (%1)").arg(_enum::options().join('|'));}, \
+        [](const QString& _value) -> QVariant { \
+          if(_enum::options().contains(_value) == false) \
+              throw exHTTPBadRequest(QString("%1 is not a valid %2").arg( \
+                      _value).arg( \
+                      QString(TARGOMAN_M2STR(_enum)).startsWith("enu") ? QString(TARGOMAN_M2STR(_enum)).mid(3) : QString(TARGOMAN_M2STR(_enum)))); \
+          return QString(_enum::toEnum(_value)); \
+        },\
+        [](const QVariant& _value) -> QVariant { \
+            return _enum::toStr(static_cast<_enum::Type>(_value.toString().toLatin1().at(0))); \
+        } \
     )
 }
-
-
 
 #endif // QHTTP_INTFAPIARGMANIPULATOR_H

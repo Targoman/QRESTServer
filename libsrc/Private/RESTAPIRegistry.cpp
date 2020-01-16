@@ -302,19 +302,11 @@ QMap<QString, QString> RESTAPIRegistry::extractMethods(QHash<QString, clsAPIObje
 }
 
 QJsonObject RESTAPIRegistry::retriveOpenAPIJson(){
-     if(RESTAPIRegistry::CachedOpenAPI.isEmpty() == false)
+    if(RESTAPIRegistry::CachedOpenAPI.isEmpty() == false)
         return RESTAPIRegistry::CachedOpenAPI;
-/**/
+    /**/
 
     RESTAPIRegistry::CachedOpenAPI = gConfigs.Public.BaseOpenAPIObject;
-    QJsonObject DefaultResponses = QJsonObject({
-                                                   {"200", QJsonObject({{"description", "Success"}})},
-                                                   //{"400", QJsonObject({{"description", "Bad request."}})},
-                                                   //{"401", QJsonObject({{"description", "Authorization information is missing or invalid"}})},
-                                                   //{"403", QJsonObject({{"description", "Access forbidden"}})},
-                                                   //{"404", QJsonObject({{"description", "Not found"}})},
-                                                   //{"5XX", QJsonObject({{"description", "Unexpected error"}})},
-                                               });
 
     if(RESTAPIRegistry::CachedOpenAPI.isEmpty())
         RESTAPIRegistry::CachedOpenAPI = QJsonObject({
@@ -484,7 +476,7 @@ QJsonObject RESTAPIRegistry::retriveOpenAPIJson(){
             PathStringParts.pop_back();
         QString TagName  =  PathStringParts.join("_");
 
-        auto createPathInfo = [TagName, DefaultResponses, APIObject, HTTPMethod, addParamSpecs, paramName, fillParamTypeSpec](QStringList* _extraPathsStorage)->QJsonObject{
+        auto createPathInfo = [TagName, APIObject, HTTPMethod, addParamSpecs, paramName, fillParamTypeSpec](QStringList* _extraPathsStorage)->QJsonObject{
             QJsonObject PathInfo = QJsonObject({{"summary", APIObject->BaseMethod.Doc}});
 
             PathInfo["tags"] = QJsonArray({TagName});
@@ -570,7 +562,47 @@ QJsonObject RESTAPIRegistry::retriveOpenAPIJson(){
                     PathInfo["parameters"] = Parameters;
             }
 
-            PathInfo["responses"] = DefaultResponses;
+            static QJsonObject DefaultResponses = QJsonObject({
+                                                                  {"200", QJsonObject({{"description", "Bad request."}})},
+                                                                  {"400", QJsonObject({{"description", "Bad request."}})},
+                                                                  {"401", QJsonObject({{"description", "Authorization information is missing or invalid"}})},
+                                                                  {"403", QJsonObject({{"description", "Access forbidden"}})},
+                                                                  {"404", QJsonObject({{"description", "Not found"}})},
+                                                                  {"5XX", QJsonObject({{"description", "Unexpected error"}})},
+                                                              });
+            QJsonObject ResponseModel = DefaultResponses;
+            if(HTTPMethod == "get"){
+                QJsonObject Properties;
+                foreach(auto Item, APIObject->Parent->filterItems()){
+                    QJsonObject ParamSpecs;
+                    intfAPIArgManipulator* ArgSpecs;
+                    if(Item.parameterType()< QHTTP_BASE_USER_DEFINED_TYPEID)
+                        ArgSpecs = gOrderedMetaTypeInfo.at(Item.parameterType());
+                    else
+                        ArgSpecs = gUserDefinedTypesInfo.at(Item.parameterType()- QHTTP_BASE_USER_DEFINED_TYPEID);
+
+                    Q_ASSERT(ArgSpecs);
+                    fillParamTypeSpec(ArgSpecs,
+                                      APIObject->Parent->filterItems(),
+                                      QMetaType::typeName(Item.parameterType()),
+                                      ParamSpecs
+                                      );
+
+                    Properties.insert(Item.name(), ParamSpecs);
+                }
+
+                ResponseModel["200"] =
+                        QJsonObject({
+                                        {"description", "Success"},
+                                        {"schema", QJsonObject({
+                                             {"type", "object"},
+                                             {"properties", Properties}
+                                         })}
+                                    });
+            }
+
+            PathInfo["responses"] = ResponseModel;
+
 
             if(APIObject->requiresJWT()){
                 PathInfo["security"] =  QJsonArray({
@@ -600,10 +632,10 @@ QJsonObject RESTAPIRegistry::retriveOpenAPIJson(){
         quint8 HasNonAutoParams = false;
         foreach(auto ParamType, APIObject->ParamTypes)
             if(/*ParamType != PARAM_HEADERS
-                  && ParamType != PARAM_REMOTE_IP
-                  && ParamType != PARAM_COOKIES
-                  && ParamType != PARAM_JWT
-                  &&*/ ParamType != PARAM_EXTRAPATH
+                        && ParamType != PARAM_REMOTE_IP
+                        && ParamType != PARAM_COOKIES
+                        && ParamType != PARAM_JWT
+                        &&*/ ParamType != PARAM_EXTRAPATH
                ){
                 HasNonAutoParams = true;
                 break;

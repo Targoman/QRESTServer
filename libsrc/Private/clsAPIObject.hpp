@@ -42,6 +42,8 @@ namespace Private {
 #define PARAM_HEADERS   "QHttp::HEADERS_t"
 #define PARAM_EXTRAPATH "QHttp::ExtraPath_t"
 #define PARAM_ORMFILTER "QHttp::ORMFilters_t"
+#define PARAM_FILE      "QHttp::stuFileInfo"
+#define PARAM_FILES     "QHttp::Files_t"
 
 class QMetaMethodExtended : public QMetaMethod {
 public:

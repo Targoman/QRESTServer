@@ -146,5 +146,10 @@ quint64 SampleSubModule::apiSampleTargomanEnum (ns::enuSample2::Type _val, QStri
     return _val;
 }
 
+quint64 SampleSubModule::apiPOSTSampleWithFile (QString A, QString B, ns::enuSample::Type _val, QHttp::stuFileInfo _file){
+    QFile::rename(_file.TempName, "/tmp/test1");
+    return _val;
+}
+
 }
 

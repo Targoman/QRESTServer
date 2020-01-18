@@ -78,11 +78,23 @@ struct stuFileInfo{
     Mime(_mime)
   {}
 
+  stuFileInfo(const stuFileInfo& _other) :
+      Name(_other.Name),
+      TempName(_other.TempName),
+      Size(_other.Size),
+      Mime(_other.Mime)
+  {}
+
   QVariant toVariant() const;
 
-  stuFileInfo fromVariant(const QVariant& _value, const QByteArray& _paramName = {}) const;
+  static stuFileInfo fromVariant(const QVariant& _value, const QByteArray& _paramName = {});
 };
 
+class Files_t : public QList<stuFileInfo>{
+public:
+    QVariant toVariant() const;
+    Files_t fromVariant(const QVariant& _value, const QByteArray& _paramName = {}) const;
+};
 /**********************************************************************/
 
 QHTTP_ADD_COMPLEX_TYPE(qhttp::THeaderHash, HEADERS_t);
@@ -113,6 +125,7 @@ extern void registerGenericTypes();
 /**********************************************************************/
 Q_DECLARE_METATYPE(QHttp::stuTable)
 Q_DECLARE_METATYPE(QHttp::stuFileInfo)
+Q_DECLARE_METATYPE(QHttp::Files_t)
 Q_DECLARE_METATYPE(QHttp::HEADERS_t)
 Q_DECLARE_METATYPE(QHttp::COOKIES_t)
 Q_DECLARE_METATYPE(QHttp::JWT_t)

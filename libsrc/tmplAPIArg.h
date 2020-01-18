@@ -73,6 +73,10 @@ public:
         if(this->fromVariantLambda)
             this->fromVariantLambda(_val, _paramName);
     }
+    inline QVariant defaultVariant() const final {
+        _itmplType Default;
+        return this->toVariantLambda == nullptr ? QVariant::fromValue(Default) : this->toVariantLambda(Default);
+    }
     inline void cleanup (void* _argStorage) final {if(_argStorage) delete (reinterpret_cast<_itmplType*>(_argStorage));}
     inline bool hasFromVariantMethod() const final {return this->fromVariantLambda != nullptr;}
     inline bool hasToVariantMethod() const final {return this->toVariantLambda != nullptr;}

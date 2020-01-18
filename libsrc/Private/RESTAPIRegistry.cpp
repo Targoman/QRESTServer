@@ -178,7 +178,15 @@ void RESTAPIRegistry::registerRESTAPI(intfRESTAPIHolder* _module, const QMetaMet
 
         QVariantList DefaultValues;
         quint8 ParamIndex = 0;
+        bool ContainsFileInput = false;
         foreach(auto Param, CommaReplacedMethodSignature.split(',')){
+            if (ParamIndex >= _method.parameterCount())
+                break;
+
+            if(_method.parameterType(ParamIndex) == qMetaTypeId<QHttp::stuFileInfo>() ||
+               _method.parameterType(ParamIndex) == qMetaTypeId<QHttp::Files_t>())
+                ContainsFileInput = true;
+
             if(Param.contains('=')){
                 QString Value = Param.split('=').last().replace(COMMA_SIGN, ",").trimmed();
                 if(Value.startsWith("(")) Value = Value.mid(1);
@@ -196,9 +204,11 @@ void RESTAPIRegistry::registerRESTAPI(intfRESTAPIHolder* _module, const QMetaMet
                 else
                     ArgSpecs = gUserDefinedTypesInfo.at(_method.parameterType(ParamIndex) - QHTTP_BASE_USER_DEFINED_TYPEID);
 
+                Q_ASSERT(ArgSpecs);
+
                 if(Value == "{}" || Value.contains("()"))
-                    DefaultValues.append(QVariant());
-                else if (ArgSpecs && ArgSpecs->complexity() == COMPLEXITY_Enum)
+                    DefaultValues.append(ArgSpecs->defaultVariant());
+                else if (ArgSpecs->complexity() == COMPLEXITY_Enum)
                     DefaultValues.append(Value.mid(Value.indexOf("::") + 2));
                 else
                     DefaultValues.append(Value);
@@ -209,9 +219,10 @@ void RESTAPIRegistry::registerRESTAPI(intfRESTAPIHolder* _module, const QMetaMet
 
         QMetaMethodExtended Method(_method, DefaultValues, MethodDoc);
 
-        if(MethodName.startsWith("GET"))
+        if(MethodName.startsWith("GET")){
+            if(ContainsFileInput) throw exRESTRegistry("file input can not be used with GET method");
             RESTAPIRegistry::addRegistryEntry(RESTAPIRegistry::Registry, _module, Method, "GET", makeMethodName(sizeof("GET")));
-        else if(MethodName.startsWith("POST"))
+        }else if(MethodName.startsWith("POST"))
             RESTAPIRegistry::addRegistryEntry(RESTAPIRegistry::Registry, _module, Method, "POST", makeMethodName(sizeof("POST")));
         else if(MethodName.startsWith("PUT"))
             RESTAPIRegistry::addRegistryEntry(RESTAPIRegistry::Registry, _module, Method, "PUT", makeMethodName(sizeof("PUT")));
@@ -219,17 +230,21 @@ void RESTAPIRegistry::registerRESTAPI(intfRESTAPIHolder* _module, const QMetaMet
             RESTAPIRegistry::addRegistryEntry(RESTAPIRegistry::Registry, _module, Method, "PUT", makeMethodName(sizeof("CREATE")));
         else if(MethodName.startsWith("PATCH"))
             RESTAPIRegistry::addRegistryEntry(RESTAPIRegistry::Registry, _module, Method, "PATCH", makeMethodName(sizeof("PATCH")));
-        else if (MethodName.startsWith("DELETE"))
+        else if (MethodName.startsWith("DELETE")){
+            if(ContainsFileInput) throw exRESTRegistry("file input can not be used with DELETE method");
             RESTAPIRegistry::addRegistryEntry(RESTAPIRegistry::Registry, _module, Method, "DELETE", makeMethodName(sizeof("DELETE")));
-        else if (MethodName.startsWith("UPDATE"))
+        }else if (MethodName.startsWith("UPDATE"))
             RESTAPIRegistry::addRegistryEntry(RESTAPIRegistry::Registry, _module, Method, "PATCH", makeMethodName(sizeof("UPDATE")));
         else if (MethodName.startsWith("WS")){
 #ifdef QHTTP_ENABLE_WEBSOCKET
+            if(ContainsFileInput) throw exRESTRegistry("file input can not be used with WebSockets");
             RESTAPIRegistry::addRegistryEntry(RESTAPIRegistry::WSRegistry, _module, Method, "WS", makeMethodName(sizeof("WS")));
 #else
             throw exRESTRegistry("Websockets are not enabled in this QRestServer please compile with websockets support");
 #endif
-        }else{
+        }else if(ContainsFileInput == false)
+            throw exRESTRegistry("methods with file input must specifically contain HTTP method");
+        else{
             RESTAPIRegistry::addRegistryEntry(RESTAPIRegistry::Registry, _module, Method, "GET", MethodName.at(0).toLower() + MethodName.mid(1));
             RESTAPIRegistry::addRegistryEntry(RESTAPIRegistry::Registry, _module, Method, "POST", MethodName.at(0).toLower() + MethodName.mid(1));
         }
@@ -272,6 +287,8 @@ QMap<QString, QString> RESTAPIRegistry::extractMethods(QHash<QString, clsAPIObje
                     case COMPLEXITY_Complex:
                     case COMPLEXITY_Enum:
                         return QString(" = \"%1\"").arg(_apiObject->defaultValue(i).toString().replace("\"", "\\\""));
+                    case COMPLEXITY_File:
+                        return "";
                     }
                     return " = " + (ArgManipulator->isPrimitiveType() ? QString("%1") : (QString("\"%1\""))).arg(
                                 _apiObject->defaultValue(i).toString().replace("\"", "\\\""));
@@ -363,9 +380,12 @@ QJsonObject RESTAPIRegistry::retriveOpenAPIJson(){
                     return  "number";
             case COMPLEXITY_String:
             case COMPLEXITY_Complex:
-                return  "string";
             case COMPLEXITY_Enum:
                 return  "string";
+            case COMPLEXITY_File:
+                if(_typeName == "QHttp::Files_t")
+                    return "string";
+                return  "file";
             }
             return "ERROR";
         };
@@ -385,8 +405,10 @@ QJsonObject RESTAPIRegistry::retriveOpenAPIJson(){
                 ParamSpecs["default"] = _deafaultValue.toString();
                 if(addExample)
                     ParamSpecs["example"] = _deafaultValue.toString();
-            }else if(addExample) {
-                ParamSpecs["example"] = QJsonValue();
+            }else{
+                ParamSpecs["required"] = true;
+                if(addExample)
+                    ParamSpecs["example"] = QJsonValue();
             }
 
         };
@@ -482,7 +504,12 @@ QJsonObject RESTAPIRegistry::retriveOpenAPIJson(){
             PathInfo["tags"] = QJsonArray({TagName});
             PathInfo["produces"] = QJsonArray({"application/json"});
             if(HTTPMethod != "get" && HTTPMethod != "delete"){
-                PathInfo["consumes"] = QJsonArray({"application/json"});
+                quint8 RequiredFiles = 0;
+                for(quint8 i=0; i< APIObject->BaseMethod.parameterCount(); ++i)
+                    if(QMetaType::typeName(APIObject->BaseMethod.parameterType(i)) == QStringLiteral(PARAM_FILE))
+                        RequiredFiles++;
+                    else if (QMetaType::typeName(APIObject->BaseMethod.parameterType(i)) == QStringLiteral(PARAM_FILES))
+                        RequiredFiles += 2;
 
                 QJsonObject Properties;
                 for(quint8 i=0; i< APIObject->BaseMethod.parameterCount(); ++i){
@@ -541,17 +568,28 @@ QJsonObject RESTAPIRegistry::retriveOpenAPIJson(){
                 for(quint8 i=0; i< APIObject->BaseMethod.parameterCount(); ++i)
                     addParamSpecs( Parameters, i, _extraPathsStorage);
 
-                Parameters.append(QJsonObject({
-                                                  {"in", "body"},
-                                                  {"name", "body"},
-                                                  {"description", "Pramaeter Object"},
-                                                  {"required", true},
-                                                  {"schema", QJsonObject({
-                                                       {"type", "object"},
-                                                       {"properties", Properties}
-                                                   })}
-                                              }));
 
+                if(RequiredFiles > 0){
+                    PathInfo["consumes"] = QJsonArray({"multipart/form-data"});
+                    for(auto Prop = Properties.begin(); Prop != Properties.end(); ++Prop){
+                        QJsonObject PropVal = Prop.value().toObject();
+                        PropVal.insert("name", Prop.key());
+                        PropVal.insert("in", "formData");
+                        Parameters.append(PropVal);
+                    }
+                }else{
+                    PathInfo["consumes"] = QJsonArray({"application/json"});
+                    Parameters.append(QJsonObject({
+                                                      {"in", "body"},
+                                                      {"name", "body"},
+                                                      {"description", "Pramaeter Object"},
+                                                      {"required", true},
+                                                      {"schema", QJsonObject({
+                                                           {"type", "object"},
+                                                           {"properties", Properties}
+                                                       })}
+                                                  }));
+                }
                 PathInfo["parameters"] = Parameters;
             }else{
                 QJsonArray Parameters;
@@ -563,7 +601,7 @@ QJsonObject RESTAPIRegistry::retriveOpenAPIJson(){
             }
 
             static QJsonObject DefaultResponses = QJsonObject({
-                                                                  {"200", QJsonObject({{"description", "Bad request."}})},
+                                                                  {"200", QJsonObject({{"description", "Success."}})},
                                                                   {"400", QJsonObject({{"description", "Bad request."}})},
                                                                   {"401", QJsonObject({{"description", "Authorization information is missing or invalid"}})},
                                                                   {"403", QJsonObject({{"description", "Access forbidden"}})},
@@ -759,11 +797,11 @@ void RESTAPIRegistry::addRegistryEntry(QHash<QString, QHttp::Private::clsAPIObje
                                        const QString& _methodName){
     QString MethodKey = RESTAPIRegistry::makeRESTAPIKey(_httpMethod, "/" + _module->moduleBaseName().replace("::", "/")+ '/' + _methodName);
 
-    if(_registry.contains(MethodKey)){
+    if(_registry.contains(MethodKey)) {
         if(RESTAPIRegistry::Registry.value(MethodKey)->isPolymorphic(_method))
             throw exRESTRegistry(QString("Polymorphism is not supported: %1").arg(_method.methodSignature().constData()));
         _registry.value(MethodKey)->updateDefaultValues(_method);
-    }else{
+    } else {
         if(RESTAPIRegistry::getCacheSeconds(_method, CACHE_INTERNAL) > 0 && RESTAPIRegistry::getCacheSeconds(_method, CACHE_CENTRAL) >0)
             throw exRESTRegistry("Both internal and central cache can not be defined on an API");
 

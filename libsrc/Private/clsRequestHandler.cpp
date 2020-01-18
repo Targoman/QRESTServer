@@ -459,11 +459,11 @@ void clsMultipartFormDataRequestHandler::onMultiPartEnd(void *_userData) {
     }
     if(Self->LastTempFile.isNull() == false){
         Self->SameNameItems.append(
-                    stuFileInfo(
+                    QJsonDocument(QJsonObject::fromVariantMap(stuFileInfo(
                         Self->LastFileName.c_str(),
                         Self->LastTempFile->fileName(),
                         static_cast<quint64>(Self->LastWrittenBytes),
-                        Self->LastMime.c_str()).toVariant().toString());
+                        Self->LastMime.c_str()).toVariant().toMap())).toJson(QJsonDocument::Compact));
         Self->LastTempFile.reset();
     }else
         Self->SameNameItems.append(Self->LastValue);

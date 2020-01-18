@@ -48,10 +48,17 @@ void registerGenericTypes()
     );
 
     QHTTP_REGISTER_METATYPE(
-                COMPLEXITY_Complex,
+                COMPLEXITY_File,
                 QHttp::stuFileInfo,
                 [](const QHttp::stuFileInfo& _value) -> QVariant{return _value.toVariant();},
-                [](const QVariant& _value, const QByteArray&) -> QHttp::stuFileInfo {QHttp::stuFileInfo TempValue; return TempValue.fromVariant(_value);}
+                [](const QVariant& _value, const QByteArray& _param) -> QHttp::stuFileInfo {QHttp::stuFileInfo TempValue; return TempValue.fromVariant(_value, _param);}
+    );
+
+    QHTTP_REGISTER_METATYPE(
+                COMPLEXITY_File,
+                QHttp::Files_t,
+                [](const QHttp::Files_t& _value) -> QVariant{ return _value.toVariant();},
+                [](const QVariant& _value, const QByteArray& _param) -> QHttp::Files_t {QHttp::Files_t TempValue; return TempValue.fromVariant(_value, _param);}
     );
 
     QHTTP_REGISTER_METATYPE(
@@ -156,18 +163,18 @@ void registerGenericTypes()
     QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(COMPLEXITY_String, QHttp::DateTime_t, optional(QFV.dateTime()), _value, [](const QList<clsORMField>&){ return "A valid datetime"; });
 }
 
-stuFileInfo stuFileInfo::fromVariant(const QVariant& _value, const QByteArray& _paramName) const
+stuFileInfo stuFileInfo::fromVariant(const QVariant& _value, const QByteArray& _paramName)
 {
-         QVariantMap Value = _value.toMap();
-         if(Value.isEmpty() || !Value.contains("name") || !Value.contains("tmpname") || !Value.contains("size") || !Value.contains("mime"))
-             throw exHTTPBadRequest(_paramName + " is not a valid File information");
+     QVariantMap Value = _value.toMap();
+     if(Value.isEmpty() || !Value.contains("name") || !Value.contains("tmpname") || !Value.contains("size") || !Value.contains("mime"))
+         throw exHTTPBadRequest(_paramName + " is not a valid File information");
 
-         return stuFileInfo(
-                     Value["name"].toString(),
-                     Value["tmpname"].toString(),
-                     Value["size"].toULongLong(),
-                     Value["mime"].toString()
-                     );
+     return stuFileInfo(
+                 Value["name"].toString(),
+                 Value["tmpname"].toString(),
+                 Value["size"].toULongLong(),
+                 Value["mime"].toString()
+                 );
 }
 
 QVariant stuFileInfo::toVariant() const{
@@ -176,6 +183,23 @@ QVariant stuFileInfo::toVariant() const{
                       {"tmpname", this->TempName},
                       {"size", this->Size},
                       {"mime", this->Mime},
-                    });
+                       });
 }
+
+QVariant Files_t::toVariant() const
+{
+    QVariantList Files;
+    foreach(auto Val, *this)
+        Files.append(Val.toVariant());
+    return Files;
+}
+
+Files_t Files_t::fromVariant(const QVariant& _value, const QByteArray& _paramName) const
+{
+    Files_t Files;
+    foreach(auto ListItem, _value.toList())
+        Files.append(QHttp::stuFileInfo::fromVariant(ListItem, _paramName));
+    return Files;
+}
+
 }

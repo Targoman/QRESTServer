@@ -89,14 +89,16 @@ public:
     void init();
 
 private slots:
+    quint64 API(POST, SampleWithFile, (QString Txt, QString B = {}, ns::enuSample::Type _val = enuSample::s1, QHttp::stuFileInfo _file = {}),
+                        "Sample API with file input ")
+private:
     QString API(GET, ,(QHttp::ExtraPath_t _EXTRAPATH, QHttp::ORMFilters_t _FILTERS, int from, int to),
             "Sample API without name")
-private:
     quint64 API(, SampleEnahancedEnum, (ns::enuSample::Type _val = enuSample::s1),
-                        "Sample list returning API")
+                        "Sample  API")
 
     quint64 API(, SampleTargomanEnum, (ns::enuSample2::Type _val = enuSample2::dd1, QString A= "sdlkjsdkfjkdlf" ),
-                        "Sample list returning API")
+                        "Sample  API")
 
 private:
     SampleSubModule();

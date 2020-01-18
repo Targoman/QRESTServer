@@ -35,6 +35,7 @@ enum enuVarComplexity {
     COMPLEXITY_Boolean,
     COMPLEXITY_String,
     COMPLEXITY_Complex,
+    COMPLEXITY_File,
     COMPLEXITY_Enum
 };
 
@@ -50,11 +51,11 @@ public:
 class intfAPIArgManipulator{
 public:
     intfAPIArgManipulator(const QString& _realTypeName);
-    typedef std::function<QVariant(const QVariant& _value)> Converter_t;
     virtual ~intfAPIArgManipulator();
 
     virtual QGenericArgument makeGenericArgument(const QVariant& _val, const QByteArray& _paramName, void** _argStorage) = 0;
     virtual QVariant invokeMethod(const intfAPIObject* _apiObject, const QVariantList& _arguments) = 0;
+    virtual QVariant defaultVariant() const = 0;
     virtual void cleanup (void* _argStorage) = 0;
     virtual bool hasFromVariantMethod() const = 0;
     virtual bool hasToVariantMethod() const = 0;

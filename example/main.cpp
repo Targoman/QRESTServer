@@ -63,6 +63,8 @@ int main(int _argc, char *_argv[])
         Configs.ListenPort = 10000;
         Configs.IndentedJson = true;
         Configs.WebSocketServerName = "ws";
+        Configs.MaxUploadSize = 10*1024*1024;
+        Configs.MaxUploadedFileSize = 1*1024*1024;
 
         RESTServer::configure (Configs);
         RESTServer::start();

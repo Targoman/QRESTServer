@@ -242,8 +242,8 @@ void RESTAPIRegistry::registerRESTAPI(intfRESTAPIHolder* _module, const QMetaMet
 #else
             throw exRESTRegistry("Websockets are not enabled in this QRestServer please compile with websockets support");
 #endif
-        }else if(ContainsFileInput == false)
-            throw exRESTRegistry("methods with file input must specifically contain HTTP method");
+        }else if(ContainsFileInput)
+            throw exRESTRegistry("methods with file input must specifically contain HTTP method: " + MethodName);
         else{
             RESTAPIRegistry::addRegistryEntry(RESTAPIRegistry::Registry, _module, Method, "GET", MethodName.at(0).toLower() + MethodName.mid(1));
             RESTAPIRegistry::addRegistryEntry(RESTAPIRegistry::Registry, _module, Method, "POST", MethodName.at(0).toLower() + MethodName.mid(1));

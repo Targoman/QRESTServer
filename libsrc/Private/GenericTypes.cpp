@@ -158,6 +158,7 @@ void registerGenericTypes()
     QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(COMPLEXITY_String, QHttp::IPv4_t, optional(QFV.ipv4()), _value, [](const QList<clsORMField>&){ return "A valid IP version 4"; });
     QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(COMPLEXITY_String, QHttp::ISO639_2_t, optional(QFV.maxLenght(2).languageCode()), _value, [](const QList<clsORMField>&){ return "A valid ISO639 two-letter language code"; });
     QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(COMPLEXITY_String, QHttp::Base64Image_t, optional(QFV.base64Image()), _value, [](const QList<clsORMField>&){ return "A valid base64 encoded png/jpg image"; });
+    QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(COMPLEXITY_String, QHttp::Sheba_t, optional(QFV.iban()), _value, [](const QList<clsORMField>&){ return "A valid Iranian sheba code"; });
     QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(COMPLEXITY_String, QHttp::Date_t, optional(QFV.date()), _value, [](const QList<clsORMField>&){ return "A valid gregorian date"; });
     QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(COMPLEXITY_String, QHttp::Time_t, optional(QFV.time()), _value, [](const QList<clsORMField>&){ return "A valid time"; });
     QHTTP_VALIDATION_REQUIRED_TYPE_IMPL(COMPLEXITY_String, QHttp::DateTime_t, optional(QFV.dateTime()), _value, [](const QList<clsORMField>&){ return "A valid datetime"; });
@@ -167,7 +168,7 @@ stuFileInfo stuFileInfo::fromVariant(const QVariant& _value, const QByteArray& _
 {
      QVariantMap Value = _value.toMap();
      if(Value.isEmpty() || !Value.contains("name") || !Value.contains("tmpname") || !Value.contains("size") || !Value.contains("mime"))
-         throw exHTTPBadRequest(_paramName + " is not a valid File information");
+         throw exHTTPBadRequest(_paramName + " is not valid File information");
 
      return stuFileInfo(
                  Value["name"].toString(),

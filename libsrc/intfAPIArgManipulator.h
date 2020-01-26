@@ -114,16 +114,16 @@ public:
         [](const QVariant& _value, const QByteArray& _paramName) -> _enum::Type { \
             if(_enum::options().contains(_value.toString())) return _enum::toEnum(_value.toString()); \
             else try { return _enum::toEnum(_value.toString(), true); } catch(...) { \
-              throw exHTTPBadRequest(QString("%1 is not a valid %2").arg( \
-                      _paramName.size() ? _paramName.constData() : _value.toString()).arg( \
+              throw exHTTPBadRequest(QString("%1(%2) is not a valid %3").arg( \
+                      _paramName.size() ? _paramName.constData() : _value.toString()).arg(_value.toString()).arg( \
                       QString(TARGOMAN_M2STR(_enum)).startsWith("enu") ? QString(TARGOMAN_M2STR(_enum)).mid(3) : QString(TARGOMAN_M2STR(_enum)))); \
         }}, \
         []() -> QStringList { return _enum::options();}, \
         [](const QList<QHttp::clsORMField>&){return QString("One of (%1)").arg(_enum::options().join('|'));}, \
         [](const QString& _value) -> QVariant { \
           if(_enum::options().contains(_value) == false) \
-              throw exHTTPBadRequest(QString("%1 is not a valid %2").arg( \
-                      _value).arg( \
+              throw exHTTPBadRequest(QString("%1(%2) is not a valid %3.").arg( \
+                      _value).arg(_value).arg( \
                       QString(TARGOMAN_M2STR(_enum)).startsWith("enu") ? QString(TARGOMAN_M2STR(_enum)).mid(3) : QString(TARGOMAN_M2STR(_enum)))); \
           return QString(_enum::toEnum(_value)); \
         },\
